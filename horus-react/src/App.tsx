@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import MainLayout from './layouts/MainLayout'
+import { AdminAuthProvider } from './context/AdminAuthContext'
+import AdminRoute from './components/AdminRoute'
 
 import Home            from './pages/Home'
 import QuienesSomos    from './pages/QuienesSomos'
@@ -21,36 +23,49 @@ import PoliticasPrivacidad from './pages/politicas/PoliticasPrivacidad'
 import PreguntasFrecuentes from './pages/politicas/PreguntasFrecuentes'
 import LibroReclamaciones  from './pages/politicas/LibroReclamaciones'
 
+import AdminLogin from './pages/admin/AdminLogin'
+import AdminRegister from './pages/admin/AdminRegister'
+import AdminDashboard from './pages/admin/AdminDashboard'
+
 import NotFound from './pages/NotFound'
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<MainLayout />}>
-          <Route path="/"                        element={<Home />} />
-          <Route path="/quienes-somos"           element={<QuienesSomos />} />
-          <Route path="/galeria"                 element={<Galeria />} />
-          <Route path="/market"                  element={<Market />} />
-          <Route path="/contactos"               element={<Contactos />} />
+    <AdminAuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<MainLayout />}>
+            <Route path="/"                        element={<Home />} />
+            <Route path="/quienes-somos"           element={<QuienesSomos />} />
+            <Route path="/galeria"                 element={<Galeria />} />
+            <Route path="/market"                  element={<Market />} />
+            <Route path="/contactos"               element={<Contactos />} />
 
-          <Route path="/tecnologias/cableado-estructurado"  element={<CableadoEstructurado />} />
-          <Route path="/tecnologias/camaras-seguridad"      element={<CamarasSeguridad />} />
-          <Route path="/tecnologias/soporte-mantenimiento"  element={<SoporteMantenimiento />} />
+            <Route path="/tecnologias/cableado-estructurado"  element={<CableadoEstructurado />} />
+            <Route path="/tecnologias/camaras-seguridad"      element={<CamarasSeguridad />} />
+            <Route path="/tecnologias/soporte-mantenimiento"  element={<SoporteMantenimiento />} />
 
-          <Route path="/educacion/asesoramiento"  element={<Asesoramiento />} />
-          <Route path="/educacion/capacitaciones" element={<Capacitaciones />} />
-          <Route path="/educacion/cursos"         element={<Cursos />} />
+            <Route path="/educacion/asesoramiento"  element={<Asesoramiento />} />
+            <Route path="/educacion/capacitaciones" element={<Capacitaciones />} />
+            <Route path="/educacion/cursos"         element={<Cursos />} />
 
-          <Route path="/politicas/cookies"           element={<PoliticasCookies />} />
-          <Route path="/politicas/devolucion"        element={<PoliticasDevolucion />} />
-          <Route path="/politicas/privacidad"        element={<PoliticasPrivacidad />} />
-          <Route path="/preguntas-frecuentes"        element={<PreguntasFrecuentes />} />
-          <Route path="/libro-reclamaciones"         element={<LibroReclamaciones />} />
+            <Route path="/politicas/cookies"           element={<PoliticasCookies />} />
+            <Route path="/politicas/devolucion"        element={<PoliticasDevolucion />} />
+            <Route path="/politicas/privacidad"        element={<PoliticasPrivacidad />} />
+            <Route path="/preguntas-frecuentes"        element={<PreguntasFrecuentes />} />
+            <Route path="/libro-reclamaciones"         element={<LibroReclamaciones />} />
+          </Route>
+
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/register" element={<AdminRegister />} />
+
+          <Route element={<AdminRoute />}>
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          </Route>
 
           <Route path="*" element={<NotFound />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </AdminAuthProvider>
   )
 }

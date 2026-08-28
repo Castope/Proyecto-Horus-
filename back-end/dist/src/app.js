@@ -7,12 +7,16 @@ const cors_1 = __importDefault(require("cors"));
 const express_1 = __importDefault(require("express"));
 const contactoRoutes_1 = __importDefault(require("./routes/contactoRoutes"));
 const reclamacionRoutes_1 = __importDefault(require("./routes/reclamacionRoutes"));
+const adminRoutes_1 = __importDefault(require("./routes/adminRoutes"));
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)({
     origin: ['http://localhost:5173', 'http://localhost:4173'],
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express_1.default.json());
 app.use('/api/contacto', contactoRoutes_1.default);
 app.use('/api/reclamaciones', reclamacionRoutes_1.default);
+app.use('/api/admin', adminRoutes_1.default);
 exports.default = app;

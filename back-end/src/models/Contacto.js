@@ -10,6 +10,6 @@ const Contacto = sequelize.define('Contacto', {
 }, {
   tableName: 'contactos',
   timestamps: true,
-});
+});       
 
 module.exports = Contacto;

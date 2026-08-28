@@ -4,14 +4,17 @@ const transporter = require('../config/mailer');
 exports.enviarContacto = async (req, res) => {
   try {
     const { nombre, email, telefono, asunto, mensaje } = req.body;
+    
+    // Lista de campos requeridos para validación más limpia
+    const camposRequeridos = ['nombre', 'email', 'telefono', 'asunto', 'mensaje'];
+    const faltantes = camposRequeridos.filter(campo => !req.body[campo]);
 
-    if (!nombre || !email || !telefono || !asunto || !mensaje) {
-      return res.status(400).json({ ok: false, mensaje: 'Todos los campos son obligatorios' });
+    if (faltantes.length > 0) {
+      return res.status(400).json({ ok: false, mensaje: `Faltan campos obligatorios: ${faltantes.join(', ')}` });
     }
 
     await Contacto.create({ nombre, email, telefono, asunto, mensaje });
-
-    res.json({ ok: true, mensaje: 'Mensaje enviado correctamente' });
+    res.status(201).json({ ok: true, mensaje: 'Mensaje enviado correctamente' });
 
     transporter.sendMail({
       from: `"Web Horus Group" <${process.env.MAIL_USER}>`,

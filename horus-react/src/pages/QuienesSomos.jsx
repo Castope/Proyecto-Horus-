@@ -78,7 +78,7 @@ export default function QuienesSomos() {
       <section className="ns-intro">
         <div className="container ns-intro-wrap">
           <div className="ns-left fade-up">
-            <div className="ns-photo-stack">
+            <div className="ns-photo-stack">  
               <img className="ns-photo-main" src={photoMain} alt="Horus Group" />
               <img className="ns-photo-sec"  src={photologo3 }  alt="Equipo" />
               <div className="ns-photo-badge">

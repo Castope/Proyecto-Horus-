@@ -1,8 +1,15 @@
 import { useEffect } from 'react'
+import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import useFadeUp from '../../hooks/useFadeUp'
 
 import imgCap from '../../assets/images/capacitaciones/capacitaciones.jpg'
+
+const cardStyle = (color: string, background: string, dark: string): CSSProperties => ({
+  ['--pc' as string]: color,
+  ['--pcb' as string]: background,
+  ['--pcd' as string]: dark,
+})
 
 const PROGRAMAS = [
   { color:'#4F46E5', bg:'#EEF2FF', dark:'#3730a3', icon:'fa-heartbeat',   n:'01', area:'Salud',          title:'Salud y Primeros Auxilios',    desc:'Para enfermeros, obstetras y personal médico. Prácticas de primeros auxilios y RCP certificadas.', items:['Primeros auxilios avanzados','RCP y desfibrilación','Atención de emergencias'], cert:'Colegio de Enfermeros' },
@@ -48,7 +55,7 @@ export default function Capacitaciones() {
           </div>
           <div className="ed-prog-grid">
             {PROGRAMAS.map(p => (
-              <div key={p.n} className="ed-prog-card fade-up" style={{'--pc':p.color,'--pcb':p.bg,'--pcd':p.dark}}>
+              <div key={p.n} className="ed-prog-card fade-up" style={cardStyle(p.color, p.bg, p.dark)}>
                 <div className="ed-prog-card-bg" />
                 <div className="ed-prog-card-top">
                   <div className="ed-prog-card-icon"><i className={`fas ${p.icon}`} /></div>

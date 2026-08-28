@@ -1,8 +1,14 @@
 import { useEffect } from 'react'
+import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import useFadeUp from '../../hooks/useFadeUp'
 
 import imgCamera from '../../assets/images/videovigilancia/camera.webp'
+
+const iconStyle = (color: string, background: string): CSSProperties => ({
+  ['--c' as string]: color,
+  ['--cb' as string]: background,
+})
 
 export default function CamarasSeguridad() {
   useFadeUp()
@@ -76,7 +82,7 @@ export default function CamarasSeguridad() {
             <div className="cam-service fade-up">
               <div className="cam-service-left">
                 <div className="cam-service-num">01</div>
-                <div className="cam-service-icon" style={{'--c':'#4F46E5','--cb':'#EEF2FF'}}><i className="fas fa-video" /></div>
+                <div className="cam-service-icon" style={iconStyle('#4F46E5', '#EEF2FF')}><i className="fas fa-video" /></div>
                 <div className="cam-service-text">
                   <h3>Cámaras HD con Visión Nocturna</h3>
                   <p>Instalamos cámaras de alta definición que graban con total claridad de día y de noche, hasta 50 metros en oscuridad completa. Resistentes al agua y al polvo.</p>
@@ -98,7 +104,7 @@ export default function CamarasSeguridad() {
             <div className="cam-service cam-service-alt fade-up">
               <div className="cam-service-left">
                 <div className="cam-service-num">02</div>
-                <div className="cam-service-icon" style={{'--c':'#FF6B47','--cb':'#FFF1EE'}}><i className="fas fa-bell" /></div>
+                <div className="cam-service-icon" style={iconStyle('#FF6B47', '#FFF1EE')}><i className="fas fa-bell" /></div>
                 <div className="cam-service-text">
                   <h3>Alertas al Instante en tu Celular</h3>
                   <p>Cuando la cámara detecta movimiento, recibes una notificación en tu teléfono en segundos. No necesitas estar mirando la pantalla — el sistema trabaja por ti.</p>
@@ -117,7 +123,7 @@ export default function CamarasSeguridad() {
             <div className="cam-service fade-up">
               <div className="cam-service-left">
                 <div className="cam-service-num">03</div>
-                <div className="cam-service-icon" style={{'--c':'#059669','--cb':'#ECFDF5'}}><i className="fas fa-cloud" /></div>
+                <div className="cam-service-icon" style={iconStyle('#059669', '#ECFDF5')}><i className="fas fa-cloud" /></div>
                 <div className="cam-service-text">
                   <h3>Grabación en la Nube 24/7</h3>
                   <p>Todo queda grabado y guardado de forma segura en la nube. Puedes revisar lo que pasó hace 30 días desde tu celular o computadora, en cualquier momento.</p>
@@ -145,7 +151,7 @@ export default function CamarasSeguridad() {
             <div className="cam-service cam-service-alt fade-up">
               <div className="cam-service-left">
                 <div className="cam-service-num">04</div>
-                <div className="cam-service-icon" style={{'--c':'#7C3AED','--cb':'#F5F3FF'}}><i className="fas fa-mobile-alt" /></div>
+                <div className="cam-service-icon" style={iconStyle('#7C3AED', '#F5F3FF')}><i className="fas fa-mobile-alt" /></div>
                 <div className="cam-service-text">
                   <h3>Control Remoto desde tu App</h3>
                   <p>Ve todas tus cámaras en vivo, mueve las cámaras PTZ, revisa grabaciones pasadas y gestiona alertas — todo desde la palma de tu mano, donde estés en el mundo.</p>

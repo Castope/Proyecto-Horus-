@@ -1,33 +1,53 @@
-const Reclamacion = require('../models/Reclamacion');
-const transporter = require('../config/mailer');
+import type { Request, Response } from 'express';
+import Reclamacion from '../models/Reclamacion';
+import transporter from '../config/mailer';
 
-function generarNumeroReclamo() {
+function generarNumeroReclamo(): string {
   const hoy = new Date();
   const fecha = hoy.toISOString().slice(0, 10).replace(/-/g, '');
   const rand = Math.floor(Math.random() * 9000) + 1000;
   return `HG-${fecha}-${rand}`;
 }
 
-exports.registrarReclamo = async (req, res) => {
+export const registrarReclamo = async (req: Request, res: Response): Promise<void> => {
   try {
     const {
-      nombres, apellidos, tipo_doc, num_doc, email, telefono,
-      direccion, tipo_registro, area, fecha_incidente,
-      descripcion_bien, detalle_reclamo, acepta_comunicaciones,
+      nombres,
+      apellidos,
+      tipo_doc,
+      num_doc,
+      email,
+      telefono,
+      direccion,
+      tipo_registro,
+      area,
+      fecha_incidente,
+      descripcion_bien,
+      detalle_reclamo,
+      acepta_comunicaciones,
     } = req.body;
 
     if (!nombres || !apellidos || !email || !tipo_registro || !detalle_reclamo) {
-      return res.status(400).json({ ok: false, mensaje: 'Faltan campos obligatorios' });
+      res.status(400).json({ ok: false, mensaje: 'Faltan campos obligatorios' });
+      return;
     }
 
     const numero_reclamo = generarNumeroReclamo();
 
     await Reclamacion.create({
-      numero_reclamo, nombres, apellidos,
+      numero_reclamo,
+      nombres,
+      apellidos,
       tipo_doc: tipo_doc || '',
-      num_doc:  num_doc  || '',
-      email, telefono, direccion, tipo_registro, area,
-      fecha_incidente, descripcion_bien, detalle_reclamo,
+      num_doc: num_doc || '',
+      email,
+      telefono,
+      direccion,
+      tipo_registro,
+      area,
+      fecha_incidente,
+      descripcion_bien,
+      detalle_reclamo,
       acepta_comunicaciones: !!acepta_comunicaciones,
     });
 
@@ -52,7 +72,7 @@ exports.registrarReclamo = async (req, res) => {
           </table>
         </div>
       `,
-    }).catch(err => console.error('Correo admin falló:', err.message));
+    }).catch((err: Error) => console.error('Correo admin falló:', err.message));
 
     transporter.sendMail({
       from: `"Horus Group SRL" <${process.env.MAIL_USER}>`,
@@ -71,8 +91,7 @@ exports.registrarReclamo = async (req, res) => {
           <p style="color:#888;">Equipo Horus Group SRL</p>
         </div>
       `,
-    }).catch(err => console.error('Correo usuario falló:', err.message));
-
+    }).catch((err: Error) => console.error('Correo usuario falló:', err.message));
   } catch (error) {
     console.error('Error en reclamación:', error);
     res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });

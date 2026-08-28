@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import useFadeUp from '../hooks/useFadeUp'
 
@@ -34,6 +35,11 @@ const WHY_CARDS = [
   { num: '03', icon: 'fa-headset',        color: '#059669', bg: '#ECFDF5', title: 'Soporte permanente',          desc: 'Atención personalizada antes, durante y después de cada proyecto o programa.' },
   { num: '04', icon: 'fa-map-marker-alt', color: '#7C3AED', bg: '#F5F3FF', title: 'Presencia local en Cajamarca', desc: 'Somos cajamarquinos. Conocemos las necesidades de la región y trabajamos para su desarrollo.', lg: true },
 ]
+
+const whyStyle = (color: string, background: string): CSSProperties => ({
+  ['--wc' as string]: color,
+  ['--wcb' as string]: background,
+})
 
 export default function Home() {
   useFadeUp()
@@ -229,7 +235,7 @@ export default function Home() {
               <div
                 key={c.num}
                 className={`ix-why-card${c.lg ? ' ix-why-lg' : ''} fade-up`}
-                style={{ '--wc': c.color, '--wcb': c.bg }}
+                style={whyStyle(c.color, c.bg)}
               >
                 <div className="ix-why-num">{c.num}</div>
                 <div className="ix-why-icon"><i className={`fas ${c.icon}`} /></div>

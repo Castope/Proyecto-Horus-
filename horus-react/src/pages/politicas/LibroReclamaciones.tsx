@@ -1,16 +1,45 @@
 ﻿import { useState, useEffect } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import useFadeUp from '../../hooks/useFadeUp'
 import { registrarReclamo } from '../../api'
 
-const INITIAL = {
+type FormData = {
+  nombres: string
+  apellidos: string
+  tipoDoc: string
+  numDoc: string
+  email: string
+  telefono: string
+  direccion: string
+  tipoRegistro: string
+  area: string
+  fechaIncidente: string
+  descripcionBien: string
+  detalleReclamo: string
+  aceptaTerminos: boolean
+  aceptaComunicaciones: boolean
+}
+
+type FormErrors = Partial<Record<keyof FormData, string>>
+
+type CampoProps = {
+  id: string
+  label: string
+  required?: boolean
+  children: React.ReactNode
+  full?: boolean
+  error?: string
+}
+
+const INITIAL: FormData = {
   nombres:'', apellidos:'', tipoDoc:'', numDoc:'', email:'', telefono:'', direccion:'',
   tipoRegistro:'', area:'', fechaIncidente:'', descripcionBien:'', detalleReclamo:'',
   aceptaTerminos: false, aceptaComunicaciones: false,
 }
 
-function validarPaso1(f) {
-  const e = {}
+function validarPaso1(f: FormData): FormErrors {
+  const e: FormErrors = {}
   if (!f.nombres.trim())    e.nombres   = 'Ingresa tus nombres'
   if (!f.apellidos.trim())  e.apellidos = 'Ingresa tus apellidos'
   if (!f.email.trim())      e.email     = 'Ingresa tu correo'
@@ -21,8 +50,8 @@ function validarPaso1(f) {
   return e
 }
 
-function validarPaso2(f) {
-  const e = {}
+function validarPaso2(f: FormData): FormErrors {
+  const e: FormErrors = {}
   if (!f.tipoRegistro)          e.tipoRegistro    = 'Selecciona el tipo de registro'
   if (!f.area)                  e.area            = 'Selecciona el área'
   if (!f.fechaIncidente)        e.fechaIncidente  = 'Indica la fecha del incidente'
@@ -31,7 +60,7 @@ function validarPaso2(f) {
   return e
 }
 
-function Campo({ id, label, required, children, full, error }) {
+function Campo({ id, label, required = false, children, full = false, error }: CampoProps) {
   return (
     <div className={`lr-field${full ? ' lr-field-full' : ''}`}>
       <label htmlFor={id}>{label} {required && <span className="lr-req">*</span>}</label>
@@ -44,8 +73,8 @@ function Campo({ id, label, required, children, full, error }) {
 export default function LibroReclamaciones() {
   useFadeUp()
   const [paso,    setPaso]    = useState(1)
-  const [form,    setForm]    = useState(INITIAL)
-  const [errores, setErrores] = useState({})
+  const [form,    setForm]    = useState<FormData>(INITIAL)
+  const [errores, setErrores] = useState<FormErrors>({})
   const [exito,   setExito]   = useState(false)
   const [numRec,  setNumRec]  = useState('')
   const [loading, setLoading] = useState(false)
@@ -54,10 +83,18 @@ export default function LibroReclamaciones() {
 
   useEffect(() => { document.title = 'Libro de Reclamaciones — Horus Group SRL' }, [])
 
-  const handleChange = e => {
-    const { name, value, type, checked } = e.target
-    setForm(p => ({ ...p, [name]: type === 'checkbox' ? checked : value }))
-    if (errores[name]) setErrores(p => { const n = { ...p }; delete n[name]; return n })
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target
+    const field = name as keyof FormData
+    const nextValue = type === 'checkbox' && 'checked' in e.target ? e.target.checked : value
+    setForm(prev => ({ ...prev, [field]: nextValue as never }))
+    if (errores[field]) {
+      setErrores(prev => {
+        const next = { ...prev }
+        delete next[field]
+        return next
+      })
+    }
   }
 
   const irPaso2 = () => {
@@ -74,7 +111,7 @@ export default function LibroReclamaciones() {
     setPaso(3)
   }
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!form.aceptaTerminos) return
     setLoading(true)

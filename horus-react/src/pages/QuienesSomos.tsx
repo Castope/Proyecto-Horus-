@@ -10,11 +10,25 @@ import photoCarlos   from '../assets/images/somos/persona2.png'
 import photoAna      from '../assets/images/somos/Persona4.jpeg'
 import photologo3 from '../assets/images/somos/logo 3.jpeg'
 
-function NtdCard({ img, name, role, bio, featured, index, open, onToggle }) {
+type Member = {
+  img: string
+  name: string
+  role: string
+  bio: string
+  featured?: boolean
+}
+
+type NtdCardProps = Member & {
+  index: number
+  open: boolean
+  onToggle: () => void
+}
+
+function NtdCard({ img, name, role, bio, featured = false, index, open, onToggle }: NtdCardProps) {
   const [hovered, setHovered] = useState(false)
   const [pos, setPos] = useState({ x: 50, y: 50 })
 
-  const handleMove = e => {
+  const handleMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect()
     setPos({
       x: ((e.clientX - rect.left) / rect.width) * 100,
@@ -63,9 +77,9 @@ function NtdCard({ img, name, role, bio, featured, index, open, onToggle }) {
 export default function QuienesSomos() {
   useFadeUp()
   useEffect(() => { document.title = 'Nosotros — Horus Group SRL' }, [])
-  const [openIndex, setOpenIndex] = useState(null)
+  const [openIndex, setOpenIndex] = useState<number | null>(null)
 
-  const members = [
+  const members: Member[] = [
     { img: photoMarco,    name: 'Marco Alvarez',     role: 'Fundador & Director General', featured: true, bio: 'Profesional de Economía de la Universidad Nacional de Cajamarca. Experiencia en manejo de personal, trabajo en equipo. Docente en institutos de educación superior en los cursos de sociedad y economía, proyectos de investigación, taller de competencias profesionales entre otros.' },
     { img: photoMilagros, name: 'Milagros Villegas', role: 'Secretaria',                  bio: 'Profesional de enfermería técnica, con experiencia en ventas y trato al cliente entre otros.' },
     { img: photoMonica,   name: 'Mònica Monzòn',    role: 'Coordinadora Institucional',  bio: 'Profesional de Enfermería por la Universidad Nacional de Cajamarca. Maestra en Ciencias con mención en Salud Ocupacional y Ambiental por la Universidad Privada Antenor Orrego - Trujillo. Actualmente labora en el Hospital Regional Docente de Cajamarca en la unidad de cuidados intensivos (UCI).' },

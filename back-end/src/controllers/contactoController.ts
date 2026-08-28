@@ -1,16 +1,17 @@
-const Contacto = require('../models/Contacto');
-const transporter = require('../config/mailer');
+import type { Request, Response } from 'express';
+import Contacto from '../models/Contacto';
+import transporter from '../config/mailer';
 
-exports.enviarContacto = async (req, res) => {
+export const enviarContacto = async (req: Request, res: Response): Promise<void> => {
   try {
     const { nombre, email, telefono, asunto, mensaje } = req.body;
-    
-    // Lista de campos requeridos para validación más limpia
+
     const camposRequeridos = ['nombre', 'email', 'telefono', 'asunto', 'mensaje'];
-    const faltantes = camposRequeridos.filter(campo => !req.body[campo]);
+    const faltantes = camposRequeridos.filter((campo) => !req.body[campo]);
 
     if (faltantes.length > 0) {
-      return res.status(400).json({ ok: false, mensaje: `Faltan campos obligatorios: ${faltantes.join(', ')}` });
+      res.status(400).json({ ok: false, mensaje: `Faltan campos obligatorios: ${faltantes.join(', ')}` });
+      return;
     }
 
     await Contacto.create({ nombre, email, telefono, asunto, mensaje });
@@ -32,7 +33,7 @@ exports.enviarContacto = async (req, res) => {
           </table>
         </div>
       `,
-    }).catch(err => console.error('Correo admin falló:', err.message));
+    }).catch((err: Error) => console.error('Correo admin falló:', err.message));
 
     transporter.sendMail({
       from: `"Horus Group SRL" <${process.env.MAIL_USER}>`,
@@ -47,8 +48,7 @@ exports.enviarContacto = async (req, res) => {
           <p style="color:#888;">Equipo Horus Group SRL</p>
         </div>
       `,
-    }).catch(err => console.error('Correo usuario falló:', err.message));
-
+    }).catch((err: Error) => console.error('Correo usuario falló:', err.message));
   } catch (error) {
     console.error('Error en contacto:', error);
     res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });

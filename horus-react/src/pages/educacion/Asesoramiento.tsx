@@ -1,8 +1,14 @@
 import { useEffect } from 'react'
+import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import useFadeUp from '../../hooks/useFadeUp'
 
 import imgAsesoria from '../../assets/images/asesoramiento/asesoramiento2.jpg'
+
+const typeStyle = (color: string, background: string): CSSProperties => ({
+  ['--tc' as string]: color,
+  ['--tcb' as string]: background,
+})
 
 export default function Asesoramiento() {
   useFadeUp()
@@ -46,7 +52,7 @@ export default function Asesoramiento() {
               { color:'#FF6B47', bg:'#FFF1EE', icon:'fa-briefcase',       title:'Asesoramiento Empresarial', desc:'Estrategia, gestión financiera, liderazgo y optimización de procesos para que tu organización crezca.',     items:['Plan estratégico','Gestión de equipos','Resultados medibles'] },
               { color:'#059669', bg:'#ECFDF5', icon:'fa-balance-scale',   title:'Asesoramiento Legal',       desc:'Orientación jurídica especializada para personas, empresas e instituciones que necesitan seguridad legal.',  items:['Asesoría especializada','Documentación legal','Respaldo profesional'] },
             ].map(t => (
-              <div key={t.title} className="ed-type-card fade-up" style={{'--tc':t.color,'--tcb':t.bg}}>
+              <div key={t.title} className="ed-type-card fade-up" style={typeStyle(t.color, t.bg)}>
                 <div className="ed-type-icon"><i className={`fas ${t.icon}`} /></div>
                 <h3>{t.title}</h3>
                 <p>{t.desc}</p>

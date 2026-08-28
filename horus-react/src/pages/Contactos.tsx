@@ -1,27 +1,45 @@
 import { useState, useEffect } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
 import useFadeUp from '../hooks/useFadeUp'
 import { enviarContacto } from '../api'
 
-const INITIAL = { nombre: '', email: '', telefono: '', asunto: '', mensaje: '' }
+type ContactForm = {
+  nombre: string
+  email: string
+  telefono: string
+  asunto: string
+  mensaje: string
+}
+
+type ContactErrors = Partial<Record<keyof ContactForm, string>>
+
+const INITIAL: ContactForm = { nombre: '', email: '', telefono: '', asunto: '', mensaje: '' }
 
 export default function Contactos() {
   useFadeUp()
-  const [form,    setForm]    = useState(INITIAL)
-  const [status,  setStatus]  = useState(null)
+  const [form,    setForm]    = useState<ContactForm>(INITIAL)
+  const [status,  setStatus]  = useState<'loading' | 'ok' | 'error' | null>(null)
   const [mensaje, setMensaje] = useState('')
-  const [errores, setErrores] = useState({})
+  const [errores, setErrores] = useState<ContactErrors>({})
 
   useEffect(() => { document.title = 'Contacto — Horus Group SRL' }, [])
 
-  const handleChange = e => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setForm(p => ({ ...p, [name]: value }))
-    if (errores[name]) setErrores(p => { const n = { ...p }; delete n[name]; return n })
+    const field = name as keyof ContactForm
+    setForm(prev => ({ ...prev, [field]: value }))
+    if (errores[field]) {
+      setErrores(prev => {
+        const next = { ...prev }
+        delete next[field]
+        return next
+      })
+    }
   }
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    const e2 = {}
+    const e2: ContactErrors = {}
     if (!form.nombre.trim())   e2.nombre   = 'Ingresa tu nombre'
     if (!form.email.trim())    e2.email    = 'Ingresa tu correo'
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e2.email = 'Correo inválido'

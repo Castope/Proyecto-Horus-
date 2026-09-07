@@ -1,5 +1,5 @@
 import { DataTypes, Model, type Optional } from 'sequelize';
-import sequelize from '../config/database';
+import sequelize from '../../config/database';
 
 interface AdminItemAttributes {
   id: number;
@@ -25,35 +25,13 @@ class AdminItem extends Model<AdminItemAttributes, AdminItemCreationAttributes> 
 
 AdminItem.init(
   {
-    id: {
-      type: DataTypes.INTEGER,
-      autoIncrement: true,
-      primaryKey: true,
-    },
-    titulo: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    descripcion: {
-      type: DataTypes.TEXT,
-      allowNull: false,
-    },
-    categoria: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      defaultValue: 'general',
-    },
-    estado: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      defaultValue: 'activo',
-    },
+    id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
+    titulo: { type: DataTypes.STRING(150), allowNull: false },
+    descripcion: { type: DataTypes.TEXT, allowNull: false },
+    categoria: { type: DataTypes.STRING(50), allowNull: false, defaultValue: 'general' },
+    estado: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'activo' },
   },
-  {
-    sequelize,
-    tableName: 'admin_items',
-    timestamps: true,
-  },
+  { sequelize, tableName: 'admin_items', timestamps: true },
 );
 
 export default AdminItem;

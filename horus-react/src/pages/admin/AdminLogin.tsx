@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { loginAdmin } from '../../services/adminApi';
+import AdminAuthLayout from '../../components/AdminAuthLayout';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -33,8 +34,8 @@ export default function AdminLogin() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#f4f6fb', padding: 24 }}>
-      <div style={{ width: '100%', maxWidth: 420, background: '#fff', borderRadius: 16, padding: 32, boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
+    <AdminAuthLayout eyebrow="Acceso privado" title="Bienvenido de nuevo" description="Ingresa tus credenciales para acceder al panel administrativo.">
+      <div className="admin-auth__legacy-card">
         <h1 style={{ marginBottom: 8, fontSize: 32 }}>Panel administrativo</h1>
         <p style={{ marginBottom: 24, color: '#666' }}>Inicia sesión para gestionar contenidos.</p>
 
@@ -60,6 +61,6 @@ export default function AdminLogin() {
           ¿No tienes cuenta? <Link to="/admin/register">Regístrate aquí</Link>
         </p>
       </div>
-    </div>
+    </AdminAuthLayout>
   );
 }

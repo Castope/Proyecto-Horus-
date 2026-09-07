@@ -16,6 +16,8 @@ import './styles/libro-reclamaciones.css'
 import './styles/policies.css'
 import './styles/responsive-fixes.css'
 import './styles/visual-upgrades.css'
+import './styles/admin-auth.css'
+import './styles/admin-dashboard.css'
 import App from './App'
 
 createRoot(document.getElementById('root')!).render(

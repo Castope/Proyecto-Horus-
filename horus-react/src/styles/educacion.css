@@ -720,28 +720,320 @@
   flex-wrap: wrap;
 }
 
-@media (max-width: 1024px) {
-  .ed-hero-inner { grid-template-columns: 1fr; gap: 48px; }
+/* ============================================
+   RESPONSIVE DESIGN - TABLET LANDSCAPE (1200px)
+   ============================================ */
+@media (max-width: 1200px) {
   .ed-hero-asesoria::before,
   .ed-hero-capacitaciones::before,
-  .ed-hero-cursos::before { display: none; }
-  .ed-hero-img img { height: 320px; }
-  .ed-types-grid { grid-template-columns: 1fr; }
-  .ed-modalities-grid { grid-template-columns: 1fr; }
-  .ed-cta-inner { flex-direction: column; text-align: center; }
-  .ed-cta-btns { justify-content: center; }
-  .ed-cta-icon { margin: 0 auto 16px; }
+  .ed-hero-cursos::before {
+    width: 50%;
+  }
+
+  .ed-hero-inner { gap: 48px; }
+  .ed-prog-grid { gap: 16px; }
 }
 
-@media (max-width: 768px) {
-  .ed-hero { padding: calc(var(--nav-h) + 48px) 0 64px; }
-  .ed-hero-text h1 { font-size: 2.4rem; }
-  .ed-benefits-grid { grid-template-columns: 1fr; }
+/* ============================================
+   RESPONSIVE DESIGN - TABLET (1024px)
+   ============================================ */
+@media (max-width: 1024px) {
+  /* Hero Section */
+  .ed-hero { padding: calc(var(--nav-h) + 64px) 0 72px; }
+  
+  .ed-hero-inner {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .ed-hero-asesoria::before,
+  .ed-hero-capacitaciones::before,
+  .ed-hero-cursos::before {
+    display: none;
+  }
+
+  .ed-hero-text h1 { font-size: clamp(2rem, 4vw, 3.2rem); }
+  
+  .ed-hero-visual {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .ed-hero-img { max-width: 100%; }
+  .ed-hero-img img { height: 280px; }
+
+  .ed-hero-card {
+    position: static;
+    max-width: 100%;
+    margin-top: -20px;
+    z-index: 10;
+  }
+
+  /* Grids */
+  .ed-types-grid { grid-template-columns: repeat(2, 1fr); }
+  .ed-modalities-grid { grid-template-columns: repeat(2, 1fr); }
   .ed-prog-grid { grid-template-columns: 1fr; }
-  .ed-types, .ed-benefits, .ed-programs, .ed-modalities { padding: 72px 0; }
-  .ed-hero-card { display: none; }
+
+  /* Benefits Grid */
+  .ed-benefits-grid { grid-template-columns: 1fr; }
+
+  /* CTA Section */
+  .ed-cta-inner {
+    flex-direction: column;
+    text-align: center;
+    gap: 32px;
+  }
+
+  .ed-cta-btns {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .ed-cta-icon { margin: 0 auto 16px; }
+
+  /* Padding adjustments */
+  .ed-types, .ed-benefits, .ed-programs, .ed-modalities { padding: 80px 0; }
 }
 
+/* ============================================
+   RESPONSIVE DESIGN - TABLET PORTRAIT (768px)
+   ============================================ */
+@media (max-width: 768px) {
+  /* General spacing */
+  .container { padding: 0 20px; }
+
+  /* Hero */
+  .ed-hero { padding: calc(var(--nav-h) + 48px) 0 56px; }
+
+  .ed-hero-text h1 {
+    font-size: clamp(1.8rem, 3.5vw, 2.4rem);
+    margin-bottom: 16px;
+  }
+
+  .ed-hero-text p {
+    font-size: 0.95rem;
+    margin-bottom: 20px;
+  }
+
+  .ed-hero-btns {
+    gap: 10px;
+  }
+
+  .ed-hero-img img { height: 240px; }
+  .ed-hero-card { display: none; }
+
+  /* Section heads */
+  .ed-section-head { margin-bottom: 40px; }
+  .ed-section-head h2 { font-size: clamp(1.5rem, 3vw, 2.2rem); }
+
+  /* Grids */
+  .ed-types-grid { grid-template-columns: 1fr; gap: 16px; }
+  .ed-modalities-grid { grid-template-columns: 1fr; gap: 16px; }
+  .ed-prog-grid { gap: 16px; }
+
+  .ed-type-card {
+    padding: 28px 20px;
+    border-radius: 16px;
+  }
+
+  .ed-type-icon { width: 44px; height: 44px; }
+  .ed-type-card h3 { font-size: 0.95rem; }
+
+  /* Modality cards */
+  .ed-modality-body { padding: 28px 20px; }
+  .ed-modality-body h3 { font-size: 1.05rem; }
+  .ed-modality-body p { font-size: 0.8rem; }
+  .ed-modality-list li { font-size: 0.75rem; }
+
+  /* Program cards */
+  .ed-prog-card-top { padding: 24px 20px 0; height: 120px; }
+  .ed-prog-card-body { padding: 16px 20px 0; }
+  .ed-prog-card-body h3 { font-size: 1.1rem; }
+  .ed-prog-card-body p { font-size: 0.8rem; }
+  .ed-prog-card-footer { padding: 14px 20px 18px; }
+
+  /* Benefits */
+  .ed-benefits { padding: 64px 0; }
+  .ed-benefit { padding: 24px 18px; }
+  .ed-benefit h3 { font-size: 0.9rem; }
+  .ed-benefit p { font-size: 0.8rem; }
+
+  /* Padding sections */
+  .ed-types, .ed-benefits, .ed-programs, .ed-modalities { padding: 60px 0; }
+
+  /* CTA section */
+  .ed-cta { padding: 72px 0; }
+  .ed-cta-inner { gap: 20px; }
+  .ed-cta-text h2 { font-size: clamp(1.5rem, 2.5vw, 1.8rem); }
+  .ed-cta-text p { font-size: 0.85rem; }
+}
+
+/* ============================================
+   RESPONSIVE DESIGN - SMALL MOBILE (640px)
+   ============================================ */
+@media (max-width: 640px) {
+  /* Hero */
+  .ed-hero { padding: calc(var(--nav-h) + 40px) 0 48px; }
+
+  .ed-hero-text h1 {
+    font-size: 2rem;
+    margin-bottom: 14px;
+  }
+
+  .ed-hero-text p { font-size: 0.9rem; margin-bottom: 16px; }
+
+  .ed-hero-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .ed-hero-btns a {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .ed-hero-img img { height: 200px; }
+
+  /* Typography */
+  .ed-section-head { margin-bottom: 32px; }
+  .ed-section-head h2 { font-size: 1.5rem; }
+  .ed-section-sub { font-size: 0.85rem; }
+
+  /* Cards */
+  .ed-type-card {
+    padding: 20px 16px;
+    border-radius: 14px;
+  }
+
+  .ed-type-icon { width: 40px; height: 40px; font-size: 1rem; }
+  .ed-type-card h3 { font-size: 0.9rem; margin-bottom: 8px; }
+  .ed-type-card p { font-size: 0.75rem; margin-bottom: 12px; }
+  .ed-type-list li { font-size: 0.7rem; }
+
+  /* Modality cards */
+  .ed-modality-body {
+    padding: 20px 16px;
+  }
+
+  .ed-modality-tag {
+    font-size: 0.6rem;
+    padding: 2px 8px;
+    margin-bottom: 10px;
+  }
+
+  .ed-modality-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 1rem;
+  }
+
+  .ed-modality-body h3 { font-size: 0.95rem; margin-bottom: 8px; }
+  .ed-modality-body p { font-size: 0.75rem; margin-bottom: 16px; }
+  .ed-modality-list li { font-size: 0.7rem; }
+  .ed-modality-cta { font-size: 0.8rem; }
+
+  /* Program cards */
+  .ed-prog-card-top { padding: 20px 16px 0; height: 100px; }
+  .ed-prog-card-icon { width: 52px; height: 52px; font-size: 1.2rem; }
+  .ed-prog-card-num { font-size: 2.5rem; }
+  .ed-prog-card-body { padding: 12px 16px 0; }
+  .ed-prog-card-body h3 { font-size: 1rem; margin-bottom: 6px; }
+  .ed-prog-card-body p { font-size: 0.75rem; margin-bottom: 12px; }
+  .ed-prog-card-list li { font-size: 0.7rem; }
+  .ed-prog-card-footer { padding: 12px 16px 16px; }
+
+  /* Benefits */
+  .ed-benefit { padding: 20px 14px; }
+  .ed-benefit-num { font-size: 0.6rem; }
+  .ed-benefit-icon { width: 40px; height: 40px; font-size: 1rem; }
+  .ed-benefit h3 { font-size: 0.85rem; margin-bottom: 6px; }
+  .ed-benefit p { font-size: 0.75rem; }
+
+  /* Padding sections */
+  .ed-types, .ed-benefits, .ed-programs, .ed-modalities { padding: 48px 0; }
+
+  /* CTA */
+  .ed-cta { padding: 48px 0; }
+  .ed-cta-text h2 { font-size: 1.3rem; margin-bottom: 6px; }
+  .ed-cta-text p { font-size: 0.8rem; }
+  .ed-cta-icon { width: 44px; height: 44px; font-size: 1.1rem; }
+  .ed-cta-btns {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE DESIGN - EXTRA SMALL (480px)
+   ============================================ */
 @media (max-width: 480px) {
-  .ed-hero-text h1 { font-size: 2rem; }
+  .container { padding: 0 16px; }
+
+  /* Hero */
+  .ed-hero { padding: calc(var(--nav-h) + 32px) 0 40px; }
+
+  .ed-hero-text h1 {
+    font-size: 1.75rem;
+    line-height: 1.1;
+  }
+
+  .ed-hero-text p { font-size: 0.85rem; }
+
+  .ed-hero-btns {
+    gap: 8px;
+  }
+
+  .ed-hero-img img { height: 180px; }
+
+  /* Section heads */
+  .ed-section-head { margin-bottom: 24px; }
+  .ed-section-head h2 { font-size: 1.3rem; }
+  .ed-section-sub { font-size: 0.8rem; }
+
+  /* Cards - aggressive reduction */
+  .ed-type-card {
+    padding: 16px 12px;
+    border-radius: 12px;
+  }
+
+  .ed-type-icon { width: 36px; height: 36px; font-size: 0.9rem; margin-bottom: 10px; }
+  .ed-type-card h3 { font-size: 0.85rem; }
+  .ed-type-card p { font-size: 0.7rem; }
+  .ed-type-list { gap: 4px; padding-top: 10px; }
+  .ed-type-list li { font-size: 0.65rem; }
+
+  /* Modality cards */
+  .ed-modality-body { padding: 16px 12px; }
+  .ed-modality-tag { font-size: 0.55rem; }
+  .ed-modality-icon { width: 40px; height: 40px; font-size: 0.9rem; }
+  .ed-modality-body h3 { font-size: 0.9rem; }
+  .ed-modality-body p { font-size: 0.7rem; }
+
+  /* Program cards */
+  .ed-prog-card-top { padding: 16px 12px 0; height: 90px; }
+  .ed-prog-card-icon { width: 48px; height: 48px; font-size: 1.1rem; }
+  .ed-prog-card-num { font-size: 2rem; }
+  .ed-prog-card-body { padding: 10px 12px 0; }
+  .ed-prog-card-body h3 { font-size: 0.95rem; }
+  .ed-prog-card-area { font-size: 0.6rem; padding: 2px 6px; }
+  .ed-prog-card-footer { padding: 10px 12px 14px; }
+
+  /* Benefits */
+  .ed-benefits-grid { gap: 1px; }
+  .ed-benefit { padding: 16px 12px; }
+  .ed-benefit-icon { width: 36px; height: 36px; font-size: 0.9rem; }
+  .ed-benefit h3 { font-size: 0.8rem; }
+  .ed-benefit p { font-size: 0.7rem; }
+
+  /* Sections */
+  .ed-types, .ed-benefits, .ed-programs, .ed-modalities { padding: 40px 0; }
+
+  /* CTA */
+  .ed-cta { padding: 40px 0; }
+  .ed-cta-text h2 { font-size: 1.2rem; }
+  .ed-cta-text p { font-size: 0.75rem; }
+  .ed-cta-icon { width: 40px; height: 40px; font-size: 1rem; margin-bottom: 12px; }
 }

@@ -2,7 +2,7 @@ import cors from 'cors';
 import express, { type Application } from 'express';
 import contactoRoutes from './routes/contactoRoutes';
 import reclamacionRoutes from './routes/reclamacionRoutes';
-import adminRoutes from './routes/adminRoutes';
+import panelRoutes from './panel/routes/panelRoutes';
 
 const app: Application = express();
 
@@ -18,6 +18,7 @@ app.use(
 app.use(express.json());
 app.use('/api/contacto', contactoRoutes);
 app.use('/api/reclamaciones', reclamacionRoutes);
-app.use('/api/admin', adminRoutes);
+// El panel conserva este prefijo para que el frontend no necesite cambios.
+app.use('/api/admin', panelRoutes);
 
 export default app;

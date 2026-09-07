@@ -4,8 +4,8 @@ import sequelize from './src/config/database';
 
 import './src/models/Contacto';
 import './src/models/Reclamacion';
-import './src/models/AdminUser';
-import './src/models/AdminItem';
+import './src/panel/models/AdminUser';
+import './src/panel/models/AdminItem';
 
 const PORT = Number(process.env.PORT) || 3000;
 

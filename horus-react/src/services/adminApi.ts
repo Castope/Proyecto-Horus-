@@ -1,4 +1,4 @@
-import type { AdminItem, AdminUser } from '../types/admin';
+import type { AdminItem, AdminMessage, AdminUser } from '../types/admin';
 
 const API_BASE = 'http://localhost:3000/api/admin';
 
@@ -78,5 +78,25 @@ export async function deleteAdminItem(token: string, id: number) {
     headers: getAuthHeaders(token),
   });
 
+  return response.json() as Promise<{ ok: boolean; mensaje?: string }>;
+}
+
+export async function getAdminMessages(token: string) {
+  const response = await fetch(`${API_BASE}/messages`, { headers: getAuthHeaders(token) });
+  return response.json() as Promise<{ ok: boolean; messages?: AdminMessage[]; mensaje?: string }>;
+}
+
+export async function createAdminMessage(token: string, payload: Omit<AdminMessage, 'id' | 'estado' | 'createdAt'>) {
+  const response = await fetch(`${API_BASE}/messages`, { method: 'POST', headers: getAuthHeaders(token), body: JSON.stringify(payload) });
+  return response.json() as Promise<{ ok: boolean; message?: AdminMessage; mensaje?: string }>;
+}
+
+export async function updateAdminMessage(token: string, id: number, estado: AdminMessage['estado']) {
+  const response = await fetch(`${API_BASE}/messages/${id}`, { method: 'PUT', headers: getAuthHeaders(token), body: JSON.stringify({ estado }) });
+  return response.json() as Promise<{ ok: boolean; message?: AdminMessage; mensaje?: string }>;
+}
+
+export async function deleteAdminMessage(token: string, id: number) {
+  const response = await fetch(`${API_BASE}/messages/${id}`, { method: 'DELETE', headers: getAuthHeaders(token) });
   return response.json() as Promise<{ ok: boolean; mensaje?: string }>;
 }

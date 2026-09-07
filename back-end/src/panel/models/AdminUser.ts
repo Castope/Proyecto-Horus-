@@ -1,5 +1,5 @@
 import { DataTypes, Model, type Optional } from 'sequelize';
-import sequelize from '../config/database';
+import sequelize from '../../config/database';
 
 interface AdminUserAttributes {
   id: number;
@@ -23,33 +23,12 @@ class AdminUser extends Model<AdminUserAttributes, AdminUserCreationAttributes> 
 
 AdminUser.init(
   {
-    id: {
-      type: DataTypes.INTEGER,
-      autoIncrement: true,
-      primaryKey: true,
-    },
-    nombre: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    email: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      unique: true,
-      validate: {
-        isEmail: true,
-      },
-    },
-    password: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
+    id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
+    nombre: { type: DataTypes.STRING(100), allowNull: false },
+    email: { type: DataTypes.STRING(254), allowNull: false, unique: true, validate: { isEmail: true } },
+    password: { type: DataTypes.STRING, allowNull: false },
   },
-  {
-    sequelize,
-    tableName: 'admin_users',
-    timestamps: true,
-  },
+  { sequelize, tableName: 'admin_users', timestamps: true },
 );
 
 export default AdminUser;

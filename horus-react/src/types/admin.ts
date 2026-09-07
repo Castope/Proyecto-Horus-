@@ -14,6 +14,17 @@ export interface AdminItem {
   updatedAt?: string;
 }
 
+export interface AdminMessage {
+  id: number;
+  nombre: string;
+  email: string;
+  telefono: string;
+  asunto: string;
+  mensaje: string;
+  estado: 'nuevo' | 'en_proceso' | 'atendido';
+  createdAt?: string;
+}
+
 export interface LoginForm {
   email: string;
   password: string;

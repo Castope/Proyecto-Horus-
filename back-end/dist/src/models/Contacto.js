@@ -11,6 +11,7 @@ const Contacto = database_1.default.define('Contacto', {
     telefono: { type: sequelize_1.DataTypes.STRING, allowNull: false },
     asunto: { type: sequelize_1.DataTypes.STRING, allowNull: false },
     mensaje: { type: sequelize_1.DataTypes.TEXT, allowNull: false },
+    estado: { type: sequelize_1.DataTypes.STRING, allowNull: false, defaultValue: 'nuevo' },
 }, {
     tableName: 'contactos',
     timestamps: true,

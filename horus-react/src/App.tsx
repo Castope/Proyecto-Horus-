@@ -25,7 +25,8 @@ import LibroReclamaciones  from './pages/politicas/LibroReclamaciones'
 
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminRegister from './pages/admin/AdminRegister'
-import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminDashboard from './pages/admin/AdminDashboardV2'
+import AdminMessages from './pages/admin/AdminMessages'
 
 import NotFound from './pages/NotFound'
 
@@ -61,6 +62,7 @@ export default function App() {
 
           <Route element={<AdminRoute />}>
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/messages" element={<AdminMessages />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />

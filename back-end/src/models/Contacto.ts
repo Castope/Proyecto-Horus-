@@ -9,6 +9,7 @@ const Contacto = sequelize.define(
     telefono: { type: DataTypes.STRING, allowNull: false },
     asunto: { type: DataTypes.STRING, allowNull: false },
     mensaje: { type: DataTypes.TEXT, allowNull: false },
+    estado: { type: DataTypes.STRING, allowNull: false, defaultValue: 'nuevo' },
   },
   {
     tableName: 'contactos',

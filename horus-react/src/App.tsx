@@ -23,8 +23,8 @@ import PoliticasPrivacidad from './pages/politicas/PoliticasPrivacidad'
 import PreguntasFrecuentes from './pages/politicas/PreguntasFrecuentes'
 import LibroReclamaciones  from './pages/politicas/LibroReclamaciones'
 
-import AdminLogin from './pages/admin/AdminLogin'
-import AdminRegister from './pages/admin/AdminRegister'
+import AdminLogin from './pages/admin/login/page'
+import AdminRegister from './pages/admin/register/page'
 import AdminDashboard from './pages/admin/AdminDashboardV2'
 import AdminMessages from './pages/admin/AdminMessages'
 

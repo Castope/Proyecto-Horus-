@@ -1,5 +1,5 @@
 .panel-shell { min-height: 100vh; display: grid; grid-template-columns: 254px minmax(0,1fr); background: #f6f8fc; color: #162238; }
-.panel-sidebar { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; padding: 30px 16px 20px; background: #0b1b36; color: #dce7f8; }
+.panel-sidebar { position: relative; min-height: 100%; align-self: stretch; display: flex; flex-direction: column; padding: 30px 16px 20px; background: #0b1b36; color: #dce7f8; }
 .panel-logo { width: 118px; height: auto; margin: 0 14px 47px; }
 .panel-section-label { margin: 0 14px 10px; color: #8fa1c1; font-size: .66rem; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
 .panel-nav { display: grid; gap: 4px; }

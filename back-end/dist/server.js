@@ -8,8 +8,7 @@ const app_1 = __importDefault(require("./src/app"));
 const database_1 = __importDefault(require("./src/config/database"));
 require("./src/models/Contacto");
 require("./src/models/Reclamacion");
-require("./src/panel/models/AdminUser");
-require("./src/panel/models/AdminItem");
+require("./src/panel/models");
 const PORT = Number(process.env.PORT) || 3000;
 async function iniciar() {
     try {

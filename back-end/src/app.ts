@@ -2,7 +2,7 @@ import cors from 'cors';
 import express, { type Application } from 'express';
 import contactoRoutes from './routes/contactoRoutes';
 import reclamacionRoutes from './routes/reclamacionRoutes';
-import panelRoutes from './panel/routes/panelRoutes';
+import panelRoutes from './panel';
 
 const app: Application = express();
 

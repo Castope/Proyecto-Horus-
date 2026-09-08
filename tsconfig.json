@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2021",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "strict": false
+  },
+  "include": [
+    "backend/src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "backend/dist",
+    "backend/node_modules",
+    "frontend",
+    "back-end"
+  ]
+}

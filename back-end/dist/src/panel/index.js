@@ -17,6 +17,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const index_1 = __importDefault(require("./index"));
-exports.default = index_1.default;
-__exportStar(require("./index"), exports);
+exports.panelRouter = void 0;
+const routes_1 = __importDefault(require("./routes"));
+exports.panelRouter = routes_1.default;
+__exportStar(require("./models"), exports);
+__exportStar(require("./controllers"), exports);
+__exportStar(require("./middleware/authMiddleware"), exports);
+__exportStar(require("./validators"), exports);
+__exportStar(require("./config/jwt"), exports);
+exports.default = routes_1.default;

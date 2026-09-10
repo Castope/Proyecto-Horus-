@@ -1,9 +1,10 @@
+import { API_BASE } from '../../apiBase';
 export class PanelApiError extends Error {
   constructor(message: string, public status: number) { super(message); }
 }
 
 export async function panelRequest<T>(path: string, token: string, method = 'GET', body?: unknown, signal?: AbortSignal): Promise<T> {
-  const response = await fetch('/api/admin/' + path, {
+  const response = await fetch(API_BASE + '/admin/' + path, {
     method, signal,
     headers: { Authorization: 'Bearer ' + token, ...(body ? { 'Content-Type': 'application/json' } : {}) },
     ...(body ? { body: JSON.stringify(body) } : {}),

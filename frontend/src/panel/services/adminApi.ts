@@ -1,6 +1,7 @@
 import type { AdminItem, AdminMessage, AdminUser } from '../types';
 
-const API_BASE = '/api/admin';
+import { API_BASE as PUBLIC_API_BASE } from '../../apiBase';
+const API_BASE = PUBLIC_API_BASE + '/admin';
 
 const getAuthHeaders = (token?: string): HeadersInit => {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };

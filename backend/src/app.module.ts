@@ -1,3 +1,4 @@
+import { validateDeployment } from './deployment.config';
 import { CatalogoModule } from './catalogo/catalogo.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
@@ -14,6 +15,7 @@ import { SettingsModule } from './settings/settings.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      validate: validateDeployment,
       envFilePath: '.env',
     }),
     DatabaseModule,

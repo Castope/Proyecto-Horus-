@@ -19,8 +19,8 @@ export class ContactoService {
         estado: 'nuevo',
       });
 
-      // Envío asíncrono de correos de notificación y acuse de recibo
-      void this.mailService.sendContactoNotificacion({
+      // Esperar al correo antes de finalizar la función en Vercel.
+      await this.mailService.sendContactoNotificacion({
         nombre: dto.nombre,
         email: dto.email,
         telefono: dto.telefono,

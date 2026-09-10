@@ -13,6 +13,9 @@ export class MailService {
 
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      socketTimeout: 10000,
       auth: { user, pass },
     });
   }

@@ -27,6 +27,20 @@ import { Setting } from '../settings/settings.model';
         synchronize: configService.get<string>('DB_SYNC') === 'true' && configService.get<string>('NODE_ENV') !== 'production',
         sync: { alter: false },
         logging: false,
+        retryAttempts: 2,
+        retryDelay: 1000,
+        pool: { max: 2, min: 0, idle: 10000, acquire: 15000 },
+        dialectOptions: {
+          connectTimeout: 10000,
+          ...(configService.get<string>('DB_SSL') === 'true' ? {
+            ssl: {
+              rejectUnauthorized: true,
+              ...(configService.get<string>('DB_SSL_CA') ? {
+                ca: configService.get<string>('DB_SSL_CA').replace(/\\n/g, '\n'),
+              } : {}),
+            },
+          } : {}),
+        },
       }),
     }),
   ],

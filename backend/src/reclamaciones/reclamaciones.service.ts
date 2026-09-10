@@ -28,8 +28,8 @@ export class ReclamacionesService {
         numero_reclamo,
       });
 
-      // Envío asíncrono de correo de constancia
-      void this.mailService.sendReclamoConstancia({
+      // Esperar al correo antes de finalizar la función en Vercel.
+      await this.mailService.sendReclamoConstancia({
         email: dto.email,
         nombres: dto.nombres,
         apellidos: dto.apellidos,

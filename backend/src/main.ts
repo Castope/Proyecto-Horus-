@@ -1,3 +1,4 @@
+import { corsOrigins } from './deployment.config';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -12,7 +13,7 @@ async function bootstrap() {
 
   // Configuración de CORS para desarrollo y producción local
   app.enableCors({
-    origin: ['http://localhost:5173', 'http://localhost:4173'],
+    origin: corsOrigins(process.env),
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'],

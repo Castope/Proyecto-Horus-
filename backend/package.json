@@ -13,7 +13,8 @@
     "start:prod": "node dist/main",
     "test": "node --test -r ts-node/register test/*.test.ts",
     "db:migrate": "node scripts/migrate.cjs",
-    "admin:create": "node scripts/create-admin.cjs"
+    "admin:create": "node scripts/create-admin.cjs",
+    "db:init": "npm run build && node scripts/init-database.cjs"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",
@@ -50,5 +51,8 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }

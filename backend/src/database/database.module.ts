@@ -1,3 +1,4 @@
+import { Curso, Servicio, PreguntaFrecuente } from '../catalogo/catalogo.models';
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -19,12 +20,12 @@ import { Setting } from '../settings/settings.model';
         host: configService.get<string>('DB_HOST', 'localhost'),
         port: Number(configService.get<number>('DB_PORT', 3306)),
         username: configService.get<string>('DB_USER', 'root'),
-        password: configService.get<string>('DB_PASS', '123456789'),
+        password: configService.get<string>('DB_PASS', ''),
         database: configService.get<string>('DB_NAME', 'horus_db'),
-        models: [Contacto, Reclamacion, AdminUser, AdminItem, GaleriaItem, Newsletter, Setting],
+        models: [Contacto, Reclamacion, AdminUser, AdminItem, GaleriaItem, Newsletter, Setting, Curso, Servicio, PreguntaFrecuente],
         autoLoadModels: true,
-        synchronize: true,
-        sync: { alter: true },
+        synchronize: configService.get<string>('DB_SYNC') === 'true' && configService.get<string>('NODE_ENV') !== 'production',
+        sync: { alter: false },
         logging: false,
       }),
     }),

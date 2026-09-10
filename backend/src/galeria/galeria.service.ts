@@ -53,8 +53,8 @@ export class GaleriaService {
     };
   }
 
-  async findOne(id: number) {
-    const item = await this.galeriaModel.findByPk(id);
+  async findOne(id: number, publico = false) {
+    const item = await this.galeriaModel.findOne({ where: publico ? { id, activo: true } : { id } });
     if (!item) {
       throw new NotFoundException({ ok: false, mensaje: 'Elemento de galería no encontrado.' });
     }

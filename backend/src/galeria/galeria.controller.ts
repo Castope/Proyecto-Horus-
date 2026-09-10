@@ -20,6 +20,6 @@ export class GaleriaController {
   @ApiResponse({ status: 200, description: 'Detalle del elemento' })
   @ApiResponse({ status: 404, description: 'Elemento no encontrado' })
   async findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.galeriaService.findOne(id);
+    return this.galeriaService.findOne(id, true);
   }
 }

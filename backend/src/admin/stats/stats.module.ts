@@ -1,3 +1,4 @@
+import { CatalogoModule } from '../../catalogo/catalogo.module';
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { Contacto } from '../../contacto/contacto.model';
@@ -8,7 +9,7 @@ import { StatsController } from './stats.controller';
 import { StatsService } from './stats.service';
 
 @Module({
-  imports: [SequelizeModule.forFeature([Contacto, Reclamacion, AdminItem, AdminUser])],
+  imports: [CatalogoModule, SequelizeModule.forFeature([Contacto, Reclamacion, AdminItem, AdminUser])],
   controllers: [StatsController],
   providers: [StatsService],
   exports: [StatsService],

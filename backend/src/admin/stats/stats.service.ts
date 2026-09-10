@@ -1,3 +1,4 @@
+import { CatalogoService } from '../../catalogo/catalogo.service';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Contacto } from '../../contacto/contacto.model';
@@ -8,6 +9,7 @@ import { AdminUser } from '../auth/admin-user.model';
 @Injectable()
 export class StatsService {
   constructor(
+    private readonly catalogoService: CatalogoService,
     @InjectModel(Contacto)
     private readonly contactoModel: typeof Contacto,
     @InjectModel(Reclamacion)
@@ -60,6 +62,7 @@ export class StatsService {
     return {
       ok: true,
       stats: {
+        catalogo: await this.catalogoService.stats(),
         mensajes: {
           total: totalMensajes,
           nuevos: mensajesNuevos,

@@ -1,3 +1,4 @@
+import { CatalogoModule } from './catalogo/catalogo.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './database/database.module';
@@ -16,6 +17,7 @@ import { SettingsModule } from './settings/settings.module';
       envFilePath: '.env',
     }),
     DatabaseModule,
+    CatalogoModule,
     MailModule,
     ContactoModule,
     ReclamacionesModule,

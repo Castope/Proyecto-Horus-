@@ -1,100 +1,69 @@
-import { useState } from 'react';
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../context';
 import { loginAdmin } from '../services';
 import AdminAuthLayout from '../components/AdminAuthLayout';
+import AdminPasswordField from '../components/AdminPasswordField';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
-  const { login } = useAdminAuth();
+  const { login, isAuthenticated } = useAdminAuth();
   const [form, setForm] = useState({ email: '', password: '' });
   const [mensaje, setMensaje] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    if (isAuthenticated) navigate('/admin/dashboard', { replace: true });
+  }, [isAuthenticated, navigate]);
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
-    setForm((previous) => ({ ...previous, [name]: value }));
+    setForm(previous => ({ ...previous, [name]: value }));
+    setMensaje('');
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (loading) return;
     setLoading(true);
     setMensaje('');
     try {
-      const response = await loginAdmin(form);
-      if (response.ok) {
+      const response = await loginAdmin({ ...form, email: form.email.trim() });
+      if (response.ok && response.token) {
         login(response.token);
-        navigate('/admin/dashboard');
-        return;
+      } else {
+        setMensaje(response.mensaje || 'Revisa tu correo y contraseña e inténtalo nuevamente.');
       }
-      setMensaje(response.mensaje || 'Credenciales incorrectas.');
     } catch {
-      setMensaje('No se pudo conectar con el servidor.');
+      setMensaje('No se pudo conectar con el servidor. Inténtalo nuevamente en unos momentos.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <AdminAuthLayout
-      eyebrow="Acceso privado"
-      title="Bienvenido de nuevo"
-      description="Ingresa tus credenciales para acceder al panel administrativo."
-    >
-      <div className="admin-auth__legacy-card">
-        <h1 style={{ marginBottom: 8, fontSize: 32 }}>Panel administrativo</h1>
-        <p style={{ marginBottom: 24, color: '#666' }}>Inicia sesión para gestionar contenidos.</p>
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: 16 }}>
-            <label htmlFor="email" style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>
-              Correo
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={handleChange}
-              required
-              style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: '1px solid #dfe3ec' }}
-            />
+    <AdminAuthLayout eyebrow="Tu espacio de trabajo" title="Bienvenido de nuevo"
+      description="Ingresa a tu cuenta para continuar con la gestión de Horus Group.">
+      <form className="admin-auth__form" onSubmit={handleSubmit} aria-busy={loading}>
+        <fieldset className="admin-auth__fields" disabled={loading}>
+          <legend className="admin-auth__sr-only">Datos de inicio de sesión</legend>
+          <div className="admin-auth__field">
+            <label htmlFor="email">Correo electrónico</label>
+            <input id="email" name="email" type="email" value={form.email} onChange={handleChange}
+              autoComplete="username" autoCapitalize="none" spellCheck={false} placeholder="nombre@ejemplo.com" required />
           </div>
-          <div style={{ marginBottom: 20 }}>
-            <label htmlFor="password" style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>
-              Contraseña
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              value={form.password}
-              onChange={handleChange}
-              required
-              style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: '1px solid #dfe3ec' }}
-            />
-          </div>
-          {mensaje && <p style={{ color: '#b42318', marginBottom: 16 }}>{mensaje}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: '100%',
-              background: '#1d4ed8',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 10,
-              padding: '12px 16px',
-              cursor: 'pointer',
-              fontWeight: 700,
-            }}
-          >
-            {loading ? 'Ingresando...' : 'Ingresar'}
-          </button>
-        </form>
-        <p style={{ marginTop: 20, textAlign: 'center', color: '#555' }}>
-          ¿No tienes cuenta? <Link to="/admin/register">Regístrate aquí</Link>
-        </p>
-      </div>
+          <AdminPasswordField id="password" label="Contraseña" value={form.password}
+            onChange={handleChange} autoComplete="current-password" />
+        </fieldset>
+        {mensaje && <p className="admin-auth__error" role="alert">{mensaje}</p>}
+        <button className="admin-auth__submit" type="submit" disabled={loading}>
+          {loading && <span className="admin-auth__spinner" aria-hidden="true" />}
+          {loading ? 'Ingresando…' : 'Iniciar sesión'}
+          {!loading && <span aria-hidden="true">→</span>}
+        </button>
+      </form>
+      <p className="admin-auth__switch">¿Aún no tienes una cuenta? <Link to="/admin/register">Crear cuenta</Link></p>
+      <div className="admin-auth__note">Un espacio para administrar contenido y atender a tu comunidad.</div>
     </AdminAuthLayout>
   );
 }

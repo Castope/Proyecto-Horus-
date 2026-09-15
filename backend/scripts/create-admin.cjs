@@ -28,4 +28,4 @@ async function run() {
     console.log('Administrador creado.');
   } finally { await db.close(); }
 }
-run().catch(() => { console.error('No se creó la cuenta. Revisa los datos, ADMIN_INITIAL_PASSWORD, duplicados y conexión a MySQL.'); process.exitCode = 1; });
+run().catch(() => { console.error('No se creó la cuenta. Revisa los datos, ADMIN_INITIAL_PASSWORD, duplicados y conexión a PostgreSQL.'); process.exitCode = 1; });

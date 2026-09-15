@@ -5,10 +5,10 @@ function connect() {
     if (process.env[key] === undefined) throw new Error('Falta configurar ' + key);
   }
   return new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASS, {
-    dialect: 'mysql', host: process.env.DB_HOST || 'localhost',
-    port: Number(process.env.DB_PORT || 3306), logging: false, pool: { max: 1, min: 0 },
+    dialect: 'postgres', host: process.env.DB_HOST || 'localhost',
+    port: Number(process.env.DB_PORT || 5432), logging: false, pool: { max: 1, min: 0 },
     dialectOptions: {
-      connectTimeout: 10000,
+      connectionTimeoutMillis: 10000,
       ...(process.env.DB_SSL === 'true' ? {
         ssl: { rejectUnauthorized: true, ...(process.env.DB_SSL_CA ? { ca: process.env.DB_SSL_CA.replace(/\\n/g, '\n') } : {}) },
       } : {}),

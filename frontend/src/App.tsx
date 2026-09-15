@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { Toaster } from 'sonner'
 import MainLayout from './layouts/MainLayout'
 import Home            from './pages/Home'
 import QuienesSomos    from './pages/QuienesSomos'
@@ -35,6 +36,7 @@ export default function App() {
   return (
     <AdminAuthProvider>
       <BrowserRouter>
+        <Toaster richColors position="top-right" closeButton expand />
         <Routes>
           <Route element={<MainLayout />}>
             <Route path="/"                        element={<Home />} />

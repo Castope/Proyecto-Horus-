@@ -80,11 +80,11 @@ test('duplicate slugs become HTTP 409 and empty updates are rejected', async () 
   await assert.rejects(() => api.update('cursos', 1, {}), BadRequestException);
 });
 
-test('administrative content and administrator registration require JWT', () => {
+test('administrative content requires JWT, but admin registration is public', () => {
   for (const controller of [AdminCursoController, AdminServicioController, AdminPreguntaFrecuenteController]) {
     assert.ok(Reflect.getMetadata(GUARDS_METADATA, controller).includes(JwtAuthGuard));
   }
-  assert.ok(Reflect.getMetadata(GUARDS_METADATA, AuthController.prototype.register).includes(JwtAuthGuard));
+  assert.equal(Reflect.getMetadata(GUARDS_METADATA, AuthController.prototype.register), undefined);
 });
 
 test('gallery public detail excludes inactive entries', async () => {

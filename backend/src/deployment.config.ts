@@ -23,7 +23,7 @@ export function validateDeployment(env: Record<string, unknown>) {
     }
     if (String(env.JWT_SECRET).length < 32) throw new Error('JWT_SECRET debe tener al menos 32 caracteres.');
     if (['localhost', '127.0.0.1', '::1'].includes(String(env.DB_HOST).toLowerCase())) {
-      throw new Error('DB_HOST debe ser un servidor MySQL accesible desde Vercel, no localhost.');
+      throw new Error('DB_HOST debe ser un servidor PostgreSQL accesible desde Vercel, no localhost.');
     }
     if (env.DB_SYNC === 'true') throw new Error('DB_SYNC debe estar desactivado en producción.');
   }

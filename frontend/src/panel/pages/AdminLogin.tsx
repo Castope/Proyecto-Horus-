@@ -1,5 +1,7 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useState } from 'react';
+import type {ChangeEvent, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useAdminAuth } from '../context';
 import { loginAdmin } from '../services';
 import AdminAuthLayout from '../components/AdminAuthLayout';
@@ -31,11 +33,19 @@ export default function AdminLogin() {
       const response = await loginAdmin({ ...form, email: form.email.trim() });
       if (response.ok && response.token) {
         login(response.token);
+        const successMessage = response.mensaje || 'Inicio de sesión correcto.';
+        setMensaje(successMessage);
+        toast.success(successMessage);
       } else {
-        setMensaje(response.mensaje || 'Revisa tu correo y contraseña e inténtalo nuevamente.');
+        const errorMessage = response.mensaje || response.message || 'Revisa tu correo y contraseña e inténtalo nuevamente.';
+        const detail = Array.isArray(errorMessage) ? errorMessage.join(' ') : errorMessage;
+        setMensaje(detail);
+        toast.error(detail);
       }
     } catch {
-      setMensaje('No se pudo conectar con el servidor. Inténtalo nuevamente en unos momentos.');
+      const errorMessage = 'No se pudo conectar con el servidor. Inténtalo nuevamente en unos momentos.';
+      setMensaje(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

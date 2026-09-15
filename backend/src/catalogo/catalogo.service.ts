@@ -25,7 +25,7 @@ export class CatalogoService {
     else if (query.estado) where.estado = query.estado;
     if (query.search) {
       const field = recurso === 'preguntas-frecuentes' ? 'pregunta' : 'titulo';
-      where[field] = { [Op.like]: '%' + query.search + '%' };
+      where[field] = { [Op.iLike]: '%' + query.search + '%' };
     }
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;

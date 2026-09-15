@@ -16,12 +16,12 @@ import { Setting } from '../settings/settings.model';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        dialect: 'mysql',
+        dialect: 'postgres',
         host: configService.get<string>('DB_HOST', 'localhost'),
-        port: Number(configService.get<number>('DB_PORT', 3306)),
-        username: configService.get<string>('DB_USER', 'root'),
+        port: Number(configService.get<number>('DB_PORT', 5432)),
+        username: configService.get<string>('DB_USER', 'postgres'),
         password: configService.get<string>('DB_PASS', ''),
-        database: configService.get<string>('DB_NAME', 'horus_db'),
+        database: configService.get<string>('DB_NAME', 'postgres'),
         models: [Contacto, Reclamacion, AdminUser, AdminItem, GaleriaItem, Newsletter, Setting, Curso, Servicio, PreguntaFrecuente],
         autoLoadModels: true,
         synchronize: configService.get<string>('DB_SYNC') === 'true' && configService.get<string>('NODE_ENV') !== 'production',
@@ -31,7 +31,7 @@ import { Setting } from '../settings/settings.model';
         retryDelay: 1000,
         pool: { max: 2, min: 0, idle: 10000, acquire: 15000 },
         dialectOptions: {
-          connectTimeout: 10000,
+          connectionTimeoutMillis: 10000,
           ...(configService.get<string>('DB_SSL') === 'true' ? {
             ssl: {
               rejectUnauthorized: true,

@@ -21,11 +21,11 @@ export class AdminReclamacionesService {
     if (query.search) {
       const term = `%${query.search.trim()}%`;
       where[Op.or] = [
-        { numero_reclamo: { [Op.like]: term } },
-        { nombres: { [Op.like]: term } },
-        { apellidos: { [Op.like]: term } },
-        { email: { [Op.like]: term } },
-        { num_doc: { [Op.like]: term } },
+        { numero_reclamo: { [Op.iLike]: term } },
+        { nombres: { [Op.iLike]: term } },
+        { apellidos: { [Op.iLike]: term } },
+        { email: { [Op.iLike]: term } },
+        { num_doc: { [Op.iLike]: term } },
       ];
     }
 

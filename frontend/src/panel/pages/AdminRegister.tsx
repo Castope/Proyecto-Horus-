@@ -1,5 +1,7 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useState } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useAdminAuth } from '../context';
 import { registerAdmin } from '../services';
 import AdminAuthLayout from '../components/AdminAuthLayout';
@@ -7,7 +9,7 @@ import AdminPasswordField from '../components/AdminPasswordField';
 
 export default function AdminRegister() {
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useAdminAuth();
+  const { isAuthenticated } = useAdminAuth();
   const [form, setForm] = useState({ nombre: '', email: '', password: '', confirmPassword: '' });
   const [mensaje, setMensaje] = useState('');
   const [loading, setLoading] = useState(false);
@@ -26,11 +28,15 @@ export default function AdminRegister() {
     event.preventDefault();
     if (loading) return;
     if (form.nombre.trim().length < 2) {
-      setMensaje('Ingresa un nombre de al menos 2 caracteres.');
+      const message = 'Ingresa un nombre de al menos 2 caracteres.';
+      setMensaje(message);
+      toast.error(message);
       return;
     }
     if (form.password !== form.confirmPassword) {
-      setMensaje('Las contraseñas no coinciden. Revisa la confirmación.');
+      const message = 'Las contraseñas no coinciden. Revisa la confirmación.';
+      setMensaje(message);
+      toast.error(message);
       return;
     }
     setLoading(true);
@@ -39,14 +45,21 @@ export default function AdminRegister() {
       const response = await registerAdmin({
         nombre: form.nombre.trim(), email: form.email.trim(), password: form.password,
       });
-      if (response.ok && response.token) {
-        login(response.token);
+      if (response.ok) {
+        const successMessage = response.mensaje || 'Cuenta creada correctamente. Ahora inicia sesión.';
+        setMensaje(successMessage);
+        toast.success(successMessage);
+        window.setTimeout(() => navigate('/admin/login', { replace: true }), 500);
       } else {
         const detail = Array.isArray(response.message) ? response.message.join(' ') : response.message;
-        setMensaje(response.mensaje || detail || 'No se pudo crear la cuenta. Revisa tus datos.');
+        const errorMessage = response.mensaje || detail || 'No se pudo crear la cuenta. Revisa tus datos.';
+        setMensaje(errorMessage);
+        toast.error(errorMessage);
       }
     } catch {
-      setMensaje('No se pudo conectar con el servidor. Inténtalo nuevamente en unos momentos.');
+      const errorMessage = 'No se pudo conectar con el servidor. Inténtalo nuevamente en unos momentos.';
+      setMensaje(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

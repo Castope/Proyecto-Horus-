@@ -12,10 +12,8 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Registrar nuevo administrador (requiere sesión administrativa)' })
+  @ApiOperation({ summary: 'Registrar nuevo administrador' })
   @ApiResponse({ status: 201, description: 'Administrador creado exitosamente' })
   async register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);

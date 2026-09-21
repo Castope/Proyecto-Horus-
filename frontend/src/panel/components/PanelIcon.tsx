@@ -1,4 +1,6 @@
 const paths: Record<string, string> = {
+  calendar: 'M3 5h18v16H3z M3 10h18 M7 3v4 M17 3v4 M7 14h2 M15 14h2 M7 18h2',
+  copy: 'M8 8h13v13H8z M16 8V3H3v13h5',
   home: 'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z',
   book: 'M3 4h7l2 2 2-2h7v15h-7l-2 2-2-2H3z M12 6v15',
   tools: 'm14 6 4 4 M3 21l7-7 M14 3a6 6 0 0 0-5 9L3 18l3 3 6-6a6 6 0 0 0 9-5l-5 2-4-4z',

@@ -1,3 +1,4 @@
+import Chatbot from '../components/chatbot/Chatbot'
 import { Outlet, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import Navbar from '../components/Navbar'
@@ -19,6 +20,7 @@ export default function MainLayout() {
         <Outlet />
       </main>
       <Footer />
+      <Chatbot />
     </>
   )
 }

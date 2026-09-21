@@ -7,6 +7,8 @@ import PanelIcon from '../components/PanelIcon';
 import PanelOverview from '../components/PanelOverview';
 import ResourceManager from '../components/ResourceManager';
 import PanelSettings from '../components/PanelSettings';
+import MessageInbox from '../components/workspace/MessageInbox';
+import '../styles/workspace.css';
 
 export default function AdminDashboard() {
   const { user, logout } = useAdminAuth();
@@ -40,8 +42,8 @@ export default function AdminDashboard() {
       <div className="hp-profile"><span className="hp-avatar">{user?.nombre?.charAt(0).toUpperCase()}</span><div><strong>{user?.nombre}</strong><small>{user?.email}</small></div></div>
     </aside>
     <div className="hp-body"><header className="hp-topbar"><div><button className="hp-icon-btn hp-menu-toggle" aria-label={menu ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menu} aria-controls="panel-sidebar" onClick={() => setMenu(!menu)}><PanelIcon name="menu" /></button><span className="hp-breadcrumb">Mi espacio <span>/</span> <strong>{title}</strong></span></div><div><span className="hp-date">{new Date().toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' })}</span><span className="hp-topbar-divider" /><span className="hp-avatar">{user?.nombre?.charAt(0).toUpperCase()}</span></div></header>
-      <main id="panel-content" className="hp-main">{section === 'resumen' ? <PanelOverview go={go} /> : section === 'ajustes' ? <PanelSettings /> :
-        <ResourceManager key={section + (params.get('crear') || '')} resource={resources[section]} autoCreate={params.get('crear') === '1'} />}</main>
+      <main id="panel-content" className="hp-main">{section === 'resumen' ? <PanelOverview go={go} /> : section === 'ajustes' ? <PanelSettings /> : section === 'mensajes' && params.get('crear') !== '1' && params.get('vista') !== 'tabla' ? <MessageInbox /> :
+        <ResourceManager key={section + (params.get('crear') || '') + (params.get('estado') || '') + (params.get('vista') || '')} resource={resources[section]} autoCreate={params.get('crear') === '1'} />}</main>
       <footer className="hp-footer"><span>© {new Date().getFullYear()} Horus Group SRL</span><span>Hecho para conectar tecnología y personas.</span></footer>
     </div>
   </div>;

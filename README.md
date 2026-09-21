@@ -513,7 +513,8 @@ Proyecto desarrollado como parte de un proyecto académico de **Ingeniería de S
 ### Desarrolladores
 
 * Anderson Vásquez
-* Equipo de desarrollo — Proyecto Horus
+* Cristopher Pulache
+* Carlos Castope
 
 ---
 

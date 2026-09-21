@@ -3,9 +3,12 @@ import { useAdminAuth } from '../context';
 import { panelRequest, errorMessage } from '../services/panelApi';
 import { type DashboardStats, label } from '../types/workspace';
 import PanelIcon from './PanelIcon';
+import { useNavigate } from 'react-router-dom';
+import OverviewWork from './workspace/OverviewWork';
 
 export default function PanelOverview({ go }: { go: (section: string, create?: boolean) => void }) {
   const { token, user } = useAdminAuth();
+  const navigate = useNavigate();
   const [data, setData] = useState<DashboardStats | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -36,11 +39,12 @@ export default function PanelOverview({ go }: { go: (section: string, create?: b
       <div className="hp-hero-art" aria-hidden="true"><div className="hp-orbit" /><div className="hp-art-tile hp-art-one"><PanelIcon name="book" size={30} /><span>Formación</span></div><div className="hp-art-tile hp-art-two"><PanelIcon name="tools" size={27} /><span>Tecnología</span></div><span className="hp-art-star">✦</span></div></section>
     <section className="hp-metrics" aria-label="Indicadores del sistema">
       {[{ title: 'Contenido del catálogo', value: catalogTotal, sub: 'Cursos, servicios y preguntas', icon: 'file', section: 'cursos', color: 'blue' },
-        { title: 'Publicados', value: published, sub: 'Disponibles en la API pública', icon: 'check', section: 'cursos', color: 'teal' },
+        { title: 'Publicados', value: published, sub: 'Disponibles para consulta', icon: 'check', section: 'cursos', color: 'teal' },
         { title: 'Mensajes nuevos', value: data?.stats.mensajes.nuevos, sub: 'Pendientes de atención', icon: 'mail', section: 'mensajes', color: 'gold' },
         { title: 'Borradores', value: draft, sub: 'Contenido por revisar', icon: 'edit', section: 'cursos', color: 'purple' }].map(item =>
         <article key={item.title}><div className="hp-metric-top"><span className={'hp-metric-icon hp-tone-' + item.color}><PanelIcon name={item.icon} /></span><span className="hp-metric-label">{item.title}</span></div><strong>{metric(item.value)}</strong><p>{item.sub}</p></article>)}
     </section>
+    {!loading && !error && data && <OverviewWork data={data} />}
     <div className="hp-overview-grid"><section className="hp-card hp-distribution"><div className="hp-card-heading"><div><p className="hp-kicker">CATÁLOGO</p><h2>Tu contenido, en perspectiva</h2></div><PanelIcon name="file" /></div>
       <div className="hp-distribution-total"><strong>{metric(catalogTotal)}</strong><span>registros en total</span></div>
       <div className="hp-stacked" aria-label="Distribución del catálogo">{!loading && !error && distribution.map(item => item.value > 0 && <span key={item.title} className={'hp-bg-' + item.color} style={{ width: (item.value / catalogTotal * 100) + '%' }} />)}</div>
@@ -49,7 +53,7 @@ export default function PanelOverview({ go }: { go: (section: string, create?: b
     </section>
     <section className="hp-card"><div className="hp-card-heading"><div><p className="hp-kicker">COMUNIDAD</p><h2>Últimas consultas</h2></div><button className="hp-text-btn" onClick={() => go('mensajes')}>Ver todas <PanelIcon name="arrow" size={15} /></button></div>
       {loading ? <div className="hp-empty"><span className="hp-loading" /><p>Cargando actividad…</p></div> : error ? <div className="hp-empty"><p>No se pudo consultar la actividad.</p></div> : data?.actividadReciente.mensajes.length ? <div className="hp-activity">{data.actividadReciente.mensajes.map(message =>
-        <button key={message.id} onClick={() => go('mensajes')}><span className="hp-avatar">{message.nombre.charAt(0).toUpperCase()}</span><div><strong>{message.asunto}</strong><small>{message.nombre} · {new Date(message.createdAt).toLocaleDateString('es-PE')}</small></div><span className={'hp-badge hp-state-' + message.estado}>{label(message.estado)}</span></button>)}</div> :
+        <button key={message.id} onClick={() => navigate('/admin/messages?id=' + message.id)}><span className="hp-avatar">{message.nombre.charAt(0).toUpperCase()}</span><div><strong>{message.asunto}</strong><small>{message.nombre} · {new Date(message.createdAt).toLocaleDateString('es-PE')}</small></div><span className={'hp-badge hp-state-' + message.estado}>{label(message.estado)}</span></button>)}</div> :
         <div className="hp-empty hp-empty-compact"><span className="hp-empty-icon"><PanelIcon name="mail" size={28} /></span><h3>Aquí comienza la conversación</h3><p>Las consultas recibidas aparecerán en este espacio.</p><button className="hp-text-btn" onClick={() => go('mensajes')}>Abrir bandeja <PanelIcon name="arrow" /></button></div>}
     </section></div>
     <section className="hp-shortcuts"><div><p className="hp-kicker">ACCESOS DIRECTOS</p><h2>¿Qué quieres hacer hoy?</h2></div><div className="hp-shortcut-grid">

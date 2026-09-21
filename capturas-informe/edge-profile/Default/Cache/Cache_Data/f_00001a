@@ -1,0 +1,350 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/pages/educacion/Cursos.tsx");const useEffect = __vite__cjsImport0_react["useEffect"];const _jsxDEV = __vite__cjsImport4_react_jsxDevRuntime["jsxDEV"]; const _Fragment = __vite__cjsImport4_react_jsxDevRuntime["Fragment"];import __vite__cjsImport0_react from "/node_modules/.vite/deps/react.js?v=974efcab";
+import { Link } from "/node_modules/.vite/deps/react-router-dom.js?v=ed85db52";
+import useFadeUp from "/src/hooks/useFadeUp.ts";
+import imgCursos from "/src/assets/images/galeria/capacitaciones/imagen 1.jpg?import";
+var _jsxFileName = "C:/Users/PCT40T/Documents/Proyecto-Horus-/frontend/src/pages/educacion/Cursos.tsx";
+import __vite__cjsImport4_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=974efcab";
+var _s = $RefreshSig$();
+const MODALIDADES = [
+	{
+		cls: "regular",
+		tag: "Tradicional",
+		icon: "fa-chalkboard-teacher",
+		title: "Presencial",
+		desc: "Clases en aula con interacción directa con el docente. La experiencia de aprendizaje más completa.",
+		items: [
+			"Clases en aula equipada",
+			"Práctica en laboratorio",
+			"Networking presencial",
+			"Certificado impreso"
+		]
+	},
+	{
+		cls: "featured",
+		tag: "Más popular",
+		icon: "fa-laptop-house",
+		title: "Semipresencial",
+		desc: "Lo mejor de ambos mundos. Clases presenciales semanales combinadas con sesiones virtuales en vivo.",
+		items: [
+			"Clases presenciales y virtuales",
+			"Grabaciones disponibles",
+			"Horarios flexibles",
+			"Certificado oficial"
+		]
+	},
+	{
+		cls: "regular",
+		tag: "100% Online",
+		icon: "fa-globe",
+		title: "Virtual",
+		desc: "Aprende desde cualquier lugar. Clases en vivo y grabadas disponibles en nuestra plataforma.",
+		items: [
+			"Clases en vivo y grabadas",
+			"Plataforma e-learning",
+			"Horario completamente flexible",
+			"Certificado digital"
+		]
+	}
+];
+export default function Cursos() {
+	_s();
+	useFadeUp();
+	useEffect(() => {
+		document.title = "Cursos — Horus Group SRL";
+	}, []);
+	return /* @__PURE__ */ _jsxDEV(_Fragment, { children: [/* @__PURE__ */ _jsxDEV("section", {
+		className: "ed-hero ed-hero-cursos",
+		children: /* @__PURE__ */ _jsxDEV("div", {
+			className: "container ed-hero-inner",
+			children: [/* @__PURE__ */ _jsxDEV("div", {
+				className: "ed-hero-text fade-up",
+				children: [
+					/* @__PURE__ */ _jsxDEV("div", {
+						className: "ed-hero-tag",
+						children: [/* @__PURE__ */ _jsxDEV("i", { className: "fas fa-book-open" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 22,
+							columnNumber: 42
+						}, this), " Educación"]
+					}, void 0, true, {
+						fileName: _jsxFileName,
+						lineNumber: 22,
+						columnNumber: 13
+					}, this),
+					/* @__PURE__ */ _jsxDEV("h1", { children: [
+						"Aprende a tu",
+						/* @__PURE__ */ _jsxDEV("br", {}, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 23,
+							columnNumber: 29
+						}, this),
+						"ritmo, con",
+						/* @__PURE__ */ _jsxDEV("br", {}, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 23,
+							columnNumber: 45
+						}, this),
+						/* @__PURE__ */ _jsxDEV("span", { children: "certificado real" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 23,
+							columnNumber: 51
+						}, this)
+					] }, void 0, true, {
+						fileName: _jsxFileName,
+						lineNumber: 23,
+						columnNumber: 13
+					}, this),
+					/* @__PURE__ */ _jsxDEV("p", { children: "Soy los cursos. Presencial, semipresencial o virtual. Tú eliges cómo aprender, yo me adapto a ti." }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 24,
+						columnNumber: 13
+					}, this),
+					/* @__PURE__ */ _jsxDEV("div", {
+						className: "ed-hero-btns",
+						children: [/* @__PURE__ */ _jsxDEV(Link, {
+							to: "/contactos",
+							className: "btn-coral",
+							children: [/* @__PURE__ */ _jsxDEV("i", { className: "fas fa-book-open" }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 26,
+								columnNumber: 59
+							}, this), " Consultar disponibilidad"]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 26,
+							columnNumber: 15
+						}, this), /* @__PURE__ */ _jsxDEV("a", {
+							href: "#ed-detail",
+							className: "ed-ghost",
+							children: [/* @__PURE__ */ _jsxDEV("i", { className: "fas fa-arrow-down" }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 27,
+								columnNumber: 57
+							}, this), " Ver modalidades"]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 27,
+							columnNumber: 15
+						}, this)]
+					}, void 0, true, {
+						fileName: _jsxFileName,
+						lineNumber: 25,
+						columnNumber: 13
+					}, this)
+				]
+			}, void 0, true, {
+				fileName: _jsxFileName,
+				lineNumber: 21,
+				columnNumber: 11
+			}, this), /* @__PURE__ */ _jsxDEV("div", {
+				className: "ed-hero-visual fade-up",
+				children: [/* @__PURE__ */ _jsxDEV("div", {
+					className: "ed-hero-img",
+					children: /* @__PURE__ */ _jsxDEV("img", {
+						src: imgCursos,
+						alt: "Cursos"
+					}, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 31,
+						columnNumber: 42
+					}, this)
+				}, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 31,
+					columnNumber: 13
+				}, this), /* @__PURE__ */ _jsxDEV("div", {
+					className: "ed-hero-card",
+					children: [
+						/* @__PURE__ */ _jsxDEV("i", { className: "fas fa-star" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 33,
+							columnNumber: 15
+						}, this),
+						/* @__PURE__ */ _jsxDEV("p", { children: "\"3 modalidades de estudio. Todas con la misma calidad y certificación oficial.\"" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 34,
+							columnNumber: 15
+						}, this),
+						/* @__PURE__ */ _jsxDEV("span", { children: "— Horus Group SRL" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 35,
+							columnNumber: 15
+						}, this)
+					]
+				}, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 32,
+					columnNumber: 13
+				}, this)]
+			}, void 0, true, {
+				fileName: _jsxFileName,
+				lineNumber: 30,
+				columnNumber: 11
+			}, this)]
+		}, void 0, true, {
+			fileName: _jsxFileName,
+			lineNumber: 20,
+			columnNumber: 9
+		}, this)
+	}, void 0, false, {
+		fileName: _jsxFileName,
+		lineNumber: 19,
+		columnNumber: 7
+	}, this), /* @__PURE__ */ _jsxDEV("section", {
+		className: "ed-modalities",
+		id: "ed-detail",
+		children: /* @__PURE__ */ _jsxDEV("div", {
+			className: "container",
+			children: [/* @__PURE__ */ _jsxDEV("div", {
+				className: "ed-section-head fade-up",
+				children: [
+					/* @__PURE__ */ _jsxDEV("span", {
+						className: "ed-eyebrow",
+						children: "Modalidades"
+					}, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 44,
+						columnNumber: 13
+					}, this),
+					/* @__PURE__ */ _jsxDEV("h2", { children: [
+						"Elige cómo",
+						/* @__PURE__ */ _jsxDEV("br", {}, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 45,
+							columnNumber: 27
+						}, this),
+						"quieres aprender"
+					] }, void 0, true, {
+						fileName: _jsxFileName,
+						lineNumber: 45,
+						columnNumber: 13
+					}, this),
+					/* @__PURE__ */ _jsxDEV("p", { children: "Tres formas de estudiar, todas con certificación oficial." }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 46,
+						columnNumber: 13
+					}, this)
+				]
+			}, void 0, true, {
+				fileName: _jsxFileName,
+				lineNumber: 43,
+				columnNumber: 11
+			}, this), /* @__PURE__ */ _jsxDEV("div", {
+				className: "ed-modalities-grid",
+				children: MODALIDADES.map((m) => /* @__PURE__ */ _jsxDEV("div", {
+					className: `ed-modality-card ${m.cls} fade-up`,
+					children: /* @__PURE__ */ _jsxDEV("div", {
+						className: "ed-modality-body",
+						children: [
+							/* @__PURE__ */ _jsxDEV("div", {
+								className: "ed-modality-tag",
+								children: m.tag
+							}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 52,
+								columnNumber: 19
+							}, this),
+							/* @__PURE__ */ _jsxDEV("div", {
+								className: "ed-modality-icon",
+								children: /* @__PURE__ */ _jsxDEV("i", { className: `fas ${m.icon}` }, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 53,
+									columnNumber: 53
+								}, this)
+							}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 53,
+								columnNumber: 19
+							}, this),
+							/* @__PURE__ */ _jsxDEV("h3", { children: m.title }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 54,
+								columnNumber: 19
+							}, this),
+							/* @__PURE__ */ _jsxDEV("p", { children: m.desc }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 55,
+								columnNumber: 19
+							}, this),
+							/* @__PURE__ */ _jsxDEV("ul", {
+								className: "ed-modality-list",
+								children: m.items.map((item) => /* @__PURE__ */ _jsxDEV("li", { children: [/* @__PURE__ */ _jsxDEV("i", { className: "fas fa-check" }, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 57,
+									columnNumber: 57
+								}, this), item] }, item, true, {
+									fileName: _jsxFileName,
+									lineNumber: 57,
+									columnNumber: 42
+								}, this))
+							}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 56,
+								columnNumber: 19
+							}, this),
+							/* @__PURE__ */ _jsxDEV(Link, {
+								to: "/contactos",
+								className: "ed-modality-cta",
+								children: "Inscribirme"
+							}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 59,
+								columnNumber: 19
+							}, this)
+						]
+					}, void 0, true, {
+						fileName: _jsxFileName,
+						lineNumber: 51,
+						columnNumber: 17
+					}, this)
+				}, m.title, false, {
+					fileName: _jsxFileName,
+					lineNumber: 50,
+					columnNumber: 15
+				}, this))
+			}, void 0, false, {
+				fileName: _jsxFileName,
+				lineNumber: 48,
+				columnNumber: 11
+			}, this)]
+		}, void 0, true, {
+			fileName: _jsxFileName,
+			lineNumber: 42,
+			columnNumber: 9
+		}, this)
+	}, void 0, false, {
+		fileName: _jsxFileName,
+		lineNumber: 41,
+		columnNumber: 7
+	}, this)] }, void 0, true);
+}
+_s(Cursos, "I32wE6TbOBzuumdZE++dnXhzjHQ=", false, function() {
+	return [useFadeUp];
+});
+_c = Cursos;
+var _c;
+$RefreshReg$(_c, "Cursos");
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+import * as __vite_react_currentExports from "/src/pages/educacion/Cursos.tsx";
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+
+  const currentExports = __vite_react_currentExports;
+  queueMicrotask(() => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/Users/PCT40T/Documents/Proyecto-Horus-/frontend/src/pages/educacion/Cursos.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/Users/PCT40T/Documents/Proyecto-Horus-/frontend/src/pages/educacion/Cursos.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+function $RefreshReg$(type, id) { return RefreshRuntime.register(type, "C:/Users/PCT40T/Documents/Proyecto-Horus-/frontend/src/pages/educacion/Cursos.tsx" + ' ' + id); }
+function $RefreshSig$() { return RefreshRuntime.createSignatureFunctionForTransform(); }
+
+//# sourceMappingURL=data:application/json;base64,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RUFBRSxRQUFVOzs7OztRQUFNOzs7OztPQUN6RSx3QkFBQyxNQUFELFlBQUssRUFBRSxPQUFXOzs7OztPQUNsQix3QkFBQyxLQUFELFlBQUksRUFBRSxNQUFTOzs7OztPQUNmLHdCQUFDLE1BQUQ7UUFBSSxXQUFVO2tCQUNYLEVBQUUsTUFBTSxLQUFJLFNBQVEsd0JBQUMsTUFBRCxhQUFlLHdCQUFDLEtBQUQsRUFBRyxXQUFVLGdCQUFpQjs7OztrQkFBQyxLQUFVLElBQS9DOzs7O2dCQUErQyxDQUFDO1FBQzNFOzs7OztPQUNMLHdCQUFDLE1BQUQ7UUFBTSxJQUFHO1FBQWEsV0FBVTtrQkFBa0I7UUFBa0I7Ozs7O09BQ2hFOzs7Ozs7S0FDRixFQVhJLEVBQUU7Ozs7WUFXTixDQUNOO0lBQ0U7Ozs7WUFDRjs7Ozs7O0VBQ0U7Ozs7VUFDVDs7OztFQUVOIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIkN1cnNvcy50c3giXSwidmVyc2lvbiI6Mywic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgdXNlRWZmZWN0IH0gZnJvbSAncmVhY3QnXHJcbmltcG9ydCB7IExpbmsgfSBmcm9tICdyZWFjdC1yb3V0ZXItZG9tJ1xyXG5pbXBvcnQgdXNlRmFkZVVwIGZyb20gJy4uLy4uL2hvb2tzL3VzZUZhZGVVcCdcclxuXHJcbmltcG9ydCBpbWdDdXJzb3MgZnJvbSAnLi4vLi4vYXNzZXRzL2ltYWdlcy9nYWxlcmlhL2NhcGFjaXRhY2lvbmVzL2ltYWdlbiAxLmpwZydcclxuXHJcbmNvbnN0IE1PREFMSURBREVTID0gW1xyXG4gIHsgY2xzOidyZWd1bGFyJywgIHRhZzonVHJhZGljaW9uYWwnLCAgaWNvbjonZmEtY2hhbGtib2FyZC10ZWFjaGVyJywgdGl0bGU6J1ByZXNlbmNpYWwnLCAgICAgIGRlc2M6J0NsYXNlcyBlbiBhdWxhIGNvbiBpbnRlcmFjY2nDs24gZGlyZWN0YSBjb24gZWwgZG9jZW50ZS4gTGEgZXhwZXJpZW5jaWEgZGUgYXByZW5kaXphamUgbcOhcyBjb21wbGV0YS4nLCBpdGVtczpbJ0NsYXNlcyBlbiBhdWxhIGVxdWlwYWRhJywnUHLDoWN0aWNhIGVuIGxhYm9yYXRvcmlvJywnTmV0d29ya2luZyBwcmVzZW5jaWFsJywnQ2VydGlmaWNhZG8gaW1wcmVzbyddIH0sXHJcbiAgeyBjbHM6J2ZlYXR1cmVkJywgdGFnOidNw6FzIHBvcHVsYXInLCAgaWNvbjonZmEtbGFwdG9wLWhvdXNlJywgICAgICAgdGl0bGU6J1NlbWlwcmVzZW5jaWFsJywgIGRlc2M6J0xvIG1lam9yIGRlIGFtYm9zIG11bmRvcy4gQ2xhc2VzIHByZXNlbmNpYWxlcyBzZW1hbmFsZXMgY29tYmluYWRhcyBjb24gc2VzaW9uZXMgdmlydHVhbGVzIGVuIHZpdm8uJywgIGl0ZW1zOlsnQ2xhc2VzIHByZXNlbmNpYWxlcyB5IHZpcnR1YWxlcycsJ0dyYWJhY2lvbmVzIGRpc3BvbmlibGVzJywnSG9yYXJpb3MgZmxleGlibGVzJywnQ2VydGlmaWNhZG8gb2ZpY2lhbCddIH0sXHJcbiAgeyBjbHM6J3JlZ3VsYXInLCAgdGFnOicxMDAlIE9ubGluZScsICBpY29uOidmYS1nbG9iZScsICAgICAgICAgICAgICB0aXRsZTonVmlydHVhbCcsICAgICAgICAgZGVzYzonQXByZW5kZSBkZXNkZSBjdWFscXVpZXIgbHVnYXIuIENsYXNlcyBlbiB2aXZvIHkgZ3JhYmFkYXMgZGlzcG9uaWJsZXMgZW4gbnVlc3RyYSBwbGF0YWZvcm1hLicsICAgICAgICAgIGl0ZW1zOlsnQ2xhc2VzIGVuIHZpdm8geSBncmFiYWRhcycsJ1BsYXRhZm9ybWEgZS1sZWFybmluZycsJ0hvcmFyaW8gY29tcGxldGFtZW50ZSBmbGV4aWJsZScsJ0NlcnRpZmljYWRvIGRpZ2l0YWwnXSB9LFxyXG5dXHJcblxyXG5leHBvcnQgZGVmYXVsdCBmdW5jdGlvbiBDdXJzb3MoKSB7XHJcbiAgdXNlRmFkZVVwKClcclxuICB1c2VFZmZlY3QoKCkgPT4geyBkb2N1bWVudC50aXRsZSA9ICdDdXJzb3Mg4oCUIEhvcnVzIEdyb3VwIFNSTCcgfSwgW10pXHJcblxyXG4gIHJldHVybiAoXHJcbiAgICA8PlxyXG4gICAgICA8c2VjdGlvbiBjbGFzc05hbWU9XCJlZC1oZXJvIGVkLWhlcm8tY3Vyc29zXCI+XHJcbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJjb250YWluZXIgZWQtaGVyby1pbm5lclwiPlxyXG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJlZC1oZXJvLXRleHQgZmFkZS11cFwiPlxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImVkLWhlcm8tdGFnXCI+PGkgY2xhc3NOYW1lPVwiZmFzIGZhLWJvb2stb3BlblwiIC8+IEVkdWNhY2nDs248L2Rpdj5cclxuICAgICAgICAgICAgPGgxPkFwcmVuZGUgYSB0dTxiciAvPnJpdG1vLCBjb248YnIgLz48c3Bhbj5jZXJ0aWZpY2FkbyByZWFsPC9zcGFuPjwvaDE+XHJcbiAgICAgICAgICAgIDxwPlNveSBsb3MgY3Vyc29zLiBQcmVzZW5jaWFsLCBzZW1pcHJlc2VuY2lhbCBvIHZpcnR1YWwuIFTDuiBlbGlnZXMgY8OzbW8gYXByZW5kZXIsIHlvIG1lIGFkYXB0byBhIHRpLjwvcD5cclxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJlZC1oZXJvLWJ0bnNcIj5cclxuICAgICAgICAgICAgICA8TGluayB0bz1cIi9jb250YWN0b3NcIiBjbGFzc05hbWU9XCJidG4tY29yYWxcIj48aSBjbGFzc05hbWU9XCJmYXMgZmEtYm9vay1vcGVuXCIgLz4gQ29uc3VsdGFyIGRpc3BvbmliaWxpZGFkPC9MaW5rPlxyXG4gICAgICAgICAgICAgIDxhIGhyZWY9XCIjZWQtZGV0YWlsXCIgY2xhc3NOYW1lPVwiZWQtZ2hvc3RcIj48aSBjbGFzc05hbWU9XCJmYXMgZmEtYXJyb3ctZG93blwiIC8+IFZlciBtb2RhbGlkYWRlczwvYT5cclxuICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZWQtaGVyby12aXN1YWwgZmFkZS11cFwiPlxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImVkLWhlcm8taW1nXCI+PGltZyBzcmM9e2ltZ0N1cnNvc30gYWx0PVwiQ3Vyc29zXCIgLz48L2Rpdj5cclxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJlZC1oZXJvLWNhcmRcIj5cclxuICAgICAgICAgICAgICA8aSBjbGFzc05hbWU9XCJmYXMgZmEtc3RhclwiIC8+XHJcbiAgICAgICAgICAgICAgPHA+XCIzIG1vZGFsaWRhZGVzIGRlIGVzdHVkaW8uIFRvZGFzIGNvbiBsYSBtaXNtYSBjYWxpZGFkIHkgY2VydGlmaWNhY2nDs24gb2ZpY2lhbC5cIjwvcD5cclxuICAgICAgICAgICAgICA8c3Bhbj7igJQgSG9ydXMgR3JvdXAgU1JMPC9zcGFuPlxyXG4gICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgIDwvZGl2PlxyXG4gICAgICA8L3NlY3Rpb24+XHJcblxyXG4gICAgICA8c2VjdGlvbiBjbGFzc05hbWU9XCJlZC1tb2RhbGl0aWVzXCIgaWQ9XCJlZC1kZXRhaWxcIj5cclxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImNvbnRhaW5lclwiPlxyXG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJlZC1zZWN0aW9uLWhlYWQgZmFkZS11cFwiPlxyXG4gICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJlZC1leWVicm93XCI+TW9kYWxpZGFkZXM8L3NwYW4+XHJcbiAgICAgICAgICAgIDxoMj5FbGlnZSBjw7NtbzxiciAvPnF1aWVyZXMgYXByZW5kZXI8L2gyPlxyXG4gICAgICAgICAgICA8cD5UcmVzIGZvcm1hcyBkZSBlc3R1ZGlhciwgdG9kYXMgY29uIGNlcnRpZmljYWNpw7NuIG9maWNpYWwuPC9wPlxyXG4gICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImVkLW1vZGFsaXRpZXMtZ3JpZFwiPlxyXG4gICAgICAgICAgICB7TU9EQUxJREFERVMubWFwKG0gPT4gKFxyXG4gICAgICAgICAgICAgIDxkaXYga2V5PXttLnRpdGxlfSBjbGFzc05hbWU9e2BlZC1tb2RhbGl0eS1jYXJkICR7bS5jbHN9IGZhZGUtdXBgfT5cclxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZWQtbW9kYWxpdHktYm9keVwiPlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImVkLW1vZGFsaXR5LXRhZ1wiPnttLnRhZ308L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJlZC1tb2RhbGl0eS1pY29uXCI+PGkgY2xhc3NOYW1lPXtgZmFzICR7bS5pY29ufWB9IC8+PC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgIDxoMz57bS50aXRsZX08L2gzPlxyXG4gICAgICAgICAgICAgICAgICA8cD57bS5kZXNjfTwvcD5cclxuICAgICAgICAgICAgICAgICAgPHVsIGNsYXNzTmFtZT1cImVkLW1vZGFsaXR5LWxpc3RcIj5cclxuICAgICAgICAgICAgICAgICAgICB7bS5pdGVtcy5tYXAoaXRlbSA9PiA8bGkga2V5PXtpdGVtfT48aSBjbGFzc05hbWU9XCJmYXMgZmEtY2hlY2tcIiAvPntpdGVtfTwvbGk+KX1cclxuICAgICAgICAgICAgICAgICAgPC91bD5cclxuICAgICAgICAgICAgICAgICAgPExpbmsgdG89XCIvY29udGFjdG9zXCIgY2xhc3NOYW1lPVwiZWQtbW9kYWxpdHktY3RhXCI+SW5zY3JpYmlybWU8L0xpbms+XHJcbiAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgKSl9XHJcbiAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgPC9zZWN0aW9uPlxyXG4gICAgPC8+XHJcbiAgKVxyXG59XHJcbiJdfQ==

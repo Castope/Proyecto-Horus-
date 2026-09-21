@@ -1,3 +1,5 @@
+import { CotizacionesModule } from './cotizaciones/cotizaciones.module';
+import { ChatbotModule } from './chatbot/chatbot.module';
 import { validateDeployment } from './deployment.config';
 import { CatalogoModule } from './catalogo/catalogo.module';
 import { Module } from '@nestjs/common';
@@ -19,7 +21,9 @@ import { SettingsModule } from './settings/settings.module';
       envFilePath: '.env',
     }),
     DatabaseModule,
+    CotizacionesModule,
     CatalogoModule,
+    ChatbotModule,
     MailModule,
     ContactoModule,
     ReclamacionesModule,

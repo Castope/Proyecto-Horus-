@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize');
 // Immutable schema for this migration. No sample content is inserted.
-module.exports.up = async function (queryInterface, options = {}) {
+module.exports.up = async function (queryInterface) {
   await queryInterface.createTable('cursos', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true, allowNull: false },
     titulo: { type: DataTypes.STRING(160), allowNull: false, },
@@ -15,7 +15,7 @@ module.exports.up = async function (queryInterface, options = {}) {
     estado: { type: DataTypes.ENUM('borrador', 'publicado', 'archivado'), allowNull: false, defaultValue: 'borrador', },
     createdAt: { type: DataTypes.DATE, allowNull: false },
     updatedAt: { type: DataTypes.DATE, allowNull: false },
-  }, options);
+  });
   await queryInterface.createTable('servicios', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true, allowNull: false },
     titulo: { type: DataTypes.STRING(160), allowNull: false, },
@@ -27,7 +27,7 @@ module.exports.up = async function (queryInterface, options = {}) {
     estado: { type: DataTypes.ENUM('borrador', 'publicado', 'archivado'), allowNull: false, defaultValue: 'borrador', },
     createdAt: { type: DataTypes.DATE, allowNull: false },
     updatedAt: { type: DataTypes.DATE, allowNull: false },
-  }, options);
+  });
   await queryInterface.createTable('preguntas_frecuentes', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true, allowNull: false },
     pregunta: { type: DataTypes.STRING(300), allowNull: false, },
@@ -37,5 +37,5 @@ module.exports.up = async function (queryInterface, options = {}) {
     estado: { type: DataTypes.ENUM('borrador', 'publicado', 'archivado'), allowNull: false, defaultValue: 'borrador', },
     createdAt: { type: DataTypes.DATE, allowNull: false },
     updatedAt: { type: DataTypes.DATE, allowNull: false },
-  }, options);
+  });
 };

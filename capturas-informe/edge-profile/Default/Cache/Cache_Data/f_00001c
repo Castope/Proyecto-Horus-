@@ -1,0 +1,1422 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/pages/politicas/PoliticasDevolucion.tsx");const useState = __vite__cjsImport0_react["useState"]; const useEffect = __vite__cjsImport0_react["useEffect"];const _jsxDEV = __vite__cjsImport3_react_jsxDevRuntime["jsxDEV"]; const _Fragment = __vite__cjsImport3_react_jsxDevRuntime["Fragment"];import __vite__cjsImport0_react from "/node_modules/.vite/deps/react.js?v=974efcab";
+import { Link } from "/node_modules/.vite/deps/react-router-dom.js?v=ed85db52";
+import logoHorus from "/src/assets/images/logo-horus.png?import";
+var _jsxFileName = "C:/Users/PCT40T/Documents/Proyecto-Horus-/frontend/src/pages/politicas/PoliticasDevolucion.tsx";
+import __vite__cjsImport3_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=974efcab";
+var _s = $RefreshSig$();
+const NAV_ITEMS = [
+	{
+		href: "intro-pd",
+		icon: "fa-info-circle",
+		label: "Introducción"
+	},
+	{
+		href: "educacion-pd",
+		icon: "fa-graduation-cap",
+		label: "A. Educación"
+	},
+	{
+		href: "equipos-pd",
+		icon: "fa-shopping-cart",
+		label: "B. Compra y Garantía"
+	},
+	{
+		href: "modif-pd",
+		icon: "fa-edit",
+		label: "Modificaciones"
+	},
+	{
+		href: "atencion-pd",
+		icon: "fa-headset",
+		label: "Atención al usuario"
+	}
+];
+export default function PoliticasDevolucion() {
+	_s();
+	const [active, setActive] = useState("intro-pd");
+	useEffect(() => {
+		document.title = "Políticas de Devolución — Horus Group SRL";
+	}, []);
+	useEffect(() => {
+		const handler = () => {
+			NAV_ITEMS.forEach(({ href }) => {
+				const el = document.getElementById(href);
+				if (el && window.scrollY >= el.offsetTop - 120) setActive(href);
+			});
+		};
+		window.addEventListener("scroll", handler, { passive: true });
+		return () => window.removeEventListener("scroll", handler);
+	}, []);
+	const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({
+		behavior: "smooth",
+		block: "start"
+	});
+	return /* @__PURE__ */ _jsxDEV(_Fragment, { children: [/* @__PURE__ */ _jsxDEV("section", {
+		className: "pd-hero",
+		children: /* @__PURE__ */ _jsxDEV("div", {
+			className: "pd-hero-inner",
+			children: [
+				/* @__PURE__ */ _jsxDEV("div", {
+					className: "pd-breadcrumb",
+					children: [/* @__PURE__ */ _jsxDEV("i", { className: "fas fa-undo-alt" }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 37,
+						columnNumber: 42
+					}, this), " Políticas › Devolución"]
+				}, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 37,
+					columnNumber: 11
+				}, this),
+				/* @__PURE__ */ _jsxDEV("h1", { children: "Políticas de Devolución" }, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 38,
+					columnNumber: 11
+				}, this),
+				/* @__PURE__ */ _jsxDEV("p", { children: "Conoce nuestros términos y condiciones para devoluciones y garantías de productos y servicios." }, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 39,
+					columnNumber: 11
+				}, this)
+			]
+		}, void 0, true, {
+			fileName: _jsxFileName,
+			lineNumber: 36,
+			columnNumber: 9
+		}, this)
+	}, void 0, false, {
+		fileName: _jsxFileName,
+		lineNumber: 35,
+		columnNumber: 7
+	}, this), /* @__PURE__ */ _jsxDEV("div", {
+		className: "pd-layout",
+		children: [/* @__PURE__ */ _jsxDEV("aside", {
+			className: "pd-sidebar",
+			children: [/* @__PURE__ */ _jsxDEV("div", {
+				className: "pd-sidebar-title",
+				children: [/* @__PURE__ */ _jsxDEV("i", {
+					className: "fas fa-list-ul",
+					style: {
+						marginRight: 6,
+						color: "#4F46E5"
+					}
+				}, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 45,
+					columnNumber: 45
+				}, this), "Contenido"]
+			}, void 0, true, {
+				fileName: _jsxFileName,
+				lineNumber: 45,
+				columnNumber: 11
+			}, this), /* @__PURE__ */ _jsxDEV("nav", {
+				className: "pd-sidebar-nav",
+				children: NAV_ITEMS.map((item) => /* @__PURE__ */ _jsxDEV("a", {
+					href: `#${item.href}`,
+					className: active === item.href ? "active" : "",
+					onClick: (e) => {
+						e.preventDefault();
+						scrollTo(item.href);
+					},
+					children: [/* @__PURE__ */ _jsxDEV("i", { className: `fas ${item.icon}` }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 50,
+						columnNumber: 17
+					}, this), item.label]
+				}, item.href, true, {
+					fileName: _jsxFileName,
+					lineNumber: 48,
+					columnNumber: 15
+				}, this))
+			}, void 0, false, {
+				fileName: _jsxFileName,
+				lineNumber: 46,
+				columnNumber: 11
+			}, this)]
+		}, void 0, true, {
+			fileName: _jsxFileName,
+			lineNumber: 44,
+			columnNumber: 9
+		}, this), /* @__PURE__ */ _jsxDEV("main", {
+			className: "pd-content",
+			children: [
+				/* @__PURE__ */ _jsxDEV("div", {
+					className: "pd-intro",
+					id: "intro-pd",
+					children: [
+						"Al acceder y utilizar este sitio web, usted está aceptando todos los términos y condiciones. Si no está de acuerdo con alguna parte, puede desistir de la utilización de este sitio web o de alguno de los servicios que brindamos por la empresa ",
+						/* @__PURE__ */ _jsxDEV("strong", { children: "Horus Group SRL" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 58,
+							columnNumber: 255
+						}, this),
+						"."
+					]
+				}, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 57,
+					columnNumber: 11
+				}, this),
+				/* @__PURE__ */ _jsxDEV("section", {
+					className: "pd-section",
+					id: "educacion-pd",
+					children: [
+						/* @__PURE__ */ _jsxDEV("div", {
+							className: "pd-section-header",
+							children: [/* @__PURE__ */ _jsxDEV("div", {
+								className: "pd-section-icon indigo",
+								children: /* @__PURE__ */ _jsxDEV("i", { className: "fas fa-graduation-cap" }, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 63,
+									columnNumber: 55
+								}, this)
+							}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 63,
+								columnNumber: 15
+							}, this), /* @__PURE__ */ _jsxDEV("h2", { children: "A. EDUCACIÓN — Talleres, capacitaciones, cursos, diplomados" }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 64,
+								columnNumber: 15
+							}, this)]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 62,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("p", { children: "La empresa de Telecomunicaciones y Capacitaciones Profesionales Horus Group-Cajamarca S.R.L. se compromete en ofrecer una satisfacción garantizada en todos talleres, cursos de actualización, capacitaciones y/o diplomados que se realice, por ello se realizará la devolución del monto pagado solo en el caso de que amerite." }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 66,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("p", { children: ["Todas las solicitudes serán recibidas y atendidas por nuestro equipo de Asistencia Legal a través de nuestro correo electrónico ", /* @__PURE__ */ _jsxDEV("a", {
+							href: "mailto:horusgroupcajamarca@gmail.com",
+							children: "horusgroupcajamarca@gmail.com"
+						}, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 67,
+							columnNumber: 144
+						}, this)] }, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 67,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("div", {
+							className: "pd-subsection",
+							children: [/* @__PURE__ */ _jsxDEV("div", {
+								className: "pd-subsection-title",
+								children: [/* @__PURE__ */ _jsxDEV("span", {
+									className: "pd-num",
+									children: "1"
+								}, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 70,
+									columnNumber: 52
+								}, this), " Circunstancia para solicitar la devolución de dinero"]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 70,
+								columnNumber: 15
+							}, this), /* @__PURE__ */ _jsxDEV("p", { children: "Casos fortuitos o de fuerza mayor que impidan el asistir a la clase teórica y/o práctica, cursos de actualización, talleres, capacitaciones y otros con características distintas a las ofrecidas, incumplimiento en los días de capacitación." }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 71,
+								columnNumber: 15
+							}, this)]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 69,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("div", {
+							className: "pd-subsection",
+							children: [/* @__PURE__ */ _jsxDEV("div", {
+								className: "pd-subsection-title",
+								children: [/* @__PURE__ */ _jsxDEV("span", {
+									className: "pd-num",
+									children: "2"
+								}, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 75,
+									columnNumber: 52
+								}, this), " Consideraciones que se debe tener en cuenta"]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 75,
+								columnNumber: 15
+							}, this), /* @__PURE__ */ _jsxDEV("ul", {
+								className: "pd-list",
+								children: [
+									/* @__PURE__ */ _jsxDEV("li", { children: [
+										"Puedes solicitar la devolución del dinero cancelado en un plazo máximo de ",
+										/* @__PURE__ */ _jsxDEV("strong", { children: "1 día calendario" }, void 0, false, {
+											fileName: _jsxFileName,
+											lineNumber: 77,
+											columnNumber: 95
+										}, this),
+										" desde la fecha en la cual te inscribiste y como máximo hasta la fecha en la cual se dará la clase teórica y/o práctica. Pasado este día, ya no tienes opción a solicitar la devolución."
+									] }, void 0, true, {
+										fileName: _jsxFileName,
+										lineNumber: 77,
+										columnNumber: 17
+									}, this),
+									/* @__PURE__ */ _jsxDEV("li", { children: [
+										"Al momento de solicitar la devolución, el correo electrónico debe contener los ",
+										/* @__PURE__ */ _jsxDEV("strong", { children: "medios probatorios" }, void 0, false, {
+											fileName: _jsxFileName,
+											lineNumber: 78,
+											columnNumber: 100
+										}, this),
+										" que acrediten la situación expuesta."
+									] }, void 0, true, {
+										fileName: _jsxFileName,
+										lineNumber: 78,
+										columnNumber: 17
+									}, this),
+									/* @__PURE__ */ _jsxDEV("li", { children: "No se aceptará la devolución de ser que no se adjunten los medios probatorios en el correo electrónico." }, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 79,
+										columnNumber: 17
+									}, this),
+									/* @__PURE__ */ _jsxDEV("li", { children: [
+										"Si ya asististe a la clase teórica, ",
+										/* @__PURE__ */ _jsxDEV("strong", { children: "no puedes solicitar la devolución" }, void 0, false, {
+											fileName: _jsxFileName,
+											lineNumber: 80,
+											columnNumber: 57
+										}, this),
+										" de tu dinero."
+									] }, void 0, true, {
+										fileName: _jsxFileName,
+										lineNumber: 80,
+										columnNumber: 17
+									}, this)
+								]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 76,
+								columnNumber: 15
+							}, this)]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 74,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("div", {
+							className: "pd-subsection",
+							children: [
+								/* @__PURE__ */ _jsxDEV("div", {
+									className: "pd-subsection-title",
+									children: [/* @__PURE__ */ _jsxDEV("span", {
+										className: "pd-num",
+										children: "3"
+									}, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 85,
+										columnNumber: 52
+									}, this), " Canales para realizar el cambio o devolución"]
+								}, void 0, true, {
+									fileName: _jsxFileName,
+									lineNumber: 85,
+									columnNumber: 15
+								}, this),
+								/* @__PURE__ */ _jsxDEV("p", { children: "Todas las solicitudes serán recibidas y atendidas por nuestro equipo de Asistencia Legal a través de nuestro correo electrónico:" }, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 86,
+									columnNumber: 15
+								}, this),
+								/* @__PURE__ */ _jsxDEV("div", {
+									className: "pd-contact-box",
+									children: [/* @__PURE__ */ _jsxDEV("i", { className: "fas fa-envelope" }, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 87,
+										columnNumber: 47
+									}, this), /* @__PURE__ */ _jsxDEV("a", {
+										href: "mailto:horusgroupcajamarca@gmail.com",
+										children: "horusgroupcajamarca@gmail.com"
+									}, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 87,
+										columnNumber: 80
+									}, this)]
+								}, void 0, true, {
+									fileName: _jsxFileName,
+									lineNumber: 87,
+									columnNumber: 15
+								}, this)
+							]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 84,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("div", {
+							className: "pd-subsection",
+							children: [/* @__PURE__ */ _jsxDEV("div", {
+								className: "pd-subsection-title",
+								children: [/* @__PURE__ */ _jsxDEV("span", {
+									className: "pd-num",
+									children: "4"
+								}, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 91,
+									columnNumber: 52
+								}, this), " Consideraciones para la solicitud de devolución de dinero"]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 91,
+								columnNumber: 15
+							}, this), /* @__PURE__ */ _jsxDEV("ul", {
+								className: "pd-list",
+								children: [/* @__PURE__ */ _jsxDEV("li", { children: [
+									"Puedes solicitar la ",
+									/* @__PURE__ */ _jsxDEV("strong", { children: "devolución íntegra" }, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 93,
+										columnNumber: 41
+									}, this),
+									" del dinero."
+								] }, void 0, true, {
+									fileName: _jsxFileName,
+									lineNumber: 93,
+									columnNumber: 17
+								}, this), /* @__PURE__ */ _jsxDEV("li", { children: "En el correo electrónico, debes indicar tus datos personales, DNI, medio de pago y comprobante del mismo, así como el taller, curso, capacitación o diplomado al cual te inscribiste y la fecha de este." }, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 94,
+									columnNumber: 17
+								}, this)]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 92,
+								columnNumber: 15
+							}, this)]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 90,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("div", {
+							className: "pd-subsection",
+							children: [/* @__PURE__ */ _jsxDEV("div", {
+								className: "pd-subsection-title",
+								children: [/* @__PURE__ */ _jsxDEV("span", {
+									className: "pd-num",
+									children: "5"
+								}, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 99,
+									columnNumber: 52
+								}, this), " Pasos para solicitudes de devolución"]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 99,
+								columnNumber: 15
+							}, this), /* @__PURE__ */ _jsxDEV("div", {
+								className: "pd-steps",
+								children: [
+									/* @__PURE__ */ _jsxDEV("div", {
+										className: "pd-step",
+										children: [/* @__PURE__ */ _jsxDEV("div", {
+											className: "pd-step-num",
+											children: "1"
+										}, void 0, false, {
+											fileName: _jsxFileName,
+											lineNumber: 102,
+											columnNumber: 19
+										}, this), /* @__PURE__ */ _jsxDEV("div", {
+											className: "pd-step-body",
+											children: [
+												/* @__PURE__ */ _jsxDEV("h4", { children: "Envía tu solicitud" }, void 0, false, {
+													fileName: _jsxFileName,
+													lineNumber: 104,
+													columnNumber: 21
+												}, this),
+												/* @__PURE__ */ _jsxDEV("p", { children: [
+													"Comunicarte mediante correo electrónico a ",
+													/* @__PURE__ */ _jsxDEV("a", {
+														href: "mailto:horusgroupcajamarca@gmail.com",
+														children: "horusgroupcajamarca@gmail.com"
+													}, void 0, false, {
+														fileName: _jsxFileName,
+														lineNumber: 105,
+														columnNumber: 66
+													}, this),
+													" adjuntando tus medios probatorios."
+												] }, void 0, true, {
+													fileName: _jsxFileName,
+													lineNumber: 105,
+													columnNumber: 21
+												}, this),
+												/* @__PURE__ */ _jsxDEV("ul", { children: [/* @__PURE__ */ _jsxDEV("li", { children: [/* @__PURE__ */ _jsxDEV("strong", { children: "ASUNTO:" }, void 0, false, {
+													fileName: _jsxFileName,
+													lineNumber: 106,
+													columnNumber: 29
+												}, this), " DEVOLUCIÓN DE DINERO"] }, void 0, true, {
+													fileName: _jsxFileName,
+													lineNumber: 106,
+													columnNumber: 25
+												}, this), /* @__PURE__ */ _jsxDEV("li", { children: [/* @__PURE__ */ _jsxDEV("strong", { children: "DESTINATARIO:" }, void 0, false, {
+													fileName: _jsxFileName,
+													lineNumber: 106,
+													columnNumber: 83
+												}, this), " Abog. Luz Karen Tavara Camacho"] }, void 0, true, {
+													fileName: _jsxFileName,
+													lineNumber: 106,
+													columnNumber: 79
+												}, this)] }, void 0, true, {
+													fileName: _jsxFileName,
+													lineNumber: 106,
+													columnNumber: 21
+												}, this)
+											]
+										}, void 0, true, {
+											fileName: _jsxFileName,
+											lineNumber: 103,
+											columnNumber: 19
+										}, this)]
+									}, void 0, true, {
+										fileName: _jsxFileName,
+										lineNumber: 101,
+										columnNumber: 17
+									}, this),
+									/* @__PURE__ */ _jsxDEV("div", {
+										className: "pd-step",
+										children: [/* @__PURE__ */ _jsxDEV("div", {
+											className: "pd-step-num",
+											children: "2"
+										}, void 0, false, {
+											fileName: _jsxFileName,
+											lineNumber: 110,
+											columnNumber: 19
+										}, this), /* @__PURE__ */ _jsxDEV("div", {
+											className: "pd-step-body",
+											children: [/* @__PURE__ */ _jsxDEV("h4", { children: "Espera la respuesta" }, void 0, false, {
+												fileName: _jsxFileName,
+												lineNumber: 112,
+												columnNumber: 21
+											}, this), /* @__PURE__ */ _jsxDEV("p", { children: [
+												"En un plazo de ",
+												/* @__PURE__ */ _jsxDEV("strong", { children: "2 días hábiles" }, void 0, false, {
+													fileName: _jsxFileName,
+													lineNumber: 113,
+													columnNumber: 39
+												}, this),
+												" recibirás una respuesta por parte del equipo de Asistencia Legal."
+											] }, void 0, true, {
+												fileName: _jsxFileName,
+												lineNumber: 113,
+												columnNumber: 21
+											}, this)]
+										}, void 0, true, {
+											fileName: _jsxFileName,
+											lineNumber: 111,
+											columnNumber: 19
+										}, this)]
+									}, void 0, true, {
+										fileName: _jsxFileName,
+										lineNumber: 109,
+										columnNumber: 17
+									}, this),
+									/* @__PURE__ */ _jsxDEV("div", {
+										className: "pd-step",
+										children: [/* @__PURE__ */ _jsxDEV("div", {
+											className: "pd-step-num",
+											children: "3"
+										}, void 0, false, {
+											fileName: _jsxFileName,
+											lineNumber: 117,
+											columnNumber: 19
+										}, this), /* @__PURE__ */ _jsxDEV("div", {
+											className: "pd-step-body",
+											children: [/* @__PURE__ */ _jsxDEV("h4", { children: "Recibe tu devolución" }, void 0, false, {
+												fileName: _jsxFileName,
+												lineNumber: 119,
+												columnNumber: 21
+											}, this), /* @__PURE__ */ _jsxDEV("p", { children: "De ser que proceda la devolución del dinero, nos pondremos en contacto contigo para comunicarte el modo de esta." }, void 0, false, {
+												fileName: _jsxFileName,
+												lineNumber: 120,
+												columnNumber: 21
+											}, this)]
+										}, void 0, true, {
+											fileName: _jsxFileName,
+											lineNumber: 118,
+											columnNumber: 19
+										}, this)]
+									}, void 0, true, {
+										fileName: _jsxFileName,
+										lineNumber: 116,
+										columnNumber: 17
+									}, this)
+								]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 100,
+								columnNumber: 15
+							}, this)]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 98,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("div", {
+							className: "pd-subsection",
+							children: [/* @__PURE__ */ _jsxDEV("div", {
+								className: "pd-subsection-title",
+								children: [/* @__PURE__ */ _jsxDEV("span", {
+									className: "pd-num",
+									children: "6"
+								}, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 127,
+									columnNumber: 52
+								}, this), " Tiempo de devolución de dinero"]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 127,
+								columnNumber: 15
+							}, this), /* @__PURE__ */ _jsxDEV("p", { children: [
+								"Se efectuará después de haberse aprobado la solicitud de devolución. El tiempo aproximado es ",
+								/* @__PURE__ */ _jsxDEV("strong", { children: "2 (dos) días hábiles" }, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 128,
+									columnNumber: 111
+								}, this),
+								" posteriores a la aprobación."
+							] }, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 128,
+								columnNumber: 15
+							}, this)]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 126,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("div", {
+							className: "pd-subsection",
+							children: [/* @__PURE__ */ _jsxDEV("div", {
+								className: "pd-subsection-title",
+								children: [/* @__PURE__ */ _jsxDEV("span", {
+									className: "pd-num",
+									children: "7"
+								}, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 132,
+									columnNumber: 52
+								}, this), " Resguardo de los certificados"]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 132,
+								columnNumber: 15
+							}, this), /* @__PURE__ */ _jsxDEV("ul", {
+								className: "pd-list",
+								children: [
+									/* @__PURE__ */ _jsxDEV("li", { children: "Los certificados que no se recojan por parte del participante en la ceremonia de entrega quedarán bajo resguardo de la empresa HORUS GROUP SRL." }, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 134,
+										columnNumber: 17
+									}, this),
+									/* @__PURE__ */ _jsxDEV("li", { children: [
+										"El tiempo de resguardo garantizado por parte la empresa es de ",
+										/* @__PURE__ */ _jsxDEV("strong", { children: "1 mes" }, void 0, false, {
+											fileName: _jsxFileName,
+											lineNumber: 135,
+											columnNumber: 83
+										}, this),
+										", luego de ese tiempo la empresa no se responsabiliza por el deterioro o pérdida de este."
+									] }, void 0, true, {
+										fileName: _jsxFileName,
+										lineNumber: 135,
+										columnNumber: 17
+									}, this),
+									/* @__PURE__ */ _jsxDEV("li", { children: [
+										"Para la entrega del certificado pasada la fecha de ceremonia, el participante deberá ponerse en contacto con la empresa a través del número de WhatsApp ",
+										/* @__PURE__ */ _jsxDEV("strong", { children: "942 956 207" }, void 0, false, {
+											fileName: _jsxFileName,
+											lineNumber: 136,
+											columnNumber: 173
+										}, this),
+										" (coordinadora institucional)."
+									] }, void 0, true, {
+										fileName: _jsxFileName,
+										lineNumber: 136,
+										columnNumber: 17
+									}, this)
+								]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 133,
+								columnNumber: 15
+							}, this)]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 131,
+							columnNumber: 13
+						}, this)
+					]
+				}, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 61,
+					columnNumber: 11
+				}, this),
+				/* @__PURE__ */ _jsxDEV("section", {
+					className: "pd-section",
+					id: "equipos-pd",
+					children: [
+						/* @__PURE__ */ _jsxDEV("div", {
+							className: "pd-section-header",
+							children: [/* @__PURE__ */ _jsxDEV("div", {
+								className: "pd-section-icon coral",
+								children: /* @__PURE__ */ _jsxDEV("i", { className: "fas fa-shopping-cart" }, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 143,
+									columnNumber: 54
+								}, this)
+							}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 143,
+								columnNumber: 15
+							}, this), /* @__PURE__ */ _jsxDEV("h2", { children: "B. COMPRA Y GARANTÍA DE EQUIPOS" }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 144,
+								columnNumber: 15
+							}, this)]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 142,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("div", {
+							className: "pd-subsection",
+							children: [/* @__PURE__ */ _jsxDEV("div", {
+								className: "pd-subsection-title",
+								children: [/* @__PURE__ */ _jsxDEV("span", {
+									className: "pd-num",
+									children: "1"
+								}, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 148,
+									columnNumber: 52
+								}, this), " Términos de Compra, Prohibiciones y Limitaciones"]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 148,
+								columnNumber: 15
+							}, this), /* @__PURE__ */ _jsxDEV("ul", {
+								className: "pd-list",
+								children: [
+									/* @__PURE__ */ _jsxDEV("li", { children: "Toda orden de compra realizada a través de nuestro sitio web se rige por estos términos." }, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 150,
+										columnNumber: 17
+									}, this),
+									/* @__PURE__ */ _jsxDEV("li", { children: [
+										"Para realizar una orden de compra tiene obligatoriamente que registrar o crear su cuenta en nuestro sitio web y ser ",
+										/* @__PURE__ */ _jsxDEV("strong", { children: "mayor de 18 años de edad" }, void 0, false, {
+											fileName: _jsxFileName,
+											lineNumber: 151,
+											columnNumber: 137
+										}, this),
+										"."
+									] }, void 0, true, {
+										fileName: _jsxFileName,
+										lineNumber: 151,
+										columnNumber: 17
+									}, this),
+									/* @__PURE__ */ _jsxDEV("li", { children: "El precio de los pedidos podrá cambiar debido a cuestiones fuera de nuestro control tales como asuntos normativos, impuestos, cargos de aduana o cambios en costo de envíos." }, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 152,
+										columnNumber: 17
+									}, this),
+									/* @__PURE__ */ _jsxDEV("li", { children: "La empresa Horus Group-Cajamarca se reserva derecho y puede cancelar la cuenta de acceso de cualquier usuario si detectamos algún acto de fraude o mala fe." }, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 153,
+										columnNumber: 17
+									}, this)
+								]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 149,
+								columnNumber: 15
+							}, this)]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 147,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("div", {
+							className: "pd-subsection",
+							children: [/* @__PURE__ */ _jsxDEV("div", {
+								className: "pd-subsection-title",
+								children: [/* @__PURE__ */ _jsxDEV("span", {
+									className: "pd-num",
+									children: "2"
+								}, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 158,
+									columnNumber: 52
+								}, this), " Pasos para la realización de compra"]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 158,
+								columnNumber: 15
+							}, this), /* @__PURE__ */ _jsxDEV("div", {
+								className: "pd-steps-compra",
+								children: [
+									"Regístrese en el sitio web (mayor de 18 años)",
+									"Seleccione el producto o servicio",
+									"Agregue al carrito de compras",
+									"Llene los datos necesarios",
+									"Revise que todos los datos estén correctos",
+									"Si tiene alguna duda, comunicarse con nosotros",
+									"Realizar el pago correspondiente",
+									"Verificar su correo electrónico",
+									"Esperar los plazos establecidos",
+									"Si no llega su producto, comunicarse con nosotros"
+								].map((s, i) => /* @__PURE__ */ _jsxDEV("div", {
+									className: "pd-step-compra",
+									children: [/* @__PURE__ */ _jsxDEV("span", { children: i + 1 }, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 161,
+										columnNumber: 59
+									}, this), s]
+								}, i, true, {
+									fileName: _jsxFileName,
+									lineNumber: 161,
+									columnNumber: 19
+								}, this))
+							}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 159,
+								columnNumber: 15
+							}, this)]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 157,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("div", {
+							className: "pd-subsection",
+							children: [/* @__PURE__ */ _jsxDEV("div", {
+								className: "pd-subsection-title",
+								children: [/* @__PURE__ */ _jsxDEV("span", {
+									className: "pd-num",
+									children: "3"
+								}, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 167,
+									columnNumber: 52
+								}, this), " Precios, impuestos y gastos de envío"]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 167,
+								columnNumber: 15
+							}, this), /* @__PURE__ */ _jsxDEV("ul", {
+								className: "pd-list",
+								children: [
+									/* @__PURE__ */ _jsxDEV("li", { children: ["Los precios incluyen el ", /* @__PURE__ */ _jsxDEV("strong", { children: "Impuesto General a las Ventas (I.G.V.)" }, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 169,
+										columnNumber: 45
+									}, this)] }, void 0, true, {
+										fileName: _jsxFileName,
+										lineNumber: 169,
+										columnNumber: 17
+									}, this),
+									/* @__PURE__ */ _jsxDEV("li", { children: "El costo de los gastos de envío será de acuerdo al transportista donde se envíe la mercadería." }, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 170,
+										columnNumber: 17
+									}, this),
+									/* @__PURE__ */ _jsxDEV("li", { children: "El usuario es responsable de proporcionar una dirección de entrega precisa y completa." }, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 171,
+										columnNumber: 17
+									}, this),
+									/* @__PURE__ */ _jsxDEV("li", { children: "En ningún caso se podrá realizar envíos de productos sin que se realice la verificación del pago." }, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 172,
+										columnNumber: 17
+									}, this)
+								]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 168,
+								columnNumber: 15
+							}, this)]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 166,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("div", {
+							className: "pd-subsection",
+							children: [
+								/* @__PURE__ */ _jsxDEV("div", {
+									className: "pd-subsection-title",
+									children: [/* @__PURE__ */ _jsxDEV("span", {
+										className: "pd-num",
+										children: "4"
+									}, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 177,
+										columnNumber: 52
+									}, this), " Condiciones de pago"]
+								}, void 0, true, {
+									fileName: _jsxFileName,
+									lineNumber: 177,
+									columnNumber: 15
+								}, this),
+								/* @__PURE__ */ _jsxDEV("p", { children: "El pago se realizará en el momento de la compra. Aceptamos las siguientes formas de pago:" }, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 178,
+									columnNumber: 15
+								}, this),
+								/* @__PURE__ */ _jsxDEV("div", {
+									className: "pd-metodos",
+									children: [
+										{
+											icon: "fa-university",
+											label: "Depósitos"
+										},
+										{
+											icon: "fa-exchange-alt",
+											label: "Transferencias bancarias"
+										},
+										{
+											icon: "fa-mobile-alt",
+											label: "Yape"
+										},
+										{
+											icon: "fa-mobile-alt",
+											label: "Plin"
+										}
+									].map((m) => /* @__PURE__ */ _jsxDEV("div", {
+										className: "pd-metodo",
+										children: [/* @__PURE__ */ _jsxDEV("i", { className: `fas ${m.icon}` }, void 0, false, {
+											fileName: _jsxFileName,
+											lineNumber: 181,
+											columnNumber: 60
+										}, this), m.label]
+									}, m.label, true, {
+										fileName: _jsxFileName,
+										lineNumber: 181,
+										columnNumber: 19
+									}, this))
+								}, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 179,
+									columnNumber: 15
+								}, this)
+							]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 176,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("div", {
+							className: "pd-subsection",
+							children: [/* @__PURE__ */ _jsxDEV("div", {
+								className: "pd-subsection-title",
+								children: [/* @__PURE__ */ _jsxDEV("span", {
+									className: "pd-num",
+									children: "5"
+								}, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 187,
+									columnNumber: 52
+								}, this), " Plazo de envío de productos"]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 187,
+								columnNumber: 15
+							}, this), /* @__PURE__ */ _jsxDEV("ul", {
+								className: "pd-list",
+								children: [/* @__PURE__ */ _jsxDEV("li", { children: [
+									"Para envíos dentro de la ciudad o región de Cajamarca: ",
+									/* @__PURE__ */ _jsxDEV("strong", { children: "1 a 5 días hábiles" }, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 189,
+										columnNumber: 76
+									}, this),
+									" previa coordinación."
+								] }, void 0, true, {
+									fileName: _jsxFileName,
+									lineNumber: 189,
+									columnNumber: 17
+								}, this), /* @__PURE__ */ _jsxDEV("li", { children: [
+									"Para envíos fuera de la región de Cajamarca: ",
+									/* @__PURE__ */ _jsxDEV("strong", { children: "5 a 7 días hábiles" }, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 190,
+										columnNumber: 66
+									}, this),
+									" previa coordinación."
+								] }, void 0, true, {
+									fileName: _jsxFileName,
+									lineNumber: 190,
+									columnNumber: 17
+								}, this)]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 188,
+								columnNumber: 15
+							}, this)]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 186,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("div", {
+							className: "pd-subsection",
+							children: [
+								/* @__PURE__ */ _jsxDEV("div", {
+									className: "pd-subsection-title",
+									children: [/* @__PURE__ */ _jsxDEV("span", {
+										className: "pd-num",
+										children: "6"
+									}, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 195,
+										columnNumber: 52
+									}, this), " Devoluciones o reposiciones"]
+								}, void 0, true, {
+									fileName: _jsxFileName,
+									lineNumber: 195,
+									columnNumber: 15
+								}, this),
+								/* @__PURE__ */ _jsxDEV("div", {
+									className: "pd-alert pd-alert-info",
+									children: [/* @__PURE__ */ _jsxDEV("i", { className: "fas fa-info-circle" }, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 196,
+										columnNumber: 55
+									}, this), /* @__PURE__ */ _jsxDEV("p", { children: [/* @__PURE__ */ _jsxDEV("strong", { children: "Cambio o sustitución del producto:" }, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 196,
+										columnNumber: 94
+									}, this), " Para que se considere un cambio o sustitución por el mismo producto, procederá siempre y cuando exista algún defecto de fabricación determinado por nuestro equipo de soporte HORUS GROUP SRL."] }, void 0, true, {
+										fileName: _jsxFileName,
+										lineNumber: 196,
+										columnNumber: 91
+									}, this)]
+								}, void 0, true, {
+									fileName: _jsxFileName,
+									lineNumber: 196,
+									columnNumber: 15
+								}, this),
+								/* @__PURE__ */ _jsxDEV("ul", {
+									className: "pd-list",
+									children: [
+										/* @__PURE__ */ _jsxDEV("li", { children: "El usuario tendrá que enviar el producto sin golpes o rasguños en su empaque original incluyendo todos los accesorios, manuales u otros que hayan sido incluidos en el momento de la compra." }, void 0, false, {
+											fileName: _jsxFileName,
+											lineNumber: 198,
+											columnNumber: 17
+										}, this),
+										/* @__PURE__ */ _jsxDEV("li", { children: [
+											"El producto será cambiado después de la verificación de las fallas de fabricación, en un plazo máximo de ",
+											/* @__PURE__ */ _jsxDEV("strong", { children: "25 días hábiles" }, void 0, false, {
+												fileName: _jsxFileName,
+												lineNumber: 199,
+												columnNumber: 126
+											}, this),
+											"."
+										] }, void 0, true, {
+											fileName: _jsxFileName,
+											lineNumber: 199,
+											columnNumber: 17
+										}, this),
+										/* @__PURE__ */ _jsxDEV("li", { children: "En el caso de no contar con stock disponible, la empresa HORUS GROUP SRL emitirá una nota de crédito por el precio del producto comprado." }, void 0, false, {
+											fileName: _jsxFileName,
+											lineNumber: 200,
+											columnNumber: 17
+										}, this),
+										/* @__PURE__ */ _jsxDEV("li", { children: "No se aceptarán cambios ni devoluciones por incompatibilidad con productos de otros fabricantes." }, void 0, false, {
+											fileName: _jsxFileName,
+											lineNumber: 201,
+											columnNumber: 17
+										}, this),
+										/* @__PURE__ */ _jsxDEV("li", { children: "No se aceptarán devoluciones de productos personalizados o productos que hayan sido usados." }, void 0, false, {
+											fileName: _jsxFileName,
+											lineNumber: 202,
+											columnNumber: 17
+										}, this)
+									]
+								}, void 0, true, {
+									fileName: _jsxFileName,
+									lineNumber: 197,
+									columnNumber: 15
+								}, this)
+							]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 194,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("div", {
+							className: "pd-subsection",
+							children: [/* @__PURE__ */ _jsxDEV("div", {
+								className: "pd-subsection-title",
+								children: [/* @__PURE__ */ _jsxDEV("span", {
+									className: "pd-num",
+									children: "7"
+								}, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 207,
+									columnNumber: 52
+								}, this), " Garantías sobre los productos"]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 207,
+								columnNumber: 15
+							}, this), /* @__PURE__ */ _jsxDEV("ul", {
+								className: "pd-list",
+								children: [
+									/* @__PURE__ */ _jsxDEV("li", { children: "La garantía de los productos es única y exclusivamente al cliente o usuario que realizó la compra." }, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 209,
+										columnNumber: 17
+									}, this),
+									/* @__PURE__ */ _jsxDEV("li", { children: [
+										"Horario de atención: ",
+										/* @__PURE__ */ _jsxDEV("strong", { children: "lunes a viernes de 9:00 am a 6:00 pm" }, void 0, false, {
+											fileName: _jsxFileName,
+											lineNumber: 210,
+											columnNumber: 42
+										}, this),
+										" y ",
+										/* @__PURE__ */ _jsxDEV("strong", { children: "sábados de 9:00 am a 1:00 pm" }, void 0, false, {
+											fileName: _jsxFileName,
+											lineNumber: 210,
+											columnNumber: 98
+										}, this),
+										"."
+									] }, void 0, true, {
+										fileName: _jsxFileName,
+										lineNumber: 210,
+										columnNumber: 17
+									}, this),
+									/* @__PURE__ */ _jsxDEV("li", { children: "La garantía no cubre accesorios de los equipos tales como cables, fuentes de poder, puertos de entrada y salida, conectores, ni consumibles que se desgasten por el uso." }, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 211,
+										columnNumber: 17
+									}, this),
+									/* @__PURE__ */ _jsxDEV("li", { children: "La garantía no incluye ningún tipo de instalación de software o firmware." }, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 212,
+										columnNumber: 17
+									}, this),
+									/* @__PURE__ */ _jsxDEV("li", { children: "La garantía no cubre daños producidos por transporte de terceros." }, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 213,
+										columnNumber: 17
+									}, this),
+									/* @__PURE__ */ _jsxDEV("li", { children: [
+										"Todos los equipos en garantía que no son reclamados hasta en un máximo de ",
+										/* @__PURE__ */ _jsxDEV("strong", { children: "2 meses" }, void 0, false, {
+											fileName: _jsxFileName,
+											lineNumber: 214,
+											columnNumber: 95
+										}, this),
+										" luego de su entrega, serán declarados en abandono."
+									] }, void 0, true, {
+										fileName: _jsxFileName,
+										lineNumber: 214,
+										columnNumber: 17
+									}, this)
+								]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 208,
+								columnNumber: 15
+							}, this)]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 206,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("div", {
+							className: "pd-subsection",
+							children: [/* @__PURE__ */ _jsxDEV("div", {
+								className: "pd-subsection-title",
+								children: [/* @__PURE__ */ _jsxDEV("span", {
+									className: "pd-num",
+									children: "8"
+								}, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 219,
+									columnNumber: 52
+								}, this), " Externalidades"]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 219,
+								columnNumber: 15
+							}, this), /* @__PURE__ */ _jsxDEV("ul", {
+								className: "pd-list",
+								children: [
+									/* @__PURE__ */ _jsxDEV("li", { children: "El cumplimiento de las obligaciones por parte de HORUS GROUP SRL puede ser suspendida en caso de algún evento fortuito o de fuerza mayor." }, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 221,
+										columnNumber: 17
+									}, this),
+									/* @__PURE__ */ _jsxDEV("li", { children: "Tales externalidades pueden ser: disturbios sociales, huelgas de cualquier naturaleza, feriados no laborables fortuitos, entre otros." }, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 222,
+										columnNumber: 17
+									}, this),
+									/* @__PURE__ */ _jsxDEV("li", { children: [
+										"La empresa HORUS GROUP SRL informará al cliente dentro de ",
+										/* @__PURE__ */ _jsxDEV("strong", { children: "1 a 3 días" }, void 0, false, {
+											fileName: _jsxFileName,
+											lineNumber: 223,
+											columnNumber: 79
+										}, this),
+										" anteriores o posteriores a su ocurrencia."
+									] }, void 0, true, {
+										fileName: _jsxFileName,
+										lineNumber: 223,
+										columnNumber: 17
+									}, this),
+									/* @__PURE__ */ _jsxDEV("li", { children: [
+										"Si dicha suspensión se prolonga más allá de ",
+										/* @__PURE__ */ _jsxDEV("strong", { children: "20 días" }, void 0, false, {
+											fileName: _jsxFileName,
+											lineNumber: 224,
+											columnNumber: 65
+										}, this),
+										", el cliente tendrá la posibilidad de rescindir el pedido en curso."
+									] }, void 0, true, {
+										fileName: _jsxFileName,
+										lineNumber: 224,
+										columnNumber: 17
+									}, this)
+								]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 220,
+								columnNumber: 15
+							}, this)]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 218,
+							columnNumber: 13
+						}, this)
+					]
+				}, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 141,
+					columnNumber: 11
+				}, this),
+				/* @__PURE__ */ _jsxDEV("section", {
+					className: "pd-section",
+					id: "modif-pd",
+					children: [/* @__PURE__ */ _jsxDEV("div", {
+						className: "pd-section-header",
+						children: [/* @__PURE__ */ _jsxDEV("div", {
+							className: "pd-section-icon green",
+							children: /* @__PURE__ */ _jsxDEV("i", { className: "fas fa-edit" }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 231,
+								columnNumber: 54
+							}, this)
+						}, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 231,
+							columnNumber: 15
+						}, this), /* @__PURE__ */ _jsxDEV("h2", { children: "Modificación en los términos y condiciones de uso" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 232,
+							columnNumber: 15
+						}, this)]
+					}, void 0, true, {
+						fileName: _jsxFileName,
+						lineNumber: 230,
+						columnNumber: 13
+					}, this), /* @__PURE__ */ _jsxDEV("p", { children: "Horus Group-Cajamarca SRL podrá modificar, adicionar, eliminar y/o actualizar las políticas de devolución en cualquier momento, por cualquier razón y/o sin previo aviso, los cuales seguirán siendo de obligatoriedad el cumplimiento de estas desde el momento de su publicación." }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 234,
+						columnNumber: 13
+					}, this)]
+				}, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 229,
+					columnNumber: 11
+				}, this),
+				/* @__PURE__ */ _jsxDEV("section", {
+					className: "pd-section",
+					id: "atencion-pd",
+					children: [
+						/* @__PURE__ */ _jsxDEV("div", {
+							className: "pd-section-header",
+							children: [/* @__PURE__ */ _jsxDEV("div", {
+								className: "pd-section-icon coral",
+								children: /* @__PURE__ */ _jsxDEV("i", { className: "fas fa-headset" }, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 239,
+									columnNumber: 54
+								}, this)
+							}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 239,
+								columnNumber: 15
+							}, this), /* @__PURE__ */ _jsxDEV("h2", { children: "Atención al usuario" }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 240,
+								columnNumber: 15
+							}, this)]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 238,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("p", { children: "Para cualquier aclaración o duda sobre los Términos y Condiciones comunicarse al correo electrónico:" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 242,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("div", {
+							className: "pd-contact-box",
+							children: [/* @__PURE__ */ _jsxDEV("i", { className: "fas fa-envelope" }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 243,
+								columnNumber: 45
+							}, this), /* @__PURE__ */ _jsxDEV("a", {
+								href: "mailto:horusgroupcajamarca@gmail.com",
+								children: "horusgroupcajamarca@gmail.com"
+							}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 243,
+								columnNumber: 78
+							}, this)]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 243,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("div", {
+							className: "pd-firma",
+							children: [/* @__PURE__ */ _jsxDEV("img", {
+								src: logoHorus,
+								alt: "Horus Group"
+							}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 245,
+								columnNumber: 15
+							}, this), /* @__PURE__ */ _jsxDEV("div", { children: [/* @__PURE__ */ _jsxDEV("p", { children: /* @__PURE__ */ _jsxDEV("strong", { children: "Asesoría Legal" }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 246,
+								columnNumber: 23
+							}, this) }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 246,
+								columnNumber: 20
+							}, this), /* @__PURE__ */ _jsxDEV("p", { children: "Horus Group-Cajamarca SRL" }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 246,
+								columnNumber: 58
+							}, this)] }, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 246,
+								columnNumber: 15
+							}, this)]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 244,
+							columnNumber: 13
+						}, this)
+					]
+				}, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 237,
+					columnNumber: 11
+				}, this),
+				/* @__PURE__ */ _jsxDEV("div", {
+					className: "pd-cta",
+					children: [
+						/* @__PURE__ */ _jsxDEV("h3", { children: "¿Tienes alguna consulta?" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 251,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("p", { children: "Nuestro equipo legal está disponible para resolver cualquier duda sobre nuestras políticas." }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 252,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("div", {
+							className: "pd-cta-btns",
+							children: [/* @__PURE__ */ _jsxDEV("a", {
+								href: "mailto:horusgroupcajamarca@gmail.com",
+								className: "pd-btn-white",
+								children: [/* @__PURE__ */ _jsxDEV("i", { className: "fas fa-envelope" }, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 254,
+									columnNumber: 87
+								}, this), " Contactar Asesoría Legal"]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 254,
+								columnNumber: 15
+							}, this), /* @__PURE__ */ _jsxDEV(Link, {
+								to: "/preguntas-frecuentes",
+								className: "pd-btn-outline-white",
+								children: [/* @__PURE__ */ _jsxDEV("i", { className: "fas fa-question-circle" }, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 255,
+									columnNumber: 81
+								}, this), " Preguntas Frecuentes"]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 255,
+								columnNumber: 15
+							}, this)]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 253,
+							columnNumber: 13
+						}, this)
+					]
+				}, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 250,
+					columnNumber: 11
+				}, this)
+			]
+		}, void 0, true, {
+			fileName: _jsxFileName,
+			lineNumber: 56,
+			columnNumber: 9
+		}, this)]
+	}, void 0, true, {
+		fileName: _jsxFileName,
+		lineNumber: 43,
+		columnNumber: 7
+	}, this)] }, void 0, true);
+}
+_s(PoliticasDevolucion, "gnWOYDI7UvTA+SRXIXpxjnLjMJ8=");
+_c = PoliticasDevolucion;
+var _c;
+$RefreshReg$(_c, "PoliticasDevolucion");
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+import * as __vite_react_currentExports from "/src/pages/politicas/PoliticasDevolucion.tsx";
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+
+  const currentExports = __vite_react_currentExports;
+  queueMicrotask(() => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/Users/PCT40T/Documents/Proyecto-Horus-/frontend/src/pages/politicas/PoliticasDevolucion.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/Users/PCT40T/Documents/Proyecto-Horus-/frontend/src/pages/politicas/PoliticasDevolucion.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+function $RefreshReg$(type, id) { return RefreshRuntime.register(type, "C:/Users/PCT40T/Documents/Proyecto-Horus-/frontend/src/pages/politicas/PoliticasDevolucion.tsx" + ' ' + id); }
+function $RefreshSig$() { return RefreshRuntime.createSignatureFunctionForTransform(); }
+
+//# sourceMappingURL=data:application/json;base64,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S0FBRCxFQUFHLFdBQVUsa0JBQW1COzs7OztRQUFNOzs7O2lCQUM3RSx3QkFBQyxNQUFELFlBQUksdUJBQXdCOzs7O2dCQUN4Qjs7Ozs7O01BQ04sd0JBQUMsS0FBRCxZQUFHLHdHQUF3Rzs7Ozs7TUFDM0csd0JBQUMsT0FBRDtPQUFLLFdBQVU7aUJBQWYsQ0FBZ0Msd0JBQUMsS0FBRCxFQUFHLFdBQVUsbUJBQW9COzs7O3lDQUFDLEtBQUQ7UUFBRyxNQUFLO2tCQUF1QztRQUFpQzs7OztnQkFBTTs7Ozs7O01BQ3ZKLHdCQUFDLE9BQUQ7T0FBSyxXQUFVO2lCQUFmLENBQ0Usd0JBQUMsT0FBRDtRQUFLLEtBQUs7UUFBVyxLQUFJO1FBQWdCOzs7O2lCQUN6Qyx3QkFBQyxPQUFELGFBQUssd0JBQUMsS0FBRCxZQUFHLHdCQUFDLFVBQUQsWUFBUSxrQkFBdUI7Ozs7aUJBQUk7Ozs7eUNBQUMsS0FBRCxZQUFHLDZCQUE2Qjs7OztnQkFBTTs7OztnQkFDN0U7Ozs7OztNQUNFOzs7Ozs7SUFFVix3QkFBQyxPQUFEO0tBQUssV0FBVTtlQUFmO01BQ0Usd0JBQUMsTUFBRCxZQUFJLDRCQUE2Qjs7Ozs7TUFDakMsd0JBQUMsS0FBRCxZQUFHLCtGQUErRjs7Ozs7TUFDbEcsd0JBQUMsT0FBRDtPQUFLLFdBQVU7aUJBQWYsQ0FDRSx3QkFBQyxLQUFEO1FBQUcsTUFBSztRQUF1QyxXQUFVO2tCQUF6RCxDQUF3RSx3QkFBQyxLQUFELEVBQUcsV0FBVSxtQkFBb0I7Ozs7OENBQTZCOzs7OztpQkFDdEksd0JBQUMsTUFBRDtRQUFNLElBQUc7UUFBd0IsV0FBVTtrQkFBM0MsQ0FBa0Usd0JBQUMsS0FBRCxFQUFHLFdBQVUsMEJBQTJCOzs7OzBDQUE0Qjs7Ozs7Z0JBQ2xJOzs7Ozs7TUFDRjs7Ozs7O0lBQ0Q7Ozs7O1dBQ0g7Ozs7O1VBQ0w7O3VEQUVOIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIlBvbGl0aWNhc0Rldm9sdWNpb24udHN4Il0sInZlcnNpb24iOjMsInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IHVzZVN0YXRlLCB1c2VFZmZlY3QgfSBmcm9tICdyZWFjdCdcclxuaW1wb3J0IHsgTGluayB9IGZyb20gJ3JlYWN0LXJvdXRlci1kb20nXHJcbmltcG9ydCBsb2dvSG9ydXMgZnJvbSAnLi4vLi4vYXNzZXRzL2ltYWdlcy9sb2dvLWhvcnVzLnBuZydcclxuXHJcbmNvbnN0IE5BVl9JVEVNUyA9IFtcclxuICB7IGhyZWY6ICdpbnRyby1wZCcsICAgICAgIGljb246ICdmYS1pbmZvLWNpcmNsZScsICAgbGFiZWw6ICdJbnRyb2R1Y2Npw7NuJyB9LFxyXG4gIHsgaHJlZjogJ2VkdWNhY2lvbi1wZCcsICAgaWNvbjogJ2ZhLWdyYWR1YXRpb24tY2FwJywgbGFiZWw6ICdBLiBFZHVjYWNpw7NuJyB9LFxyXG4gIHsgaHJlZjogJ2VxdWlwb3MtcGQnLCAgICAgaWNvbjogJ2ZhLXNob3BwaW5nLWNhcnQnLCBsYWJlbDogJ0IuIENvbXByYSB5IEdhcmFudMOtYScgfSxcclxuICB7IGhyZWY6ICdtb2RpZi1wZCcsICAgICAgIGljb246ICdmYS1lZGl0JywgICAgICAgICAgbGFiZWw6ICdNb2RpZmljYWNpb25lcycgfSxcclxuICB7IGhyZWY6ICdhdGVuY2lvbi1wZCcsICAgIGljb246ICdmYS1oZWFkc2V0JywgICAgICAgbGFiZWw6ICdBdGVuY2nDs24gYWwgdXN1YXJpbycgfSxcclxuXVxyXG5cclxuZXhwb3J0IGRlZmF1bHQgZnVuY3Rpb24gUG9saXRpY2FzRGV2b2x1Y2lvbigpIHtcclxuICBjb25zdCBbYWN0aXZlLCBzZXRBY3RpdmVdID0gdXNlU3RhdGUoJ2ludHJvLXBkJylcclxuXHJcbiAgdXNlRWZmZWN0KCgpID0+IHtcclxuICAgIGRvY3VtZW50LnRpdGxlID0gJ1BvbMOtdGljYXMgZGUgRGV2b2x1Y2nDs24g4oCUIEhvcnVzIEdyb3VwIFNSTCdcclxuICB9LCBbXSlcclxuXHJcbiAgdXNlRWZmZWN0KCgpID0+IHtcclxuICAgIGNvbnN0IGhhbmRsZXIgPSAoKSA9PiB7XHJcbiAgICAgIE5BVl9JVEVNUy5mb3JFYWNoKCh7IGhyZWYgfSkgPT4ge1xyXG4gICAgICAgIGNvbnN0IGVsID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoaHJlZilcclxuICAgICAgICBpZiAoZWwgJiYgd2luZG93LnNjcm9sbFkgPj0gZWwub2Zmc2V0VG9wIC0gMTIwKSBzZXRBY3RpdmUoaHJlZilcclxuICAgICAgfSlcclxuICAgIH1cclxuICAgIHdpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdzY3JvbGwnLCBoYW5kbGVyLCB7IHBhc3NpdmU6IHRydWUgfSlcclxuICAgIHJldHVybiAoKSA9PiB3aW5kb3cucmVtb3ZlRXZlbnRMaXN0ZW5lcignc2Nyb2xsJywgaGFuZGxlcilcclxuICB9LCBbXSlcclxuXHJcbiAgY29uc3Qgc2Nyb2xsVG8gPSAoaWQpID0+IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKGlkKT8uc2Nyb2xsSW50b1ZpZXcoeyBiZWhhdmlvcjogJ3Ntb290aCcsIGJsb2NrOiAnc3RhcnQnIH0pXHJcblxyXG4gIHJldHVybiAoXHJcbiAgICA8PlxyXG4gICAgICA8c2VjdGlvbiBjbGFzc05hbWU9XCJwZC1oZXJvXCI+XHJcbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwZC1oZXJvLWlubmVyXCI+XHJcbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLWJyZWFkY3J1bWJcIj48aSBjbGFzc05hbWU9XCJmYXMgZmEtdW5kby1hbHRcIiAvPiBQb2zDrXRpY2FzIOKAuiBEZXZvbHVjacOzbjwvZGl2PlxyXG4gICAgICAgICAgPGgxPlBvbMOtdGljYXMgZGUgRGV2b2x1Y2nDs248L2gxPlxyXG4gICAgICAgICAgPHA+Q29ub2NlIG51ZXN0cm9zIHTDqXJtaW5vcyB5IGNvbmRpY2lvbmVzIHBhcmEgZGV2b2x1Y2lvbmVzIHkgZ2FyYW50w61hcyBkZSBwcm9kdWN0b3MgeSBzZXJ2aWNpb3MuPC9wPlxyXG4gICAgICAgIDwvZGl2PlxyXG4gICAgICA8L3NlY3Rpb24+XHJcblxyXG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLWxheW91dFwiPlxyXG4gICAgICAgIDxhc2lkZSBjbGFzc05hbWU9XCJwZC1zaWRlYmFyXCI+XHJcbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLXNpZGViYXItdGl0bGVcIj48aSBjbGFzc05hbWU9XCJmYXMgZmEtbGlzdC11bFwiIHN0eWxlPXt7IG1hcmdpblJpZ2h0OiA2LCBjb2xvcjogJyM0RjQ2RTUnIH19IC8+Q29udGVuaWRvPC9kaXY+XHJcbiAgICAgICAgICA8bmF2IGNsYXNzTmFtZT1cInBkLXNpZGViYXItbmF2XCI+XHJcbiAgICAgICAgICAgIHtOQVZfSVRFTVMubWFwKGl0ZW0gPT4gKFxyXG4gICAgICAgICAgICAgIDxhIGtleT17aXRlbS5ocmVmfSBocmVmPXtgIyR7aXRlbS5ocmVmfWB9IGNsYXNzTmFtZT17YWN0aXZlID09PSBpdGVtLmhyZWYgPyAnYWN0aXZlJyA6ICcnfVxyXG4gICAgICAgICAgICAgICAgb25DbGljaz17ZSA9PiB7IGUucHJldmVudERlZmF1bHQoKTsgc2Nyb2xsVG8oaXRlbS5ocmVmKSB9fT5cclxuICAgICAgICAgICAgICAgIDxpIGNsYXNzTmFtZT17YGZhcyAke2l0ZW0uaWNvbn1gfSAvPntpdGVtLmxhYmVsfVxyXG4gICAgICAgICAgICAgIDwvYT5cclxuICAgICAgICAgICAgKSl9XHJcbiAgICAgICAgICA8L25hdj5cclxuICAgICAgICA8L2FzaWRlPlxyXG5cclxuICAgICAgICA8bWFpbiBjbGFzc05hbWU9XCJwZC1jb250ZW50XCI+XHJcbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLWludHJvXCIgaWQ9XCJpbnRyby1wZFwiPlxyXG4gICAgICAgICAgICBBbCBhY2NlZGVyIHkgdXRpbGl6YXIgZXN0ZSBzaXRpbyB3ZWIsIHVzdGVkIGVzdMOhIGFjZXB0YW5kbyB0b2RvcyBsb3MgdMOpcm1pbm9zIHkgY29uZGljaW9uZXMuIFNpIG5vIGVzdMOhIGRlIGFjdWVyZG8gY29uIGFsZ3VuYSBwYXJ0ZSwgcHVlZGUgZGVzaXN0aXIgZGUgbGEgdXRpbGl6YWNpw7NuIGRlIGVzdGUgc2l0aW8gd2ViIG8gZGUgYWxndW5vIGRlIGxvcyBzZXJ2aWNpb3MgcXVlIGJyaW5kYW1vcyBwb3IgbGEgZW1wcmVzYSA8c3Ryb25nPkhvcnVzIEdyb3VwIFNSTDwvc3Ryb25nPi5cclxuICAgICAgICAgIDwvZGl2PlxyXG5cclxuICAgICAgICAgIDxzZWN0aW9uIGNsYXNzTmFtZT1cInBkLXNlY3Rpb25cIiBpZD1cImVkdWNhY2lvbi1wZFwiPlxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLXNlY3Rpb24taGVhZGVyXCI+XHJcbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwZC1zZWN0aW9uLWljb24gaW5kaWdvXCI+PGkgY2xhc3NOYW1lPVwiZmFzIGZhLWdyYWR1YXRpb24tY2FwXCIgLz48L2Rpdj5cclxuICAgICAgICAgICAgICA8aDI+QS4gRURVQ0FDScOTTiDigJQgVGFsbGVyZXMsIGNhcGFjaXRhY2lvbmVzLCBjdXJzb3MsIGRpcGxvbWFkb3M8L2gyPlxyXG4gICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgPHA+TGEgZW1wcmVzYSBkZSBUZWxlY29tdW5pY2FjaW9uZXMgeSBDYXBhY2l0YWNpb25lcyBQcm9mZXNpb25hbGVzIEhvcnVzIEdyb3VwLUNhamFtYXJjYSBTLlIuTC4gc2UgY29tcHJvbWV0ZSBlbiBvZnJlY2VyIHVuYSBzYXRpc2ZhY2Npw7NuIGdhcmFudGl6YWRhIGVuIHRvZG9zIHRhbGxlcmVzLCBjdXJzb3MgZGUgYWN0dWFsaXphY2nDs24sIGNhcGFjaXRhY2lvbmVzIHkvbyBkaXBsb21hZG9zIHF1ZSBzZSByZWFsaWNlLCBwb3IgZWxsbyBzZSByZWFsaXphcsOhIGxhIGRldm9sdWNpw7NuIGRlbCBtb250byBwYWdhZG8gc29sbyBlbiBlbCBjYXNvIGRlIHF1ZSBhbWVyaXRlLjwvcD5cclxuICAgICAgICAgICAgPHA+VG9kYXMgbGFzIHNvbGljaXR1ZGVzIHNlcsOhbiByZWNpYmlkYXMgeSBhdGVuZGlkYXMgcG9yIG51ZXN0cm8gZXF1aXBvIGRlIEFzaXN0ZW5jaWEgTGVnYWwgYSB0cmF2w6lzIGRlIG51ZXN0cm8gY29ycmVvIGVsZWN0csOzbmljbyA8YSBocmVmPVwibWFpbHRvOmhvcnVzZ3JvdXBjYWphbWFyY2FAZ21haWwuY29tXCI+aG9ydXNncm91cGNhamFtYXJjYUBnbWFpbC5jb208L2E+PC9wPlxyXG5cclxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwZC1zdWJzZWN0aW9uXCI+XHJcbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwZC1zdWJzZWN0aW9uLXRpdGxlXCI+PHNwYW4gY2xhc3NOYW1lPVwicGQtbnVtXCI+MTwvc3Bhbj4gQ2lyY3Vuc3RhbmNpYSBwYXJhIHNvbGljaXRhciBsYSBkZXZvbHVjacOzbiBkZSBkaW5lcm88L2Rpdj5cclxuICAgICAgICAgICAgICA8cD5DYXNvcyBmb3J0dWl0b3MgbyBkZSBmdWVyemEgbWF5b3IgcXVlIGltcGlkYW4gZWwgYXNpc3RpciBhIGxhIGNsYXNlIHRlw7NyaWNhIHkvbyBwcsOhY3RpY2EsIGN1cnNvcyBkZSBhY3R1YWxpemFjacOzbiwgdGFsbGVyZXMsIGNhcGFjaXRhY2lvbmVzIHkgb3Ryb3MgY29uIGNhcmFjdGVyw61zdGljYXMgZGlzdGludGFzIGEgbGFzIG9mcmVjaWRhcywgaW5jdW1wbGltaWVudG8gZW4gbG9zIGTDrWFzIGRlIGNhcGFjaXRhY2nDs24uPC9wPlxyXG4gICAgICAgICAgICA8L2Rpdj5cclxuXHJcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicGQtc3Vic2VjdGlvblwiPlxyXG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicGQtc3Vic2VjdGlvbi10aXRsZVwiPjxzcGFuIGNsYXNzTmFtZT1cInBkLW51bVwiPjI8L3NwYW4+IENvbnNpZGVyYWNpb25lcyBxdWUgc2UgZGViZSB0ZW5lciBlbiBjdWVudGE8L2Rpdj5cclxuICAgICAgICAgICAgICA8dWwgY2xhc3NOYW1lPVwicGQtbGlzdFwiPlxyXG4gICAgICAgICAgICAgICAgPGxpPlB1ZWRlcyBzb2xpY2l0YXIgbGEgZGV2b2x1Y2nDs24gZGVsIGRpbmVybyBjYW5jZWxhZG8gZW4gdW4gcGxhem8gbcOheGltbyBkZSA8c3Ryb25nPjEgZMOtYSBjYWxlbmRhcmlvPC9zdHJvbmc+IGRlc2RlIGxhIGZlY2hhIGVuIGxhIGN1YWwgdGUgaW5zY3JpYmlzdGUgeSBjb21vIG3DoXhpbW8gaGFzdGEgbGEgZmVjaGEgZW4gbGEgY3VhbCBzZSBkYXLDoSBsYSBjbGFzZSB0ZcOzcmljYSB5L28gcHLDoWN0aWNhLiBQYXNhZG8gZXN0ZSBkw61hLCB5YSBubyB0aWVuZXMgb3BjacOzbiBhIHNvbGljaXRhciBsYSBkZXZvbHVjacOzbi48L2xpPlxyXG4gICAgICAgICAgICAgICAgPGxpPkFsIG1vbWVudG8gZGUgc29saWNpdGFyIGxhIGRldm9sdWNpw7NuLCBlbCBjb3JyZW8gZWxlY3Ryw7NuaWNvIGRlYmUgY29udGVuZXIgbG9zIDxzdHJvbmc+bWVkaW9zIHByb2JhdG9yaW9zPC9zdHJvbmc+IHF1ZSBhY3JlZGl0ZW4gbGEgc2l0dWFjacOzbiBleHB1ZXN0YS48L2xpPlxyXG4gICAgICAgICAgICAgICAgPGxpPk5vIHNlIGFjZXB0YXLDoSBsYSBkZXZvbHVjacOzbiBkZSBzZXIgcXVlIG5vIHNlIGFkanVudGVuIGxvcyBtZWRpb3MgcHJvYmF0b3Jpb3MgZW4gZWwgY29ycmVvIGVsZWN0csOzbmljby48L2xpPlxyXG4gICAgICAgICAgICAgICAgPGxpPlNpIHlhIGFzaXN0aXN0ZSBhIGxhIGNsYXNlIHRlw7NyaWNhLCA8c3Ryb25nPm5vIHB1ZWRlcyBzb2xpY2l0YXIgbGEgZGV2b2x1Y2nDs248L3N0cm9uZz4gZGUgdHUgZGluZXJvLjwvbGk+XHJcbiAgICAgICAgICAgICAgPC91bD5cclxuICAgICAgICAgICAgPC9kaXY+XHJcblxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLXN1YnNlY3Rpb25cIj5cclxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLXN1YnNlY3Rpb24tdGl0bGVcIj48c3BhbiBjbGFzc05hbWU9XCJwZC1udW1cIj4zPC9zcGFuPiBDYW5hbGVzIHBhcmEgcmVhbGl6YXIgZWwgY2FtYmlvIG8gZGV2b2x1Y2nDs248L2Rpdj5cclxuICAgICAgICAgICAgICA8cD5Ub2RhcyBsYXMgc29saWNpdHVkZXMgc2Vyw6FuIHJlY2liaWRhcyB5IGF0ZW5kaWRhcyBwb3IgbnVlc3RybyBlcXVpcG8gZGUgQXNpc3RlbmNpYSBMZWdhbCBhIHRyYXbDqXMgZGUgbnVlc3RybyBjb3JyZW8gZWxlY3Ryw7NuaWNvOjwvcD5cclxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLWNvbnRhY3QtYm94XCI+PGkgY2xhc3NOYW1lPVwiZmFzIGZhLWVudmVsb3BlXCIgLz48YSBocmVmPVwibWFpbHRvOmhvcnVzZ3JvdXBjYWphbWFyY2FAZ21haWwuY29tXCI+aG9ydXNncm91cGNhamFtYXJjYUBnbWFpbC5jb208L2E+PC9kaXY+XHJcbiAgICAgICAgICAgIDwvZGl2PlxyXG5cclxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwZC1zdWJzZWN0aW9uXCI+XHJcbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwZC1zdWJzZWN0aW9uLXRpdGxlXCI+PHNwYW4gY2xhc3NOYW1lPVwicGQtbnVtXCI+NDwvc3Bhbj4gQ29uc2lkZXJhY2lvbmVzIHBhcmEgbGEgc29saWNpdHVkIGRlIGRldm9sdWNpw7NuIGRlIGRpbmVybzwvZGl2PlxyXG4gICAgICAgICAgICAgIDx1bCBjbGFzc05hbWU9XCJwZC1saXN0XCI+XHJcbiAgICAgICAgICAgICAgICA8bGk+UHVlZGVzIHNvbGljaXRhciBsYSA8c3Ryb25nPmRldm9sdWNpw7NuIMOtbnRlZ3JhPC9zdHJvbmc+IGRlbCBkaW5lcm8uPC9saT5cclxuICAgICAgICAgICAgICAgIDxsaT5FbiBlbCBjb3JyZW8gZWxlY3Ryw7NuaWNvLCBkZWJlcyBpbmRpY2FyIHR1cyBkYXRvcyBwZXJzb25hbGVzLCBETkksIG1lZGlvIGRlIHBhZ28geSBjb21wcm9iYW50ZSBkZWwgbWlzbW8sIGFzw60gY29tbyBlbCB0YWxsZXIsIGN1cnNvLCBjYXBhY2l0YWNpw7NuIG8gZGlwbG9tYWRvIGFsIGN1YWwgdGUgaW5zY3JpYmlzdGUgeSBsYSBmZWNoYSBkZSBlc3RlLjwvbGk+XHJcbiAgICAgICAgICAgICAgPC91bD5cclxuICAgICAgICAgICAgPC9kaXY+XHJcblxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLXN1YnNlY3Rpb25cIj5cclxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLXN1YnNlY3Rpb24tdGl0bGVcIj48c3BhbiBjbGFzc05hbWU9XCJwZC1udW1cIj41PC9zcGFuPiBQYXNvcyBwYXJhIHNvbGljaXR1ZGVzIGRlIGRldm9sdWNpw7NuPC9kaXY+XHJcbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwZC1zdGVwc1wiPlxyXG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwZC1zdGVwXCI+XHJcbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicGQtc3RlcC1udW1cIj4xPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicGQtc3RlcC1ib2R5XCI+XHJcbiAgICAgICAgICAgICAgICAgICAgPGg0PkVudsOtYSB0dSBzb2xpY2l0dWQ8L2g0PlxyXG4gICAgICAgICAgICAgICAgICAgIDxwPkNvbXVuaWNhcnRlIG1lZGlhbnRlIGNvcnJlbyBlbGVjdHLDs25pY28gYSA8YSBocmVmPVwibWFpbHRvOmhvcnVzZ3JvdXBjYWphbWFyY2FAZ21haWwuY29tXCI+aG9ydXNncm91cGNhamFtYXJjYUBnbWFpbC5jb208L2E+IGFkanVudGFuZG8gdHVzIG1lZGlvcyBwcm9iYXRvcmlvcy48L3A+XHJcbiAgICAgICAgICAgICAgICAgICAgPHVsPjxsaT48c3Ryb25nPkFTVU5UTzo8L3N0cm9uZz4gREVWT0xVQ0nDk04gREUgRElORVJPPC9saT48bGk+PHN0cm9uZz5ERVNUSU5BVEFSSU86PC9zdHJvbmc+IEFib2cuIEx1eiBLYXJlbiBUYXZhcmEgQ2FtYWNobzwvbGk+PC91bD5cclxuICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicGQtc3RlcFwiPlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLXN0ZXAtbnVtXCI+MjwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLXN0ZXAtYm9keVwiPlxyXG4gICAgICAgICAgICAgICAgICAgIDxoND5Fc3BlcmEgbGEgcmVzcHVlc3RhPC9oND5cclxuICAgICAgICAgICAgICAgICAgICA8cD5FbiB1biBwbGF6byBkZSA8c3Ryb25nPjIgZMOtYXMgaMOhYmlsZXM8L3N0cm9uZz4gcmVjaWJpcsOhcyB1bmEgcmVzcHVlc3RhIHBvciBwYXJ0ZSBkZWwgZXF1aXBvIGRlIEFzaXN0ZW5jaWEgTGVnYWwuPC9wPlxyXG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwZC1zdGVwXCI+XHJcbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicGQtc3RlcC1udW1cIj4zPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicGQtc3RlcC1ib2R5XCI+XHJcbiAgICAgICAgICAgICAgICAgICAgPGg0PlJlY2liZSB0dSBkZXZvbHVjacOzbjwvaDQ+XHJcbiAgICAgICAgICAgICAgICAgICAgPHA+RGUgc2VyIHF1ZSBwcm9jZWRhIGxhIGRldm9sdWNpw7NuIGRlbCBkaW5lcm8sIG5vcyBwb25kcmVtb3MgZW4gY29udGFjdG8gY29udGlnbyBwYXJhIGNvbXVuaWNhcnRlIGVsIG1vZG8gZGUgZXN0YS48L3A+XHJcbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgIDwvZGl2PlxyXG5cclxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwZC1zdWJzZWN0aW9uXCI+XHJcbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwZC1zdWJzZWN0aW9uLXRpdGxlXCI+PHNwYW4gY2xhc3NOYW1lPVwicGQtbnVtXCI+Njwvc3Bhbj4gVGllbXBvIGRlIGRldm9sdWNpw7NuIGRlIGRpbmVybzwvZGl2PlxyXG4gICAgICAgICAgICAgIDxwPlNlIGVmZWN0dWFyw6EgZGVzcHXDqXMgZGUgaGFiZXJzZSBhcHJvYmFkbyBsYSBzb2xpY2l0dWQgZGUgZGV2b2x1Y2nDs24uIEVsIHRpZW1wbyBhcHJveGltYWRvIGVzIDxzdHJvbmc+MiAoZG9zKSBkw61hcyBow6FiaWxlczwvc3Ryb25nPiBwb3N0ZXJpb3JlcyBhIGxhIGFwcm9iYWNpw7NuLjwvcD5cclxuICAgICAgICAgICAgPC9kaXY+XHJcblxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLXN1YnNlY3Rpb25cIj5cclxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLXN1YnNlY3Rpb24tdGl0bGVcIj48c3BhbiBjbGFzc05hbWU9XCJwZC1udW1cIj43PC9zcGFuPiBSZXNndWFyZG8gZGUgbG9zIGNlcnRpZmljYWRvczwvZGl2PlxyXG4gICAgICAgICAgICAgIDx1bCBjbGFzc05hbWU9XCJwZC1saXN0XCI+XHJcbiAgICAgICAgICAgICAgICA8bGk+TG9zIGNlcnRpZmljYWRvcyBxdWUgbm8gc2UgcmVjb2phbiBwb3IgcGFydGUgZGVsIHBhcnRpY2lwYW50ZSBlbiBsYSBjZXJlbW9uaWEgZGUgZW50cmVnYSBxdWVkYXLDoW4gYmFqbyByZXNndWFyZG8gZGUgbGEgZW1wcmVzYSBIT1JVUyBHUk9VUCBTUkwuPC9saT5cclxuICAgICAgICAgICAgICAgIDxsaT5FbCB0aWVtcG8gZGUgcmVzZ3VhcmRvIGdhcmFudGl6YWRvIHBvciBwYXJ0ZSBsYSBlbXByZXNhIGVzIGRlIDxzdHJvbmc+MSBtZXM8L3N0cm9uZz4sIGx1ZWdvIGRlIGVzZSB0aWVtcG8gbGEgZW1wcmVzYSBubyBzZSByZXNwb25zYWJpbGl6YSBwb3IgZWwgZGV0ZXJpb3JvIG8gcMOpcmRpZGEgZGUgZXN0ZS48L2xpPlxyXG4gICAgICAgICAgICAgICAgPGxpPlBhcmEgbGEgZW50cmVnYSBkZWwgY2VydGlmaWNhZG8gcGFzYWRhIGxhIGZlY2hhIGRlIGNlcmVtb25pYSwgZWwgcGFydGljaXBhbnRlIGRlYmVyw6EgcG9uZXJzZSBlbiBjb250YWN0byBjb24gbGEgZW1wcmVzYSBhIHRyYXbDqXMgZGVsIG7Dum1lcm8gZGUgV2hhdHNBcHAgPHN0cm9uZz45NDIgOTU2IDIwNzwvc3Ryb25nPiAoY29vcmRpbmFkb3JhIGluc3RpdHVjaW9uYWwpLjwvbGk+XHJcbiAgICAgICAgICAgICAgPC91bD5cclxuICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICA8L3NlY3Rpb24+XHJcblxyXG4gICAgICAgICAgPHNlY3Rpb24gY2xhc3NOYW1lPVwicGQtc2VjdGlvblwiIGlkPVwiZXF1aXBvcy1wZFwiPlxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLXNlY3Rpb24taGVhZGVyXCI+XHJcbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwZC1zZWN0aW9uLWljb24gY29yYWxcIj48aSBjbGFzc05hbWU9XCJmYXMgZmEtc2hvcHBpbmctY2FydFwiIC8+PC9kaXY+XHJcbiAgICAgICAgICAgICAgPGgyPkIuIENPTVBSQSBZIEdBUkFOVMONQSBERSBFUVVJUE9TPC9oMj5cclxuICAgICAgICAgICAgPC9kaXY+XHJcblxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLXN1YnNlY3Rpb25cIj5cclxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLXN1YnNlY3Rpb24tdGl0bGVcIj48c3BhbiBjbGFzc05hbWU9XCJwZC1udW1cIj4xPC9zcGFuPiBUw6lybWlub3MgZGUgQ29tcHJhLCBQcm9oaWJpY2lvbmVzIHkgTGltaXRhY2lvbmVzPC9kaXY+XHJcbiAgICAgICAgICAgICAgPHVsIGNsYXNzTmFtZT1cInBkLWxpc3RcIj5cclxuICAgICAgICAgICAgICAgIDxsaT5Ub2RhIG9yZGVuIGRlIGNvbXByYSByZWFsaXphZGEgYSB0cmF2w6lzIGRlIG51ZXN0cm8gc2l0aW8gd2ViIHNlIHJpZ2UgcG9yIGVzdG9zIHTDqXJtaW5vcy48L2xpPlxyXG4gICAgICAgICAgICAgICAgPGxpPlBhcmEgcmVhbGl6YXIgdW5hIG9yZGVuIGRlIGNvbXByYSB0aWVuZSBvYmxpZ2F0b3JpYW1lbnRlIHF1ZSByZWdpc3RyYXIgbyBjcmVhciBzdSBjdWVudGEgZW4gbnVlc3RybyBzaXRpbyB3ZWIgeSBzZXIgPHN0cm9uZz5tYXlvciBkZSAxOCBhw7FvcyBkZSBlZGFkPC9zdHJvbmc+LjwvbGk+XHJcbiAgICAgICAgICAgICAgICA8bGk+RWwgcHJlY2lvIGRlIGxvcyBwZWRpZG9zIHBvZHLDoSBjYW1iaWFyIGRlYmlkbyBhIGN1ZXN0aW9uZXMgZnVlcmEgZGUgbnVlc3RybyBjb250cm9sIHRhbGVzIGNvbW8gYXN1bnRvcyBub3JtYXRpdm9zLCBpbXB1ZXN0b3MsIGNhcmdvcyBkZSBhZHVhbmEgbyBjYW1iaW9zIGVuIGNvc3RvIGRlIGVudsOtb3MuPC9saT5cclxuICAgICAgICAgICAgICAgIDxsaT5MYSBlbXByZXNhIEhvcnVzIEdyb3VwLUNhamFtYXJjYSBzZSByZXNlcnZhIGRlcmVjaG8geSBwdWVkZSBjYW5jZWxhciBsYSBjdWVudGEgZGUgYWNjZXNvIGRlIGN1YWxxdWllciB1c3VhcmlvIHNpIGRldGVjdGFtb3MgYWxnw7puIGFjdG8gZGUgZnJhdWRlIG8gbWFsYSBmZS48L2xpPlxyXG4gICAgICAgICAgICAgIDwvdWw+XHJcbiAgICAgICAgICAgIDwvZGl2PlxyXG5cclxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwZC1zdWJzZWN0aW9uXCI+XHJcbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwZC1zdWJzZWN0aW9uLXRpdGxlXCI+PHNwYW4gY2xhc3NOYW1lPVwicGQtbnVtXCI+Mjwvc3Bhbj4gUGFzb3MgcGFyYSBsYSByZWFsaXphY2nDs24gZGUgY29tcHJhPC9kaXY+XHJcbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwZC1zdGVwcy1jb21wcmFcIj5cclxuICAgICAgICAgICAgICAgIHtbJ1JlZ8Otc3RyZXNlIGVuIGVsIHNpdGlvIHdlYiAobWF5b3IgZGUgMTggYcOxb3MpJywgJ1NlbGVjY2lvbmUgZWwgcHJvZHVjdG8gbyBzZXJ2aWNpbycsICdBZ3JlZ3VlIGFsIGNhcnJpdG8gZGUgY29tcHJhcycsICdMbGVuZSBsb3MgZGF0b3MgbmVjZXNhcmlvcycsICdSZXZpc2UgcXVlIHRvZG9zIGxvcyBkYXRvcyBlc3TDqW4gY29ycmVjdG9zJywgJ1NpIHRpZW5lIGFsZ3VuYSBkdWRhLCBjb211bmljYXJzZSBjb24gbm9zb3Ryb3MnLCAnUmVhbGl6YXIgZWwgcGFnbyBjb3JyZXNwb25kaWVudGUnLCAnVmVyaWZpY2FyIHN1IGNvcnJlbyBlbGVjdHLDs25pY28nLCAnRXNwZXJhciBsb3MgcGxhem9zIGVzdGFibGVjaWRvcycsICdTaSBubyBsbGVnYSBzdSBwcm9kdWN0bywgY29tdW5pY2Fyc2UgY29uIG5vc290cm9zJ10ubWFwKChzLCBpKSA9PiAoXHJcbiAgICAgICAgICAgICAgICAgIDxkaXYga2V5PXtpfSBjbGFzc05hbWU9XCJwZC1zdGVwLWNvbXByYVwiPjxzcGFuPntpICsgMX08L3NwYW4+e3N9PC9kaXY+XHJcbiAgICAgICAgICAgICAgICApKX1cclxuICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgPC9kaXY+XHJcblxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLXN1YnNlY3Rpb25cIj5cclxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLXN1YnNlY3Rpb24tdGl0bGVcIj48c3BhbiBjbGFzc05hbWU9XCJwZC1udW1cIj4zPC9zcGFuPiBQcmVjaW9zLCBpbXB1ZXN0b3MgeSBnYXN0b3MgZGUgZW52w61vPC9kaXY+XHJcbiAgICAgICAgICAgICAgPHVsIGNsYXNzTmFtZT1cInBkLWxpc3RcIj5cclxuICAgICAgICAgICAgICAgIDxsaT5Mb3MgcHJlY2lvcyBpbmNsdXllbiBlbCA8c3Ryb25nPkltcHVlc3RvIEdlbmVyYWwgYSBsYXMgVmVudGFzIChJLkcuVi4pPC9zdHJvbmc+PC9saT5cclxuICAgICAgICAgICAgICAgIDxsaT5FbCBjb3N0byBkZSBsb3MgZ2FzdG9zIGRlIGVudsOtbyBzZXLDoSBkZSBhY3VlcmRvIGFsIHRyYW5zcG9ydGlzdGEgZG9uZGUgc2UgZW52w61lIGxhIG1lcmNhZGVyw61hLjwvbGk+XHJcbiAgICAgICAgICAgICAgICA8bGk+RWwgdXN1YXJpbyBlcyByZXNwb25zYWJsZSBkZSBwcm9wb3JjaW9uYXIgdW5hIGRpcmVjY2nDs24gZGUgZW50cmVnYSBwcmVjaXNhIHkgY29tcGxldGEuPC9saT5cclxuICAgICAgICAgICAgICAgIDxsaT5FbiBuaW5nw7puIGNhc28gc2UgcG9kcsOhIHJlYWxpemFyIGVudsOtb3MgZGUgcHJvZHVjdG9zIHNpbiBxdWUgc2UgcmVhbGljZSBsYSB2ZXJpZmljYWNpw7NuIGRlbCBwYWdvLjwvbGk+XHJcbiAgICAgICAgICAgICAgPC91bD5cclxuICAgICAgICAgICAgPC9kaXY+XHJcblxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLXN1YnNlY3Rpb25cIj5cclxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLXN1YnNlY3Rpb24tdGl0bGVcIj48c3BhbiBjbGFzc05hbWU9XCJwZC1udW1cIj40PC9zcGFuPiBDb25kaWNpb25lcyBkZSBwYWdvPC9kaXY+XHJcbiAgICAgICAgICAgICAgPHA+RWwgcGFnbyBzZSByZWFsaXphcsOhIGVuIGVsIG1vbWVudG8gZGUgbGEgY29tcHJhLiBBY2VwdGFtb3MgbGFzIHNpZ3VpZW50ZXMgZm9ybWFzIGRlIHBhZ286PC9wPlxyXG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicGQtbWV0b2Rvc1wiPlxyXG4gICAgICAgICAgICAgICAge1t7IGljb246ICdmYS11bml2ZXJzaXR5JywgbGFiZWw6ICdEZXDDs3NpdG9zJyB9LCB7IGljb246ICdmYS1leGNoYW5nZS1hbHQnLCBsYWJlbDogJ1RyYW5zZmVyZW5jaWFzIGJhbmNhcmlhcycgfSwgeyBpY29uOiAnZmEtbW9iaWxlLWFsdCcsIGxhYmVsOiAnWWFwZScgfSwgeyBpY29uOiAnZmEtbW9iaWxlLWFsdCcsIGxhYmVsOiAnUGxpbicgfV0ubWFwKG0gPT4gKFxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGtleT17bS5sYWJlbH0gY2xhc3NOYW1lPVwicGQtbWV0b2RvXCI+PGkgY2xhc3NOYW1lPXtgZmFzICR7bS5pY29ufWB9IC8+e20ubGFiZWx9PC9kaXY+XHJcbiAgICAgICAgICAgICAgICApKX1cclxuICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgPC9kaXY+XHJcblxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLXN1YnNlY3Rpb25cIj5cclxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLXN1YnNlY3Rpb24tdGl0bGVcIj48c3BhbiBjbGFzc05hbWU9XCJwZC1udW1cIj41PC9zcGFuPiBQbGF6byBkZSBlbnbDrW8gZGUgcHJvZHVjdG9zPC9kaXY+XHJcbiAgICAgICAgICAgICAgPHVsIGNsYXNzTmFtZT1cInBkLWxpc3RcIj5cclxuICAgICAgICAgICAgICAgIDxsaT5QYXJhIGVudsOtb3MgZGVudHJvIGRlIGxhIGNpdWRhZCBvIHJlZ2nDs24gZGUgQ2FqYW1hcmNhOiA8c3Ryb25nPjEgYSA1IGTDrWFzIGjDoWJpbGVzPC9zdHJvbmc+IHByZXZpYSBjb29yZGluYWNpw7NuLjwvbGk+XHJcbiAgICAgICAgICAgICAgICA8bGk+UGFyYSBlbnbDrW9zIGZ1ZXJhIGRlIGxhIHJlZ2nDs24gZGUgQ2FqYW1hcmNhOiA8c3Ryb25nPjUgYSA3IGTDrWFzIGjDoWJpbGVzPC9zdHJvbmc+IHByZXZpYSBjb29yZGluYWNpw7NuLjwvbGk+XHJcbiAgICAgICAgICAgICAgPC91bD5cclxuICAgICAgICAgICAgPC9kaXY+XHJcblxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLXN1YnNlY3Rpb25cIj5cclxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLXN1YnNlY3Rpb24tdGl0bGVcIj48c3BhbiBjbGFzc05hbWU9XCJwZC1udW1cIj42PC9zcGFuPiBEZXZvbHVjaW9uZXMgbyByZXBvc2ljaW9uZXM8L2Rpdj5cclxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLWFsZXJ0IHBkLWFsZXJ0LWluZm9cIj48aSBjbGFzc05hbWU9XCJmYXMgZmEtaW5mby1jaXJjbGVcIiAvPjxwPjxzdHJvbmc+Q2FtYmlvIG8gc3VzdGl0dWNpw7NuIGRlbCBwcm9kdWN0bzo8L3N0cm9uZz4gUGFyYSBxdWUgc2UgY29uc2lkZXJlIHVuIGNhbWJpbyBvIHN1c3RpdHVjacOzbiBwb3IgZWwgbWlzbW8gcHJvZHVjdG8sIHByb2NlZGVyw6Egc2llbXByZSB5IGN1YW5kbyBleGlzdGEgYWxnw7puIGRlZmVjdG8gZGUgZmFicmljYWNpw7NuIGRldGVybWluYWRvIHBvciBudWVzdHJvIGVxdWlwbyBkZSBzb3BvcnRlIEhPUlVTIEdST1VQIFNSTC48L3A+PC9kaXY+XHJcbiAgICAgICAgICAgICAgPHVsIGNsYXNzTmFtZT1cInBkLWxpc3RcIj5cclxuICAgICAgICAgICAgICAgIDxsaT5FbCB1c3VhcmlvIHRlbmRyw6EgcXVlIGVudmlhciBlbCBwcm9kdWN0byBzaW4gZ29scGVzIG8gcmFzZ3XDsW9zIGVuIHN1IGVtcGFxdWUgb3JpZ2luYWwgaW5jbHV5ZW5kbyB0b2RvcyBsb3MgYWNjZXNvcmlvcywgbWFudWFsZXMgdSBvdHJvcyBxdWUgaGF5YW4gc2lkbyBpbmNsdWlkb3MgZW4gZWwgbW9tZW50byBkZSBsYSBjb21wcmEuPC9saT5cclxuICAgICAgICAgICAgICAgIDxsaT5FbCBwcm9kdWN0byBzZXLDoSBjYW1iaWFkbyBkZXNwdcOpcyBkZSBsYSB2ZXJpZmljYWNpw7NuIGRlIGxhcyBmYWxsYXMgZGUgZmFicmljYWNpw7NuLCBlbiB1biBwbGF6byBtw6F4aW1vIGRlIDxzdHJvbmc+MjUgZMOtYXMgaMOhYmlsZXM8L3N0cm9uZz4uPC9saT5cclxuICAgICAgICAgICAgICAgIDxsaT5FbiBlbCBjYXNvIGRlIG5vIGNvbnRhciBjb24gc3RvY2sgZGlzcG9uaWJsZSwgbGEgZW1wcmVzYSBIT1JVUyBHUk9VUCBTUkwgZW1pdGlyw6EgdW5hIG5vdGEgZGUgY3LDqWRpdG8gcG9yIGVsIHByZWNpbyBkZWwgcHJvZHVjdG8gY29tcHJhZG8uPC9saT5cclxuICAgICAgICAgICAgICAgIDxsaT5ObyBzZSBhY2VwdGFyw6FuIGNhbWJpb3MgbmkgZGV2b2x1Y2lvbmVzIHBvciBpbmNvbXBhdGliaWxpZGFkIGNvbiBwcm9kdWN0b3MgZGUgb3Ryb3MgZmFicmljYW50ZXMuPC9saT5cclxuICAgICAgICAgICAgICAgIDxsaT5ObyBzZSBhY2VwdGFyw6FuIGRldm9sdWNpb25lcyBkZSBwcm9kdWN0b3MgcGVyc29uYWxpemFkb3MgbyBwcm9kdWN0b3MgcXVlIGhheWFuIHNpZG8gdXNhZG9zLjwvbGk+XHJcbiAgICAgICAgICAgICAgPC91bD5cclxuICAgICAgICAgICAgPC9kaXY+XHJcblxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLXN1YnNlY3Rpb25cIj5cclxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLXN1YnNlY3Rpb24tdGl0bGVcIj48c3BhbiBjbGFzc05hbWU9XCJwZC1udW1cIj43PC9zcGFuPiBHYXJhbnTDrWFzIHNvYnJlIGxvcyBwcm9kdWN0b3M8L2Rpdj5cclxuICAgICAgICAgICAgICA8dWwgY2xhc3NOYW1lPVwicGQtbGlzdFwiPlxyXG4gICAgICAgICAgICAgICAgPGxpPkxhIGdhcmFudMOtYSBkZSBsb3MgcHJvZHVjdG9zIGVzIMO6bmljYSB5IGV4Y2x1c2l2YW1lbnRlIGFsIGNsaWVudGUgbyB1c3VhcmlvIHF1ZSByZWFsaXrDsyBsYSBjb21wcmEuPC9saT5cclxuICAgICAgICAgICAgICAgIDxsaT5Ib3JhcmlvIGRlIGF0ZW5jacOzbjogPHN0cm9uZz5sdW5lcyBhIHZpZXJuZXMgZGUgOTowMCBhbSBhIDY6MDAgcG08L3N0cm9uZz4geSA8c3Ryb25nPnPDoWJhZG9zIGRlIDk6MDAgYW0gYSAxOjAwIHBtPC9zdHJvbmc+LjwvbGk+XHJcbiAgICAgICAgICAgICAgICA8bGk+TGEgZ2FyYW50w61hIG5vIGN1YnJlIGFjY2Vzb3Jpb3MgZGUgbG9zIGVxdWlwb3MgdGFsZXMgY29tbyBjYWJsZXMsIGZ1ZW50ZXMgZGUgcG9kZXIsIHB1ZXJ0b3MgZGUgZW50cmFkYSB5IHNhbGlkYSwgY29uZWN0b3JlcywgbmkgY29uc3VtaWJsZXMgcXVlIHNlIGRlc2dhc3RlbiBwb3IgZWwgdXNvLjwvbGk+XHJcbiAgICAgICAgICAgICAgICA8bGk+TGEgZ2FyYW50w61hIG5vIGluY2x1eWUgbmluZ8O6biB0aXBvIGRlIGluc3RhbGFjacOzbiBkZSBzb2Z0d2FyZSBvIGZpcm13YXJlLjwvbGk+XHJcbiAgICAgICAgICAgICAgICA8bGk+TGEgZ2FyYW50w61hIG5vIGN1YnJlIGRhw7FvcyBwcm9kdWNpZG9zIHBvciB0cmFuc3BvcnRlIGRlIHRlcmNlcm9zLjwvbGk+XHJcbiAgICAgICAgICAgICAgICA8bGk+VG9kb3MgbG9zIGVxdWlwb3MgZW4gZ2FyYW50w61hIHF1ZSBubyBzb24gcmVjbGFtYWRvcyBoYXN0YSBlbiB1biBtw6F4aW1vIGRlIDxzdHJvbmc+MiBtZXNlczwvc3Ryb25nPiBsdWVnbyBkZSBzdSBlbnRyZWdhLCBzZXLDoW4gZGVjbGFyYWRvcyBlbiBhYmFuZG9uby48L2xpPlxyXG4gICAgICAgICAgICAgIDwvdWw+XHJcbiAgICAgICAgICAgIDwvZGl2PlxyXG5cclxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwZC1zdWJzZWN0aW9uXCI+XHJcbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwZC1zdWJzZWN0aW9uLXRpdGxlXCI+PHNwYW4gY2xhc3NOYW1lPVwicGQtbnVtXCI+ODwvc3Bhbj4gRXh0ZXJuYWxpZGFkZXM8L2Rpdj5cclxuICAgICAgICAgICAgICA8dWwgY2xhc3NOYW1lPVwicGQtbGlzdFwiPlxyXG4gICAgICAgICAgICAgICAgPGxpPkVsIGN1bXBsaW1pZW50byBkZSBsYXMgb2JsaWdhY2lvbmVzIHBvciBwYXJ0ZSBkZSBIT1JVUyBHUk9VUCBTUkwgcHVlZGUgc2VyIHN1c3BlbmRpZGEgZW4gY2FzbyBkZSBhbGfDum4gZXZlbnRvIGZvcnR1aXRvIG8gZGUgZnVlcnphIG1heW9yLjwvbGk+XHJcbiAgICAgICAgICAgICAgICA8bGk+VGFsZXMgZXh0ZXJuYWxpZGFkZXMgcHVlZGVuIHNlcjogZGlzdHVyYmlvcyBzb2NpYWxlcywgaHVlbGdhcyBkZSBjdWFscXVpZXIgbmF0dXJhbGV6YSwgZmVyaWFkb3Mgbm8gbGFib3JhYmxlcyBmb3J0dWl0b3MsIGVudHJlIG90cm9zLjwvbGk+XHJcbiAgICAgICAgICAgICAgICA8bGk+TGEgZW1wcmVzYSBIT1JVUyBHUk9VUCBTUkwgaW5mb3JtYXLDoSBhbCBjbGllbnRlIGRlbnRybyBkZSA8c3Ryb25nPjEgYSAzIGTDrWFzPC9zdHJvbmc+IGFudGVyaW9yZXMgbyBwb3N0ZXJpb3JlcyBhIHN1IG9jdXJyZW5jaWEuPC9saT5cclxuICAgICAgICAgICAgICAgIDxsaT5TaSBkaWNoYSBzdXNwZW5zacOzbiBzZSBwcm9sb25nYSBtw6FzIGFsbMOhIGRlIDxzdHJvbmc+MjAgZMOtYXM8L3N0cm9uZz4sIGVsIGNsaWVudGUgdGVuZHLDoSBsYSBwb3NpYmlsaWRhZCBkZSByZXNjaW5kaXIgZWwgcGVkaWRvIGVuIGN1cnNvLjwvbGk+XHJcbiAgICAgICAgICAgICAgPC91bD5cclxuICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICA8L3NlY3Rpb24+XHJcblxyXG4gICAgICAgICAgPHNlY3Rpb24gY2xhc3NOYW1lPVwicGQtc2VjdGlvblwiIGlkPVwibW9kaWYtcGRcIj5cclxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwZC1zZWN0aW9uLWhlYWRlclwiPlxyXG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicGQtc2VjdGlvbi1pY29uIGdyZWVuXCI+PGkgY2xhc3NOYW1lPVwiZmFzIGZhLWVkaXRcIiAvPjwvZGl2PlxyXG4gICAgICAgICAgICAgIDxoMj5Nb2RpZmljYWNpw7NuIGVuIGxvcyB0w6lybWlub3MgeSBjb25kaWNpb25lcyBkZSB1c288L2gyPlxyXG4gICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgPHA+SG9ydXMgR3JvdXAtQ2FqYW1hcmNhIFNSTCBwb2Ryw6EgbW9kaWZpY2FyLCBhZGljaW9uYXIsIGVsaW1pbmFyIHkvbyBhY3R1YWxpemFyIGxhcyBwb2zDrXRpY2FzIGRlIGRldm9sdWNpw7NuIGVuIGN1YWxxdWllciBtb21lbnRvLCBwb3IgY3VhbHF1aWVyIHJhesOzbiB5L28gc2luIHByZXZpbyBhdmlzbywgbG9zIGN1YWxlcyBzZWd1aXLDoW4gc2llbmRvIGRlIG9ibGlnYXRvcmllZGFkIGVsIGN1bXBsaW1pZW50byBkZSBlc3RhcyBkZXNkZSBlbCBtb21lbnRvIGRlIHN1IHB1YmxpY2FjacOzbi48L3A+XHJcbiAgICAgICAgICA8L3NlY3Rpb24+XHJcblxyXG4gICAgICAgICAgPHNlY3Rpb24gY2xhc3NOYW1lPVwicGQtc2VjdGlvblwiIGlkPVwiYXRlbmNpb24tcGRcIj5cclxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwZC1zZWN0aW9uLWhlYWRlclwiPlxyXG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicGQtc2VjdGlvbi1pY29uIGNvcmFsXCI+PGkgY2xhc3NOYW1lPVwiZmFzIGZhLWhlYWRzZXRcIiAvPjwvZGl2PlxyXG4gICAgICAgICAgICAgIDxoMj5BdGVuY2nDs24gYWwgdXN1YXJpbzwvaDI+XHJcbiAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICA8cD5QYXJhIGN1YWxxdWllciBhY2xhcmFjacOzbiBvIGR1ZGEgc29icmUgbG9zIFTDqXJtaW5vcyB5IENvbmRpY2lvbmVzIGNvbXVuaWNhcnNlIGFsIGNvcnJlbyBlbGVjdHLDs25pY286PC9wPlxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLWNvbnRhY3QtYm94XCI+PGkgY2xhc3NOYW1lPVwiZmFzIGZhLWVudmVsb3BlXCIgLz48YSBocmVmPVwibWFpbHRvOmhvcnVzZ3JvdXBjYWphbWFyY2FAZ21haWwuY29tXCI+aG9ydXNncm91cGNhamFtYXJjYUBnbWFpbC5jb208L2E+PC9kaXY+XHJcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicGQtZmlybWFcIj5cclxuICAgICAgICAgICAgICA8aW1nIHNyYz17bG9nb0hvcnVzfSBhbHQ9XCJIb3J1cyBHcm91cFwiIC8+XHJcbiAgICAgICAgICAgICAgPGRpdj48cD48c3Ryb25nPkFzZXNvcsOtYSBMZWdhbDwvc3Ryb25nPjwvcD48cD5Ib3J1cyBHcm91cC1DYWphbWFyY2EgU1JMPC9wPjwvZGl2PlxyXG4gICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgIDwvc2VjdGlvbj5cclxuXHJcbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBkLWN0YVwiPlxyXG4gICAgICAgICAgICA8aDM+wr9UaWVuZXMgYWxndW5hIGNvbnN1bHRhPzwvaDM+XHJcbiAgICAgICAgICAgIDxwPk51ZXN0cm8gZXF1aXBvIGxlZ2FsIGVzdMOhIGRpc3BvbmlibGUgcGFyYSByZXNvbHZlciBjdWFscXVpZXIgZHVkYSBzb2JyZSBudWVzdHJhcyBwb2zDrXRpY2FzLjwvcD5cclxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwZC1jdGEtYnRuc1wiPlxyXG4gICAgICAgICAgICAgIDxhIGhyZWY9XCJtYWlsdG86aG9ydXNncm91cGNhamFtYXJjYUBnbWFpbC5jb21cIiBjbGFzc05hbWU9XCJwZC1idG4td2hpdGVcIj48aSBjbGFzc05hbWU9XCJmYXMgZmEtZW52ZWxvcGVcIiAvPiBDb250YWN0YXIgQXNlc29yw61hIExlZ2FsPC9hPlxyXG4gICAgICAgICAgICAgIDxMaW5rIHRvPVwiL3ByZWd1bnRhcy1mcmVjdWVudGVzXCIgY2xhc3NOYW1lPVwicGQtYnRuLW91dGxpbmUtd2hpdGVcIj48aSBjbGFzc05hbWU9XCJmYXMgZmEtcXVlc3Rpb24tY2lyY2xlXCIgLz4gUHJlZ3VudGFzIEZyZWN1ZW50ZXM8L0xpbms+XHJcbiAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgPC9tYWluPlxyXG4gICAgICA8L2Rpdj5cclxuICAgIDwvPlxyXG4gIClcclxufVxyXG4iXX0=

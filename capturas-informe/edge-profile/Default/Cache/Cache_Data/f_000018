@@ -1,0 +1,433 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/pages/educacion/Asesoramiento.tsx");const useEffect = __vite__cjsImport0_react["useEffect"];const _jsxDEV = __vite__cjsImport4_react_jsxDevRuntime["jsxDEV"]; const _Fragment = __vite__cjsImport4_react_jsxDevRuntime["Fragment"];import __vite__cjsImport0_react from "/node_modules/.vite/deps/react.js?v=974efcab";
+import { Link } from "/node_modules/.vite/deps/react-router-dom.js?v=ed85db52";
+import useFadeUp from "/src/hooks/useFadeUp.ts";
+import imgAsesoria from "/src/assets/images/asesoramiento/asesoramiento2.jpg?import";
+var _jsxFileName = "C:/Users/PCT40T/Documents/Proyecto-Horus-/frontend/src/pages/educacion/Asesoramiento.tsx";
+import __vite__cjsImport4_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=974efcab";
+var _s = $RefreshSig$();
+const typeStyle = (color, background) => ({
+	["--tc"]: color,
+	["--tcb"]: background
+});
+export default function Asesoramiento() {
+	_s();
+	useFadeUp();
+	useEffect(() => {
+		document.title = "Asesoramiento Profesional — Horus Group SRL";
+	}, []);
+	return /* @__PURE__ */ _jsxDEV(_Fragment, { children: [
+		/* @__PURE__ */ _jsxDEV("section", {
+			className: "ed-hero ed-hero-asesoria",
+			children: /* @__PURE__ */ _jsxDEV("div", {
+				className: "container ed-hero-inner",
+				children: [/* @__PURE__ */ _jsxDEV("div", {
+					className: "ed-hero-text fade-up",
+					children: [
+						/* @__PURE__ */ _jsxDEV("div", {
+							className: "ed-hero-tag",
+							children: [/* @__PURE__ */ _jsxDEV("i", { className: "fas fa-user-tie" }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 22,
+								columnNumber: 42
+							}, this), " Educación"]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 22,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("h1", { children: [
+							"Te guío para",
+							/* @__PURE__ */ _jsxDEV("br", {}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 23,
+								columnNumber: 29
+							}, this),
+							"que llegues",
+							/* @__PURE__ */ _jsxDEV("br", {}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 23,
+								columnNumber: 46
+							}, this),
+							/* @__PURE__ */ _jsxDEV("span", { children: "más lejos" }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 23,
+								columnNumber: 52
+							}, this)
+						] }, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 23,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("p", { children: "Soy el asesoramiento profesional. No te digo qué hacer, te ayudo a encontrar el mejor camino para tu proyecto, empresa o carrera." }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 24,
+							columnNumber: 13
+						}, this),
+						/* @__PURE__ */ _jsxDEV("div", {
+							className: "ed-hero-btns",
+							children: [/* @__PURE__ */ _jsxDEV(Link, {
+								to: "/contactos",
+								className: "btn-coral",
+								children: [/* @__PURE__ */ _jsxDEV("i", { className: "fas fa-calendar-check" }, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 26,
+									columnNumber: 59
+								}, this), " Agendar consulta gratis"]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 26,
+								columnNumber: 15
+							}, this), /* @__PURE__ */ _jsxDEV("a", {
+								href: "#ed-detail",
+								className: "ed-ghost",
+								children: [/* @__PURE__ */ _jsxDEV("i", { className: "fas fa-arrow-down" }, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 27,
+									columnNumber: 57
+								}, this), " Ver tipos"]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 27,
+								columnNumber: 15
+							}, this)]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 25,
+							columnNumber: 13
+						}, this)
+					]
+				}, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 21,
+					columnNumber: 11
+				}, this), /* @__PURE__ */ _jsxDEV("div", {
+					className: "ed-hero-visual fade-up",
+					children: [/* @__PURE__ */ _jsxDEV("div", {
+						className: "ed-hero-img",
+						children: /* @__PURE__ */ _jsxDEV("img", {
+							src: imgAsesoria,
+							alt: "Asesoramiento Profesional"
+						}, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 32,
+							columnNumber: 15
+						}, this)
+					}, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 31,
+						columnNumber: 13
+					}, this), /* @__PURE__ */ _jsxDEV("div", {
+						className: "ed-hero-card",
+						children: [
+							/* @__PURE__ */ _jsxDEV("i", { className: "fas fa-quote-left" }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 35,
+								columnNumber: 15
+							}, this),
+							/* @__PURE__ */ _jsxDEV("p", { children: "\"El asesoramiento de Horus Group transformó la manera en que gestionamos nuestros programas.\"" }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 36,
+								columnNumber: 15
+							}, this),
+							/* @__PURE__ */ _jsxDEV("span", { children: "— Directivo, Colegio de Enfermeros" }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 37,
+								columnNumber: 15
+							}, this)
+						]
+					}, void 0, true, {
+						fileName: _jsxFileName,
+						lineNumber: 34,
+						columnNumber: 13
+					}, this)]
+				}, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 30,
+					columnNumber: 11
+				}, this)]
+			}, void 0, true, {
+				fileName: _jsxFileName,
+				lineNumber: 20,
+				columnNumber: 9
+			}, this)
+		}, void 0, false, {
+			fileName: _jsxFileName,
+			lineNumber: 19,
+			columnNumber: 7
+		}, this),
+		/* @__PURE__ */ _jsxDEV("section", {
+			className: "ed-types",
+			id: "ed-detail",
+			children: /* @__PURE__ */ _jsxDEV("div", {
+				className: "container",
+				children: [/* @__PURE__ */ _jsxDEV("div", {
+					className: "ed-section-head fade-up",
+					children: [/* @__PURE__ */ _jsxDEV("span", {
+						className: "ed-eyebrow",
+						children: "Tipos de asesoramiento"
+					}, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 46,
+						columnNumber: 13
+					}, this), /* @__PURE__ */ _jsxDEV("h2", { children: [
+						"¿En qué área",
+						/* @__PURE__ */ _jsxDEV("br", {}, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 47,
+							columnNumber: 29
+						}, this),
+						"puedo ayudarte?"
+					] }, void 0, true, {
+						fileName: _jsxFileName,
+						lineNumber: 47,
+						columnNumber: 13
+					}, this)]
+				}, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 45,
+					columnNumber: 11
+				}, this), /* @__PURE__ */ _jsxDEV("div", {
+					className: "ed-types-grid",
+					children: [
+						{
+							color: "#4F46E5",
+							bg: "#EEF2FF",
+							icon: "fa-graduation-cap",
+							title: "Asesoramiento Educativo",
+							desc: "Tesis, trabajos de grado, diseño curricular y evaluación de programas académicos con metodología rigurosa.",
+							items: [
+								"Metodología de investigación",
+								"Estructura y redacción",
+								"Acompañamiento continuo"
+							]
+						},
+						{
+							color: "#FF6B47",
+							bg: "#FFF1EE",
+							icon: "fa-briefcase",
+							title: "Asesoramiento Empresarial",
+							desc: "Estrategia, gestión financiera, liderazgo y optimización de procesos para que tu organización crezca.",
+							items: [
+								"Plan estratégico",
+								"Gestión de equipos",
+								"Resultados medibles"
+							]
+						},
+						{
+							color: "#059669",
+							bg: "#ECFDF5",
+							icon: "fa-balance-scale",
+							title: "Asesoramiento Legal",
+							desc: "Orientación jurídica especializada para personas, empresas e instituciones que necesitan seguridad legal.",
+							items: [
+								"Asesoría especializada",
+								"Documentación legal",
+								"Respaldo profesional"
+							]
+						}
+					].map((t) => /* @__PURE__ */ _jsxDEV("div", {
+						className: "ed-type-card fade-up",
+						style: typeStyle(t.color, t.bg),
+						children: [
+							/* @__PURE__ */ _jsxDEV("div", {
+								className: "ed-type-icon",
+								children: /* @__PURE__ */ _jsxDEV("i", { className: `fas ${t.icon}` }, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 56,
+									columnNumber: 47
+								}, this)
+							}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 56,
+								columnNumber: 17
+							}, this),
+							/* @__PURE__ */ _jsxDEV("h3", { children: t.title }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 57,
+								columnNumber: 17
+							}, this),
+							/* @__PURE__ */ _jsxDEV("p", { children: t.desc }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 58,
+								columnNumber: 17
+							}, this),
+							/* @__PURE__ */ _jsxDEV("ul", {
+								className: "ed-type-list",
+								children: t.items.map((item) => /* @__PURE__ */ _jsxDEV("li", { children: [/* @__PURE__ */ _jsxDEV("i", { className: "fas fa-check" }, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 60,
+									columnNumber: 55
+								}, this), item] }, item, true, {
+									fileName: _jsxFileName,
+									lineNumber: 60,
+									columnNumber: 40
+								}, this))
+							}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 59,
+								columnNumber: 17
+							}, this)
+						]
+					}, t.title, true, {
+						fileName: _jsxFileName,
+						lineNumber: 55,
+						columnNumber: 15
+					}, this))
+				}, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 49,
+					columnNumber: 11
+				}, this)]
+			}, void 0, true, {
+				fileName: _jsxFileName,
+				lineNumber: 44,
+				columnNumber: 9
+			}, this)
+		}, void 0, false, {
+			fileName: _jsxFileName,
+			lineNumber: 43,
+			columnNumber: 7
+		}, this),
+		/* @__PURE__ */ _jsxDEV("section", {
+			className: "ed-benefits",
+			children: /* @__PURE__ */ _jsxDEV("div", {
+				className: "container",
+				children: [/* @__PURE__ */ _jsxDEV("div", {
+					className: "ed-section-head fade-up",
+					children: [/* @__PURE__ */ _jsxDEV("span", {
+						className: "ed-eyebrow",
+						children: "Por qué elegirnos"
+					}, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 71,
+						columnNumber: 13
+					}, this), /* @__PURE__ */ _jsxDEV("h2", { children: [
+						"Lo que nos hace",
+						/* @__PURE__ */ _jsxDEV("br", {}, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 72,
+							columnNumber: 32
+						}, this),
+						"diferentes"
+					] }, void 0, true, {
+						fileName: _jsxFileName,
+						lineNumber: 72,
+						columnNumber: 13
+					}, this)]
+				}, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 70,
+					columnNumber: 11
+				}, this), /* @__PURE__ */ _jsxDEV("div", {
+					className: "ed-benefits-grid",
+					children: [
+						{
+							n: "01",
+							icon: "fa-user-check",
+							title: "Consultores especializados",
+							desc: "Equipo con formación académica y experiencia práctica en gestión institucional y empresarial."
+						},
+						{
+							n: "02",
+							icon: "fa-puzzle-piece",
+							title: "Soluciones a medida",
+							desc: "Cada propuesta es diseñada específicamente para las necesidades y contexto de tu organización."
+						},
+						{
+							n: "03",
+							icon: "fa-chart-bar",
+							title: "Resultados medibles",
+							desc: "Establecemos indicadores claros y hacemos seguimiento continuo para garantizar el impacto real."
+						},
+						{
+							n: "04",
+							icon: "fa-handshake",
+							title: "Acompañamiento real",
+							desc: "No solo entregamos un informe: te acompañamos en la implementación y ajuste de las soluciones."
+						}
+					].map((b) => /* @__PURE__ */ _jsxDEV("div", {
+						className: "ed-benefit fade-up",
+						children: [
+							/* @__PURE__ */ _jsxDEV("div", {
+								className: "ed-benefit-num",
+								children: b.n
+							}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 82,
+								columnNumber: 17
+							}, this),
+							/* @__PURE__ */ _jsxDEV("div", {
+								className: "ed-benefit-icon",
+								children: /* @__PURE__ */ _jsxDEV("i", { className: `fas ${b.icon}` }, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 83,
+									columnNumber: 50
+								}, this)
+							}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 83,
+								columnNumber: 17
+							}, this),
+							/* @__PURE__ */ _jsxDEV("h3", { children: b.title }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 84,
+								columnNumber: 17
+							}, this),
+							/* @__PURE__ */ _jsxDEV("p", { children: b.desc }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 85,
+								columnNumber: 17
+							}, this)
+						]
+					}, b.n, true, {
+						fileName: _jsxFileName,
+						lineNumber: 81,
+						columnNumber: 15
+					}, this))
+				}, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 74,
+					columnNumber: 11
+				}, this)]
+			}, void 0, true, {
+				fileName: _jsxFileName,
+				lineNumber: 69,
+				columnNumber: 9
+			}, this)
+		}, void 0, false, {
+			fileName: _jsxFileName,
+			lineNumber: 68,
+			columnNumber: 7
+		}, this)
+	] }, void 0, true);
+}
+_s(Asesoramiento, "I32wE6TbOBzuumdZE++dnXhzjHQ=", false, function() {
+	return [useFadeUp];
+});
+_c = Asesoramiento;
+var _c;
+$RefreshReg$(_c, "Asesoramiento");
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+import * as __vite_react_currentExports from "/src/pages/educacion/Asesoramiento.tsx";
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+
+  const currentExports = __vite_react_currentExports;
+  queueMicrotask(() => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/Users/PCT40T/Documents/Proyecto-Horus-/frontend/src/pages/educacion/Asesoramiento.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/Users/PCT40T/Documents/Proyecto-Horus-/frontend/src/pages/educacion/Asesoramiento.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+function $RefreshReg$(type, id) { return RefreshRuntime.register(type, "C:/Users/PCT40T/Documents/Proyecto-Horus-/frontend/src/pages/educacion/Asesoramiento.tsx" + ' ' + id); }
+function $RefreshSig$() { return RefreshRuntime.createSignatureFunctionForTransform(); }
+
+//# sourceMappingURL=data:application/json;base64,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WUFBSSxFQUFFLE1BQVM7Ozs7O09BQ1g7UUFMSSxFQUFFOzs7O2FBS04sQ0FDTjtLQUNFOzs7O2FBQ0Y7Ozs7OztHQUNFOzs7OztFQUNUOzs7O0VBRU4iLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiQXNlc29yYW1pZW50by50c3giXSwidmVyc2lvbiI6Mywic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgdXNlRWZmZWN0IH0gZnJvbSAncmVhY3QnXHJcbmltcG9ydCB0eXBlIHsgQ1NTUHJvcGVydGllcyB9IGZyb20gJ3JlYWN0J1xyXG5pbXBvcnQgeyBMaW5rIH0gZnJvbSAncmVhY3Qtcm91dGVyLWRvbSdcclxuaW1wb3J0IHVzZUZhZGVVcCBmcm9tICcuLi8uLi9ob29rcy91c2VGYWRlVXAnXHJcblxyXG5pbXBvcnQgaW1nQXNlc29yaWEgZnJvbSAnLi4vLi4vYXNzZXRzL2ltYWdlcy9hc2Vzb3JhbWllbnRvL2FzZXNvcmFtaWVudG8yLmpwZydcclxuXHJcbmNvbnN0IHR5cGVTdHlsZSA9IChjb2xvcjogc3RyaW5nLCBiYWNrZ3JvdW5kOiBzdHJpbmcpOiBDU1NQcm9wZXJ0aWVzID0+ICh7XHJcbiAgWyctLXRjJyBhcyBzdHJpbmddOiBjb2xvcixcclxuICBbJy0tdGNiJyBhcyBzdHJpbmddOiBiYWNrZ3JvdW5kLFxyXG59KVxyXG5cclxuZXhwb3J0IGRlZmF1bHQgZnVuY3Rpb24gQXNlc29yYW1pZW50bygpIHtcclxuICB1c2VGYWRlVXAoKVxyXG4gIHVzZUVmZmVjdCgoKSA9PiB7IGRvY3VtZW50LnRpdGxlID0gJ0FzZXNvcmFtaWVudG8gUHJvZmVzaW9uYWwg4oCUIEhvcnVzIEdyb3VwIFNSTCcgfSwgW10pXHJcblxyXG4gIHJldHVybiAoXHJcbiAgICA8PlxyXG4gICAgICA8c2VjdGlvbiBjbGFzc05hbWU9XCJlZC1oZXJvIGVkLWhlcm8tYXNlc29yaWFcIj5cclxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImNvbnRhaW5lciBlZC1oZXJvLWlubmVyXCI+XHJcbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImVkLWhlcm8tdGV4dCBmYWRlLXVwXCI+XHJcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZWQtaGVyby10YWdcIj48aSBjbGFzc05hbWU9XCJmYXMgZmEtdXNlci10aWVcIiAvPiBFZHVjYWNpw7NuPC9kaXY+XHJcbiAgICAgICAgICAgIDxoMT5UZSBndcOtbyBwYXJhPGJyIC8+cXVlIGxsZWd1ZXM8YnIgLz48c3Bhbj5tw6FzIGxlam9zPC9zcGFuPjwvaDE+XHJcbiAgICAgICAgICAgIDxwPlNveSBlbCBhc2Vzb3JhbWllbnRvIHByb2Zlc2lvbmFsLiBObyB0ZSBkaWdvIHF1w6kgaGFjZXIsIHRlIGF5dWRvIGEgZW5jb250cmFyIGVsIG1lam9yIGNhbWlubyBwYXJhIHR1IHByb3llY3RvLCBlbXByZXNhIG8gY2FycmVyYS48L3A+XHJcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZWQtaGVyby1idG5zXCI+XHJcbiAgICAgICAgICAgICAgPExpbmsgdG89XCIvY29udGFjdG9zXCIgY2xhc3NOYW1lPVwiYnRuLWNvcmFsXCI+PGkgY2xhc3NOYW1lPVwiZmFzIGZhLWNhbGVuZGFyLWNoZWNrXCIgLz4gQWdlbmRhciBjb25zdWx0YSBncmF0aXM8L0xpbms+XHJcbiAgICAgICAgICAgICAgPGEgaHJlZj1cIiNlZC1kZXRhaWxcIiBjbGFzc05hbWU9XCJlZC1naG9zdFwiPjxpIGNsYXNzTmFtZT1cImZhcyBmYS1hcnJvdy1kb3duXCIgLz4gVmVyIHRpcG9zPC9hPlxyXG4gICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJlZC1oZXJvLXZpc3VhbCBmYWRlLXVwXCI+XHJcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZWQtaGVyby1pbWdcIj5cclxuICAgICAgICAgICAgICA8aW1nIHNyYz17aW1nQXNlc29yaWF9IGFsdD1cIkFzZXNvcmFtaWVudG8gUHJvZmVzaW9uYWxcIiAvPlxyXG4gICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJlZC1oZXJvLWNhcmRcIj5cclxuICAgICAgICAgICAgICA8aSBjbGFzc05hbWU9XCJmYXMgZmEtcXVvdGUtbGVmdFwiIC8+XHJcbiAgICAgICAgICAgICAgPHA+XCJFbCBhc2Vzb3JhbWllbnRvIGRlIEhvcnVzIEdyb3VwIHRyYW5zZm9ybcOzIGxhIG1hbmVyYSBlbiBxdWUgZ2VzdGlvbmFtb3MgbnVlc3Ryb3MgcHJvZ3JhbWFzLlwiPC9wPlxyXG4gICAgICAgICAgICAgIDxzcGFuPuKAlCBEaXJlY3Rpdm8sIENvbGVnaW8gZGUgRW5mZXJtZXJvczwvc3Bhbj5cclxuICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgPC9zZWN0aW9uPlxyXG5cclxuICAgICAgPHNlY3Rpb24gY2xhc3NOYW1lPVwiZWQtdHlwZXNcIiBpZD1cImVkLWRldGFpbFwiPlxyXG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiY29udGFpbmVyXCI+XHJcbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImVkLXNlY3Rpb24taGVhZCBmYWRlLXVwXCI+XHJcbiAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cImVkLWV5ZWJyb3dcIj5UaXBvcyBkZSBhc2Vzb3JhbWllbnRvPC9zcGFuPlxyXG4gICAgICAgICAgICA8aDI+wr9FbiBxdcOpIMOhcmVhPGJyIC8+cHVlZG8gYXl1ZGFydGU/PC9oMj5cclxuICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJlZC10eXBlcy1ncmlkXCI+XHJcbiAgICAgICAgICAgIHtbXHJcbiAgICAgICAgICAgICAgeyBjb2xvcjonIzRGNDZFNScsIGJnOicjRUVGMkZGJywgaWNvbjonZmEtZ3JhZHVhdGlvbi1jYXAnLCB0aXRsZTonQXNlc29yYW1pZW50byBFZHVjYXRpdm8nLCAgIGRlc2M6J1Rlc2lzLCB0cmFiYWpvcyBkZSBncmFkbywgZGlzZcOxbyBjdXJyaWN1bGFyIHkgZXZhbHVhY2nDs24gZGUgcHJvZ3JhbWFzIGFjYWTDqW1pY29zIGNvbiBtZXRvZG9sb2fDrWEgcmlndXJvc2EuJywgaXRlbXM6WydNZXRvZG9sb2fDrWEgZGUgaW52ZXN0aWdhY2nDs24nLCdFc3RydWN0dXJhIHkgcmVkYWNjacOzbicsJ0Fjb21wYcOxYW1pZW50byBjb250aW51byddIH0sXHJcbiAgICAgICAgICAgICAgeyBjb2xvcjonI0ZGNkI0NycsIGJnOicjRkZGMUVFJywgaWNvbjonZmEtYnJpZWZjYXNlJywgICAgICAgdGl0bGU6J0FzZXNvcmFtaWVudG8gRW1wcmVzYXJpYWwnLCBkZXNjOidFc3RyYXRlZ2lhLCBnZXN0acOzbiBmaW5hbmNpZXJhLCBsaWRlcmF6Z28geSBvcHRpbWl6YWNpw7NuIGRlIHByb2Nlc29zIHBhcmEgcXVlIHR1IG9yZ2FuaXphY2nDs24gY3JlemNhLicsICAgICBpdGVtczpbJ1BsYW4gZXN0cmF0w6lnaWNvJywnR2VzdGnDs24gZGUgZXF1aXBvcycsJ1Jlc3VsdGFkb3MgbWVkaWJsZXMnXSB9LFxyXG4gICAgICAgICAgICAgIHsgY29sb3I6JyMwNTk2NjknLCBiZzonI0VDRkRGNScsIGljb246J2ZhLWJhbGFuY2Utc2NhbGUnLCAgIHRpdGxlOidBc2Vzb3JhbWllbnRvIExlZ2FsJywgICAgICAgZGVzYzonT3JpZW50YWNpw7NuIGp1csOtZGljYSBlc3BlY2lhbGl6YWRhIHBhcmEgcGVyc29uYXMsIGVtcHJlc2FzIGUgaW5zdGl0dWNpb25lcyBxdWUgbmVjZXNpdGFuIHNlZ3VyaWRhZCBsZWdhbC4nLCAgaXRlbXM6WydBc2Vzb3LDrWEgZXNwZWNpYWxpemFkYScsJ0RvY3VtZW50YWNpw7NuIGxlZ2FsJywnUmVzcGFsZG8gcHJvZmVzaW9uYWwnXSB9LFxyXG4gICAgICAgICAgICBdLm1hcCh0ID0+IChcclxuICAgICAgICAgICAgICA8ZGl2IGtleT17dC50aXRsZX0gY2xhc3NOYW1lPVwiZWQtdHlwZS1jYXJkIGZhZGUtdXBcIiBzdHlsZT17dHlwZVN0eWxlKHQuY29sb3IsIHQuYmcpfT5cclxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZWQtdHlwZS1pY29uXCI+PGkgY2xhc3NOYW1lPXtgZmFzICR7dC5pY29ufWB9IC8+PC9kaXY+XHJcbiAgICAgICAgICAgICAgICA8aDM+e3QudGl0bGV9PC9oMz5cclxuICAgICAgICAgICAgICAgIDxwPnt0LmRlc2N9PC9wPlxyXG4gICAgICAgICAgICAgICAgPHVsIGNsYXNzTmFtZT1cImVkLXR5cGUtbGlzdFwiPlxyXG4gICAgICAgICAgICAgICAgICB7dC5pdGVtcy5tYXAoaXRlbSA9PiA8bGkga2V5PXtpdGVtfT48aSBjbGFzc05hbWU9XCJmYXMgZmEtY2hlY2tcIiAvPntpdGVtfTwvbGk+KX1cclxuICAgICAgICAgICAgICAgIDwvdWw+XHJcbiAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICkpfVxyXG4gICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgPC9kaXY+XHJcbiAgICAgIDwvc2VjdGlvbj5cclxuXHJcbiAgICAgIDxzZWN0aW9uIGNsYXNzTmFtZT1cImVkLWJlbmVmaXRzXCI+XHJcbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJjb250YWluZXJcIj5cclxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZWQtc2VjdGlvbi1oZWFkIGZhZGUtdXBcIj5cclxuICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwiZWQtZXllYnJvd1wiPlBvciBxdcOpIGVsZWdpcm5vczwvc3Bhbj5cclxuICAgICAgICAgICAgPGgyPkxvIHF1ZSBub3MgaGFjZTxiciAvPmRpZmVyZW50ZXM8L2gyPlxyXG4gICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImVkLWJlbmVmaXRzLWdyaWRcIj5cclxuICAgICAgICAgICAge1tcclxuICAgICAgICAgICAgICB7IG46JzAxJywgaWNvbjonZmEtdXNlci1jaGVjaycsICB0aXRsZTonQ29uc3VsdG9yZXMgZXNwZWNpYWxpemFkb3MnLCBkZXNjOidFcXVpcG8gY29uIGZvcm1hY2nDs24gYWNhZMOpbWljYSB5IGV4cGVyaWVuY2lhIHByw6FjdGljYSBlbiBnZXN0acOzbiBpbnN0aXR1Y2lvbmFsIHkgZW1wcmVzYXJpYWwuJyB9LFxyXG4gICAgICAgICAgICAgIHsgbjonMDInLCBpY29uOidmYS1wdXp6bGUtcGllY2UnLCB0aXRsZTonU29sdWNpb25lcyBhIG1lZGlkYScsICAgICAgICBkZXNjOidDYWRhIHByb3B1ZXN0YSBlcyBkaXNlw7FhZGEgZXNwZWPDrWZpY2FtZW50ZSBwYXJhIGxhcyBuZWNlc2lkYWRlcyB5IGNvbnRleHRvIGRlIHR1IG9yZ2FuaXphY2nDs24uJyB9LFxyXG4gICAgICAgICAgICAgIHsgbjonMDMnLCBpY29uOidmYS1jaGFydC1iYXInLCAgIHRpdGxlOidSZXN1bHRhZG9zIG1lZGlibGVzJywgICAgICAgIGRlc2M6J0VzdGFibGVjZW1vcyBpbmRpY2Fkb3JlcyBjbGFyb3MgeSBoYWNlbW9zIHNlZ3VpbWllbnRvIGNvbnRpbnVvIHBhcmEgZ2FyYW50aXphciBlbCBpbXBhY3RvIHJlYWwuJyB9LFxyXG4gICAgICAgICAgICAgIHsgbjonMDQnLCBpY29uOidmYS1oYW5kc2hha2UnLCAgIHRpdGxlOidBY29tcGHDsWFtaWVudG8gcmVhbCcsICAgICAgICBkZXNjOidObyBzb2xvIGVudHJlZ2Ftb3MgdW4gaW5mb3JtZTogdGUgYWNvbXBhw7FhbW9zIGVuIGxhIGltcGxlbWVudGFjacOzbiB5IGFqdXN0ZSBkZSBsYXMgc29sdWNpb25lcy4nIH0sXHJcbiAgICAgICAgICAgIF0ubWFwKGIgPT4gKFxyXG4gICAgICAgICAgICAgIDxkaXYga2V5PXtiLm59IGNsYXNzTmFtZT1cImVkLWJlbmVmaXQgZmFkZS11cFwiPlxyXG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJlZC1iZW5lZml0LW51bVwiPntiLm59PC9kaXY+XHJcbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImVkLWJlbmVmaXQtaWNvblwiPjxpIGNsYXNzTmFtZT17YGZhcyAke2IuaWNvbn1gfSAvPjwvZGl2PlxyXG4gICAgICAgICAgICAgICAgPGgzPntiLnRpdGxlfTwvaDM+XHJcbiAgICAgICAgICAgICAgICA8cD57Yi5kZXNjfTwvcD5cclxuICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgKSl9XHJcbiAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgPC9zZWN0aW9uPlxyXG4gICAgPC8+XHJcbiAgKVxyXG59XHJcbiJdfQ==

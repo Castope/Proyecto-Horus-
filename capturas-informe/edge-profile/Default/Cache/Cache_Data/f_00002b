@@ -1,0 +1,322 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/panel/components/workspace/CourseAgenda.tsx");const useState = __vite__cjsImport0_react["useState"];const _jsxDEV = __vite__cjsImport4_react_jsxDevRuntime["jsxDEV"];import __vite__cjsImport0_react from "/node_modules/.vite/deps/react.js?v=974efcab";
+import { label } from "/src/panel/types/workspace.ts";
+import { useCollection, dateLabel } from "/src/panel/components/workspace/useCollection.ts";
+import PanelIcon from "/src/panel/components/PanelIcon.tsx";
+var _jsxFileName = "C:/Users/PCT40T/Documents/Proyecto-Horus-/frontend/src/panel/components/workspace/CourseAgenda.tsx";
+import __vite__cjsImport4_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=974efcab";
+var _s = $RefreshSig$();
+export default function CourseAgenda({ revision, onOpen }) {
+	_s();
+	const { rows, loading, error } = useCollection("cursos", true, revision);
+	const [period, setPeriod] = useState("upcoming");
+	const [state, setState] = useState("");
+	const today = new Date();
+	today.setHours(0, 0, 0, 0);
+	const day = (row) => row.fecha_inicio ? new Date(String(row.fecha_inicio).slice(0, 10) + "T00:00:00").getTime() : NaN;
+	const current = rows.filter((row) => row.estado !== "archivado");
+	const upcoming = current.filter((row) => day(row) >= today.getTime());
+	const unplanned = current.filter((row) => !Number.isFinite(day(row)));
+	const visible = current.filter((row) => (!state || row.estado === state) && (period === "unscheduled" ? !Number.isFinite(day(row)) : period === "past" ? day(row) < today.getTime() : day(row) >= today.getTime())).sort((a, b) => (day(a) || 0) - (day(b) || 0));
+	if (loading) return /* @__PURE__ */ _jsxDEV("div", {
+		className: "hp-empty",
+		role: "status",
+		children: "Cargando agenda…"
+	}, void 0, false, {
+		fileName: _jsxFileName,
+		lineNumber: 18,
+		columnNumber: 23
+	}, this);
+	if (error) return /* @__PURE__ */ _jsxDEV("p", {
+		className: "hp-error",
+		role: "alert",
+		children: [error, " Usa Actualizar para volver a consultar."]
+	}, void 0, true, {
+		fileName: _jsxFileName,
+		lineNumber: 19,
+		columnNumber: 21
+	}, this);
+	return /* @__PURE__ */ _jsxDEV("div", {
+		className: "hw-agenda",
+		children: [
+			/* @__PURE__ */ _jsxDEV("div", {
+				className: "hw-insights",
+				children: [
+					/* @__PURE__ */ _jsxDEV("article", { children: [
+						/* @__PURE__ */ _jsxDEV(PanelIcon, { name: "calendar" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 21,
+							columnNumber: 43
+						}, this),
+						/* @__PURE__ */ _jsxDEV("strong", { children: upcoming.length }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 21,
+							columnNumber: 72
+						}, this),
+						/* @__PURE__ */ _jsxDEV("span", { children: "Inicios próximos" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 21,
+							columnNumber: 106
+						}, this)
+					] }, void 0, true, {
+						fileName: _jsxFileName,
+						lineNumber: 21,
+						columnNumber: 34
+					}, this),
+					/* @__PURE__ */ _jsxDEV("article", { children: [
+						/* @__PURE__ */ _jsxDEV(PanelIcon, { name: "help" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 21,
+							columnNumber: 154
+						}, this),
+						/* @__PURE__ */ _jsxDEV("strong", { children: unplanned.length }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 21,
+							columnNumber: 179
+						}, this),
+						/* @__PURE__ */ _jsxDEV("span", { children: "Por programar" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 21,
+							columnNumber: 214
+						}, this)
+					] }, void 0, true, {
+						fileName: _jsxFileName,
+						lineNumber: 21,
+						columnNumber: 145
+					}, this),
+					/* @__PURE__ */ _jsxDEV("article", { children: [
+						/* @__PURE__ */ _jsxDEV(PanelIcon, { name: "book" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 21,
+							columnNumber: 259
+						}, this),
+						/* @__PURE__ */ _jsxDEV("strong", { children: current.length }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 21,
+							columnNumber: 284
+						}, this),
+						/* @__PURE__ */ _jsxDEV("span", { children: "Cursos sin archivar" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 21,
+							columnNumber: 317
+						}, this)
+					] }, void 0, true, {
+						fileName: _jsxFileName,
+						lineNumber: 21,
+						columnNumber: 250
+					}, this)
+				]
+			}, void 0, true, {
+				fileName: _jsxFileName,
+				lineNumber: 21,
+				columnNumber: 5
+			}, this),
+			/* @__PURE__ */ _jsxDEV("div", {
+				className: "hw-agenda-toolbar",
+				children: [/* @__PURE__ */ _jsxDEV("div", {
+					className: "hw-tabs",
+					"aria-label": "Periodo de agenda",
+					children: [
+						["upcoming", "Próximos"],
+						["unscheduled", "Sin fecha"],
+						["past", "Fechas pasadas"]
+					].map(([value, name]) => /* @__PURE__ */ _jsxDEV("button", {
+						"aria-pressed": period === value,
+						onClick: () => setPeriod(value),
+						children: name
+					}, value, false, {
+						fileName: _jsxFileName,
+						lineNumber: 22,
+						columnNumber: 205
+					}, this))
+				}, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 22,
+					columnNumber: 40
+				}, this), /* @__PURE__ */ _jsxDEV("label", {
+					className: "hw-select",
+					children: ["Publicación", /* @__PURE__ */ _jsxDEV("select", {
+						value: state,
+						onChange: (e) => setState(e.target.value),
+						children: [
+							/* @__PURE__ */ _jsxDEV("option", {
+								value: "",
+								children: "Todos"
+							}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 23,
+								columnNumber: 110
+							}, this),
+							/* @__PURE__ */ _jsxDEV("option", {
+								value: "publicado",
+								children: "Publicados"
+							}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 23,
+								columnNumber: 141
+							}, this),
+							/* @__PURE__ */ _jsxDEV("option", {
+								value: "borrador",
+								children: "Borradores"
+							}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 23,
+								columnNumber: 186
+							}, this)
+						]
+					}, void 0, true, {
+						fileName: _jsxFileName,
+						lineNumber: 23,
+						columnNumber: 47
+					}, this)]
+				}, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 23,
+					columnNumber: 7
+				}, this)]
+			}, void 0, true, {
+				fileName: _jsxFileName,
+				lineNumber: 22,
+				columnNumber: 5
+			}, this),
+			/* @__PURE__ */ _jsxDEV("p", {
+				className: "hw-caption",
+				children: "Fechas del catálogo completo. No incluyen cupos, inscripciones ni confirmación de apertura."
+			}, void 0, false, {
+				fileName: _jsxFileName,
+				lineNumber: 24,
+				columnNumber: 5
+			}, this),
+			visible.length ? /* @__PURE__ */ _jsxDEV("div", {
+				className: "hw-timeline",
+				children: visible.map((row) => /* @__PURE__ */ _jsxDEV("button", {
+					onClick: () => onOpen(row),
+					children: [
+						/* @__PURE__ */ _jsxDEV("span", {
+							className: "hw-date-tile",
+							children: [/* @__PURE__ */ _jsxDEV(PanelIcon, {
+								name: "calendar",
+								size: 21
+							}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 25,
+								columnNumber: 152
+							}, this), /* @__PURE__ */ _jsxDEV("small", { children: dateLabel(row.fecha_inicio, true) }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 25,
+								columnNumber: 191
+							}, this)]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 25,
+							columnNumber: 121
+						}, this),
+						/* @__PURE__ */ _jsxDEV("span", {
+							className: "hw-timeline-info",
+							children: [/* @__PURE__ */ _jsxDEV("strong", { children: String(row.titulo) }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 26,
+								columnNumber: 42
+							}, this), /* @__PURE__ */ _jsxDEV("small", { children: [
+								label(row.modalidad),
+								" · ",
+								String(row.duracion || "")
+							] }, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 26,
+								columnNumber: 79
+							}, this)]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 26,
+							columnNumber: 7
+						}, this),
+						/* @__PURE__ */ _jsxDEV("span", {
+							className: "hp-badge hp-state-" + row.estado,
+							children: label(row.estado)
+						}, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 26,
+							columnNumber: 154
+						}, this),
+						/* @__PURE__ */ _jsxDEV(PanelIcon, {
+							name: "edit",
+							size: 16
+						}, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 26,
+							columnNumber: 232
+						}, this)
+					]
+				}, row.id, true, {
+					fileName: _jsxFileName,
+					lineNumber: 25,
+					columnNumber: 72
+				}, this))
+			}, void 0, false, {
+				fileName: _jsxFileName,
+				lineNumber: 25,
+				columnNumber: 23
+			}, this) : /* @__PURE__ */ _jsxDEV("div", {
+				className: "hp-empty hp-empty-compact",
+				children: [
+					/* @__PURE__ */ _jsxDEV(PanelIcon, {
+						name: "calendar",
+						size: 30
+					}, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 26,
+						columnNumber: 330
+					}, this),
+					/* @__PURE__ */ _jsxDEV("h3", { children: "No hay cursos en esta vista" }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 26,
+						columnNumber: 369
+					}, this),
+					/* @__PURE__ */ _jsxDEV("p", { children: "Revisa otro periodo o asigna una fecha desde la ficha del curso." }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 26,
+						columnNumber: 405
+					}, this)
+				]
+			}, void 0, true, {
+				fileName: _jsxFileName,
+				lineNumber: 26,
+				columnNumber: 287
+			}, this)
+		]
+	}, void 0, true, {
+		fileName: _jsxFileName,
+		lineNumber: 20,
+		columnNumber: 10
+	}, this);
+}
+_s(CourseAgenda, "PuFA+A9FzNgMsUl1lA4Vlm6/KPw=", false, function() {
+	return [useCollection];
+});
+_c = CourseAgenda;
+var _c;
+$RefreshReg$(_c, "CourseAgenda");
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+import * as __vite_react_currentExports from "/src/panel/components/workspace/CourseAgenda.tsx";
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+
+  const currentExports = __vite_react_currentExports;
+  queueMicrotask(() => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/Users/PCT40T/Documents/Proyecto-Horus-/frontend/src/panel/components/workspace/CourseAgenda.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/Users/PCT40T/Documents/Proyecto-Horus-/frontend/src/panel/components/workspace/CourseAgenda.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+function $RefreshReg$(type, id) { return RefreshRuntime.register(type, "C:/Users/PCT40T/Documents/Proyecto-Horus-/frontend/src/panel/components/workspace/CourseAgenda.tsx" + ' ' + id); }
+function $RefreshSig$() { return RefreshRuntime.createSignatureFunctionForTransform(); }
+
+//# sourceMappingURL=data:application/json;base64,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QUQ7UUFBUSxPQUFNO2tCQUFZO1FBQW1COzs7OzsrQkFBQyxVQUFEO1FBQVEsT0FBTTtrQkFBVztRQUFtQjs7Ozs7T0FBUzs7Ozs7Y0FBUTs7Ozs7YUFBTTs7Ozs7O0dBQ3hQLHdCQUFDLEtBQUQ7SUFBRyxXQUFVO2NBQWE7SUFBK0Y7Ozs7O0dBQ3hILFFBQVEsU0FBUyx3QkFBQyxPQUFEO0lBQUssV0FBVTtjQUFlLFFBQVEsS0FBSSxRQUFPLHdCQUFDLFVBQUQ7S0FBcUIsZUFBZSxPQUFPLElBQUk7ZUFBL0M7TUFBaUQsd0JBQUMsUUFBRDtPQUFNLFdBQVU7aUJBQWhCLENBQStCLHdCQUFDLFdBQUQ7UUFBVyxNQUFLO1FBQVcsTUFBTTtRQUFNOzs7O3lDQUFDLFNBQUQsWUFBUSxVQUFVLElBQUksY0FBYyxLQUFLLEVBQVM7Ozs7Z0JBQU87Ozs7OztNQUNqUCx3QkFBQyxRQUFEO09BQU0sV0FBVTtpQkFBaEIsQ0FBbUMsd0JBQUMsVUFBRCxZQUFTLE9BQU8sSUFBSSxPQUFPLEVBQVU7Ozs7eUNBQUMsU0FBRDtRQUFRLE1BQU0sSUFBSSxVQUFVO1FBQUM7UUFBSSxPQUFPLElBQUksWUFBWSxHQUFHO1FBQVM7Ozs7Z0JBQU87Ozs7Ozs4QkFBQyxRQUFEO09BQU0sV0FBVyx1QkFBdUIsSUFBSTtpQkFBUyxNQUFNLElBQUksT0FBTztPQUFROzs7Ozs4QkFBQyxXQUFEO09BQVcsTUFBSztPQUFPLE1BQU07T0FBTTs7Ozs7TUFBUztPQUQvTCxJQUFJOzs7O1lBQzJMLENBQUM7SUFBTzs7OztjQUFHLHdCQUFDLE9BQUQ7SUFBSyxXQUFVO2NBQWY7S0FBMkMsd0JBQUMsV0FBRDtNQUFXLE1BQUs7TUFBVyxNQUFNO01BQU07Ozs7OzZCQUFDLE1BQUQsWUFBSSwrQkFBZ0M7Ozs7OzZCQUFDLEtBQUQsWUFBRyxvRUFBb0U7Ozs7O0tBQU07Ozs7OztHQUN6ZDs7Ozs7Ozs7O0VBQ1AiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiQ291cnNlQWdlbmRhLnRzeCJdLCJ2ZXJzaW9uIjozLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyB1c2VTdGF0ZSB9IGZyb20gJ3JlYWN0JztcbmltcG9ydCB0eXBlIHsgUm93IH0gZnJvbSAnLi4vLi4vdHlwZXMvd29ya3NwYWNlJztcbmltcG9ydCB7IGxhYmVsIH0gZnJvbSAnLi4vLi4vdHlwZXMvd29ya3NwYWNlJztcbmltcG9ydCB7IHVzZUNvbGxlY3Rpb24sIGRhdGVMYWJlbCB9IGZyb20gJy4vdXNlQ29sbGVjdGlvbic7XG5pbXBvcnQgUGFuZWxJY29uIGZyb20gJy4uL1BhbmVsSWNvbic7XG5cbmV4cG9ydCBkZWZhdWx0IGZ1bmN0aW9uIENvdXJzZUFnZW5kYSh7IHJldmlzaW9uLCBvbk9wZW4gfTogeyByZXZpc2lvbjogbnVtYmVyOyBvbk9wZW46IChyb3c6IFJvdykgPT4gdm9pZCB9KSB7XG4gIGNvbnN0IHsgcm93cywgbG9hZGluZywgZXJyb3IgfSA9IHVzZUNvbGxlY3Rpb24oJ2N1cnNvcycsIHRydWUsIHJldmlzaW9uKTtcbiAgY29uc3QgW3BlcmlvZCwgc2V0UGVyaW9kXSA9IHVzZVN0YXRlKCd1cGNvbWluZycpO1xuICBjb25zdCBbc3RhdGUsIHNldFN0YXRlXSA9IHVzZVN0YXRlKCcnKTtcbiAgY29uc3QgdG9kYXkgPSBuZXcgRGF0ZSgpOyB0b2RheS5zZXRIb3VycygwLCAwLCAwLCAwKTtcbiAgY29uc3QgZGF5ID0gKHJvdzogUm93KSA9PiByb3cuZmVjaGFfaW5pY2lvID8gbmV3IERhdGUoU3RyaW5nKHJvdy5mZWNoYV9pbmljaW8pLnNsaWNlKDAsIDEwKSArICdUMDA6MDA6MDAnKS5nZXRUaW1lKCkgOiBOYU47XG4gIGNvbnN0IGN1cnJlbnQgPSByb3dzLmZpbHRlcihyb3cgPT4gcm93LmVzdGFkbyAhPT0gJ2FyY2hpdmFkbycpO1xuICBjb25zdCB1cGNvbWluZyA9IGN1cnJlbnQuZmlsdGVyKHJvdyA9PiBkYXkocm93KSA+PSB0b2RheS5nZXRUaW1lKCkpO1xuICBjb25zdCB1bnBsYW5uZWQgPSBjdXJyZW50LmZpbHRlcihyb3cgPT4gIU51bWJlci5pc0Zpbml0ZShkYXkocm93KSkpO1xuICBjb25zdCB2aXNpYmxlID0gY3VycmVudC5maWx0ZXIocm93ID0+ICghc3RhdGUgfHwgcm93LmVzdGFkbyA9PT0gc3RhdGUpICYmIChwZXJpb2QgPT09ICd1bnNjaGVkdWxlZCcgPyAhTnVtYmVyLmlzRmluaXRlKGRheShyb3cpKSA6IHBlcmlvZCA9PT0gJ3Bhc3QnID8gZGF5KHJvdykgPCB0b2RheS5nZXRUaW1lKCkgOiBkYXkocm93KSA+PSB0b2RheS5nZXRUaW1lKCkpKVxuICAgIC5zb3J0KChhLCBiKSA9PiAoZGF5KGEpIHx8IDApIC0gKGRheShiKSB8fCAwKSk7XG4gIGlmIChsb2FkaW5nKSByZXR1cm4gPGRpdiBjbGFzc05hbWU9XCJocC1lbXB0eVwiIHJvbGU9XCJzdGF0dXNcIj5DYXJnYW5kbyBhZ2VuZGHigKY8L2Rpdj47XG4gIGlmIChlcnJvcikgcmV0dXJuIDxwIGNsYXNzTmFtZT1cImhwLWVycm9yXCIgcm9sZT1cImFsZXJ0XCI+e2Vycm9yfSBVc2EgQWN0dWFsaXphciBwYXJhIHZvbHZlciBhIGNvbnN1bHRhci48L3A+O1xuICByZXR1cm4gPGRpdiBjbGFzc05hbWU9XCJody1hZ2VuZGFcIj5cbiAgICA8ZGl2IGNsYXNzTmFtZT1cImh3LWluc2lnaHRzXCI+PGFydGljbGU+PFBhbmVsSWNvbiBuYW1lPVwiY2FsZW5kYXJcIiAvPjxzdHJvbmc+e3VwY29taW5nLmxlbmd0aH08L3N0cm9uZz48c3Bhbj5JbmljaW9zIHByw7N4aW1vczwvc3Bhbj48L2FydGljbGU+PGFydGljbGU+PFBhbmVsSWNvbiBuYW1lPVwiaGVscFwiIC8+PHN0cm9uZz57dW5wbGFubmVkLmxlbmd0aH08L3N0cm9uZz48c3Bhbj5Qb3IgcHJvZ3JhbWFyPC9zcGFuPjwvYXJ0aWNsZT48YXJ0aWNsZT48UGFuZWxJY29uIG5hbWU9XCJib29rXCIgLz48c3Ryb25nPntjdXJyZW50Lmxlbmd0aH08L3N0cm9uZz48c3Bhbj5DdXJzb3Mgc2luIGFyY2hpdmFyPC9zcGFuPjwvYXJ0aWNsZT48L2Rpdj5cbiAgICA8ZGl2IGNsYXNzTmFtZT1cImh3LWFnZW5kYS10b29sYmFyXCI+PGRpdiBjbGFzc05hbWU9XCJody10YWJzXCIgYXJpYS1sYWJlbD1cIlBlcmlvZG8gZGUgYWdlbmRhXCI+e1tbJ3VwY29taW5nJywgJ1Byw7N4aW1vcyddLCBbJ3Vuc2NoZWR1bGVkJywgJ1NpbiBmZWNoYSddLCBbJ3Bhc3QnLCAnRmVjaGFzIHBhc2FkYXMnXV0ubWFwKChbdmFsdWUsIG5hbWVdKSA9PiA8YnV0dG9uIGtleT17dmFsdWV9IGFyaWEtcHJlc3NlZD17cGVyaW9kID09PSB2YWx1ZX0gb25DbGljaz17KCkgPT4gc2V0UGVyaW9kKHZhbHVlKX0+e25hbWV9PC9idXR0b24+KX08L2Rpdj5cbiAgICAgIDxsYWJlbCBjbGFzc05hbWU9XCJody1zZWxlY3RcIj5QdWJsaWNhY2nDs248c2VsZWN0IHZhbHVlPXtzdGF0ZX0gb25DaGFuZ2U9e2UgPT4gc2V0U3RhdGUoZS50YXJnZXQudmFsdWUpfT48b3B0aW9uIHZhbHVlPVwiXCI+VG9kb3M8L29wdGlvbj48b3B0aW9uIHZhbHVlPVwicHVibGljYWRvXCI+UHVibGljYWRvczwvb3B0aW9uPjxvcHRpb24gdmFsdWU9XCJib3JyYWRvclwiPkJvcnJhZG9yZXM8L29wdGlvbj48L3NlbGVjdD48L2xhYmVsPjwvZGl2PlxuICAgIDxwIGNsYXNzTmFtZT1cImh3LWNhcHRpb25cIj5GZWNoYXMgZGVsIGNhdMOhbG9nbyBjb21wbGV0by4gTm8gaW5jbHV5ZW4gY3Vwb3MsIGluc2NyaXBjaW9uZXMgbmkgY29uZmlybWFjacOzbiBkZSBhcGVydHVyYS48L3A+XG4gICAge3Zpc2libGUubGVuZ3RoID8gPGRpdiBjbGFzc05hbWU9XCJody10aW1lbGluZVwiPnt2aXNpYmxlLm1hcChyb3cgPT4gPGJ1dHRvbiBrZXk9e3Jvdy5pZH0gb25DbGljaz17KCkgPT4gb25PcGVuKHJvdyl9PjxzcGFuIGNsYXNzTmFtZT1cImh3LWRhdGUtdGlsZVwiPjxQYW5lbEljb24gbmFtZT1cImNhbGVuZGFyXCIgc2l6ZT17MjF9IC8+PHNtYWxsPntkYXRlTGFiZWwocm93LmZlY2hhX2luaWNpbywgdHJ1ZSl9PC9zbWFsbD48L3NwYW4+XG4gICAgICA8c3BhbiBjbGFzc05hbWU9XCJody10aW1lbGluZS1pbmZvXCI+PHN0cm9uZz57U3RyaW5nKHJvdy50aXR1bG8pfTwvc3Ryb25nPjxzbWFsbD57bGFiZWwocm93Lm1vZGFsaWRhZCl9IMK3IHtTdHJpbmcocm93LmR1cmFjaW9uIHx8ICcnKX08L3NtYWxsPjwvc3Bhbj48c3BhbiBjbGFzc05hbWU9eydocC1iYWRnZSBocC1zdGF0ZS0nICsgcm93LmVzdGFkb30+e2xhYmVsKHJvdy5lc3RhZG8pfTwvc3Bhbj48UGFuZWxJY29uIG5hbWU9XCJlZGl0XCIgc2l6ZT17MTZ9IC8+PC9idXR0b24+KX08L2Rpdj4gOiA8ZGl2IGNsYXNzTmFtZT1cImhwLWVtcHR5IGhwLWVtcHR5LWNvbXBhY3RcIj48UGFuZWxJY29uIG5hbWU9XCJjYWxlbmRhclwiIHNpemU9ezMwfSAvPjxoMz5ObyBoYXkgY3Vyc29zIGVuIGVzdGEgdmlzdGE8L2gzPjxwPlJldmlzYSBvdHJvIHBlcmlvZG8gbyBhc2lnbmEgdW5hIGZlY2hhIGRlc2RlIGxhIGZpY2hhIGRlbCBjdXJzby48L3A+PC9kaXY+fVxuICA8L2Rpdj47XG59XG4iXX0=

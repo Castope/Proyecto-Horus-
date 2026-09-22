@@ -84,11 +84,16 @@ test('Prisma works against MySQL and legacy-compatible SQL in an isolated databa
       assert.equal((await messages.updateStatus(message.id, { estado: 'atendido' })).message.estado, 'atendido');
       const newsletter = new NewsletterService(client);
       await newsletter.subscribe({ email: 'ANA@example.com' });
+      await client.newsletter.update({ where: { email: 'ana@example.com' }, data: { activo: false, interes: 'cursos' } });
       await newsletter.subscribe({ email: 'ANA@example.com' });
+      const subscriber = await client.newsletter.findUnique({ where: { email: 'ana@example.com' } });
+      assert.equal(subscriber.activo, true);
+      assert.equal(subscriber.interes, 'cursos');
       assert.equal((await newsletter.findAll()).total, 1);
       const settings = new SettingsService(client);
       await settings.getPublicSettings();
       await settings.updateSettings({ ajustes: { empresa_nombre: 'Empresa prueba' } });
+      await assert.rejects(() => settings.updateSettings({ ajustes: { empresa_nombre: 'Must not persist', email_contacto: 'invalid' } }), e => e.getStatus() === 400);
       assert.equal((await settings.getPublicSettings()).settings.empresa_nombre, 'Empresa prueba');
       const auth = new AuthService(client, new JwtService({ secret: 'x'.repeat(32) }));
       await auth.register({ nombre: 'Admin', email: 'admin@example.com', password: 'Password123' });

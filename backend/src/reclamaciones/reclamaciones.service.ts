@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { CreateReclamacionDto } from './dto/create-reclamacion.dto';
@@ -13,7 +14,7 @@ export class ReclamacionesService {
   private generarNumeroReclamo(): string {
     const hoy = new Date();
     const fecha = hoy.toISOString().slice(0, 10).replace(/-/g, '');
-    const rand = Math.floor(Math.random() * 9000) + 1000;
+    const rand = randomUUID();
     return `HG-${fecha}-${rand}`;
   }
 
@@ -44,12 +45,10 @@ export class ReclamacionesService {
         numero_reclamo,
         id: registro.id,
       };
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Error desconocido';
+    } catch {
       throw new InternalServerErrorException({
         ok: false,
         mensaje: 'Error al registrar la reclamación.',
-        error: msg,
       });
     }
   }

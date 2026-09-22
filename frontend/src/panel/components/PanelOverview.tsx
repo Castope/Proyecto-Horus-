@@ -1,3 +1,4 @@
+import { useRequestStatus } from '../hooks/useRequestStatus';
 import { useEffect, useState } from 'react';
 import { useAdminAuth } from '../context';
 import { panelRequest, errorMessage } from '../services/panelApi';
@@ -10,18 +11,16 @@ export default function PanelOverview({ go }: { go: (section: string, create?: b
   const { token, user } = useAdminAuth();
   const navigate = useNavigate();
   const [data, setData] = useState<DashboardStats | null>(null);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
   const [reload, setReload] = useState(0);
+  const { loading, error, setLoading, setError } = useRequestStatus(JSON.stringify([token, reload]));
   useEffect(() => {
     if (!token) return;
     const controller = new AbortController();
-    setLoading(true); setError('');
-    panelRequest<DashboardStats>('stats', token, 'GET', undefined, controller.signal).then(setData)
+    panelRequest<DashboardStats>('stats', token, 'GET', undefined, controller.signal).then(data => { if (!controller.signal.aborted) setData(data); })
       .catch(err => { if (!controller.signal.aborted) setError(errorMessage(err)); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [token, reload]);
+  }, [token, reload, setLoading, setError]);
   const catalog = data?.stats.catalogo;
   const catalogTotal = Object.values(catalog || {}).reduce((sum, item) => sum + item.total, 0);
   const published = Object.values(catalog || {}).reduce((sum, item) => sum + item.publicados, 0);

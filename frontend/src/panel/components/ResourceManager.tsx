@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useRequestStatus } from '../hooks/useRequestStatus';
+import { useEffect, useRef, useState, type SubmitEvent } from 'react';
 import { useAdminAuth } from '../context';
 import { Link, useSearchParams } from 'react-router-dom';
 import ResourceCards from './workspace/ResourceCards';
@@ -24,30 +25,26 @@ export default function ResourceManager({ resource: r, autoCreate }: Props) {
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState(r.states.includes(params.get('estado') || '') ? params.get('estado')! : '');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [reload, setReload] = useState(0);
   const [editor, setEditor] = useState<{ row?: Row; view?: boolean } | null>(autoCreate ? {} : null);
-  const [form, setForm] = useState<Record<string, string>>({});
+  const defaults = (row?: Row) => Object.fromEntries(r.fields.map(field => {
+    let value = row?.[field.key];
+    if (field.key === 'activo') value = row ? row.activo ? 'activo' : 'inactivo' : 'activo';
+    if (field.type === 'date' && value) value = String(value).slice(0, 10);
+    return [field.key, String(value ?? field.options?.[0] ?? (field.type === 'number' ? '0' : ''))];
+  }));
+  const [form, setForm] = useState<Record<string, string>>(() => autoCreate ? defaults() : {});
   const [formError, setFormError] = useState('');
   const [pendingDelete, setPendingDelete] = useState<Row | null>(null);
   const [busy, setBusy] = useState(false);
   const actionLock = useRef(false);
   const pageSize = 8;
+  const { loading, error, setLoading, setError } = useRequestStatus(JSON.stringify([token, r.endpoint, page, query, status, reload]));
 
-  const defaults = useCallback((row?: Row) => Object.fromEntries(r.fields.map(field => {
-    let value = row?.[field.key];
-    if (field.key === 'activo') value = row ? row.activo ? 'activo' : 'inactivo' : 'activo';
-    if (field.type === 'date' && value) value = String(value).slice(0, 10);
-    return [field.key, String(value ?? field.options?.[0] ?? (field.type === 'number' ? '0' : ''))];
-  })), [r]);
-
-  useEffect(() => { if (autoCreate) setForm(defaults()); }, [autoCreate, defaults]);
   useEffect(() => {
     if (!token) return;
     const controller = new AbortController();
-    setLoading(true); setError('');
     const params = new URLSearchParams({ page: String(page), limit: String(pageSize) });
     if (query.trim()) params.set('search', query.trim());
     if (status) params.set('estado', status);
@@ -69,7 +66,7 @@ export default function ResourceManager({ resource: r, autoCreate }: Props) {
       }).catch(err => { if (!controller.signal.aborted) setError(errorMessage(err)); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [token, r, page, query, status, reload]);
+  }, [token, r, page, query, status, reload, setLoading, setError]);
 
   const openNew = () => { setForm(defaults()); setFormError(''); setEditor({}); };
   const openRow = async (row: Row, view = false) => {
@@ -99,7 +96,7 @@ export default function ResourceManager({ resource: r, autoCreate }: Props) {
     } catch (err) { setError(errorMessage(err)); }
     finally { actionLock.current = false; setBusy(false); }
   };
-  const save = async (event: FormEvent) => {
+  const save = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!token || actionLock.current) return;
     actionLock.current = true; setBusy(true); setFormError('');

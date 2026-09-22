@@ -1,3 +1,4 @@
+import { isUniqueViolation } from '../../database/serialization';
 import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { JwtService } from '@nestjs/jwt';
@@ -18,17 +19,23 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto) {
-    const exists = await this.prisma.adminUser.findFirst({ where: { email: dto.email.toLowerCase() } });
+    const exists = await this.prisma.adminUser.findFirst({ where: { email: dto.email.toLowerCase().trim() } });
     if (exists) {
       throw new ConflictException({ ok: false, mensaje: 'Ya existe un administrador con ese correo.' });
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, 12);
-    const user = await this.prisma.adminUser.create({ data: {
-      nombre: dto.nombre.trim(),
-      email: dto.email.toLowerCase().trim(),
-      password: hashedPassword,
-    } });
+    let user: AdminUser;
+    try {
+      user = await this.prisma.adminUser.create({ data: {
+        nombre: dto.nombre.trim(),
+        email: dto.email.toLowerCase().trim(),
+        password: hashedPassword,
+      } });
+    } catch (error) {
+      if (isUniqueViolation(error)) throw new ConflictException({ ok: false, mensaje: 'Ya existe un administrador con ese correo.' });
+      throw error;
+    }
 
     const token = this.generateToken(user);
 

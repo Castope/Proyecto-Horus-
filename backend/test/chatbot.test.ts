@@ -1,8 +1,9 @@
 import 'reflect-metadata';
+import { createValidationPipe } from '../src/common/validation';
 import { test } from 'node:test';
 import * as assert from 'node:assert/strict';
 import { ConfigService } from '@nestjs/config';
-import { Module, ValidationPipe, ServiceUnavailableException } from '@nestjs/common';
+import { Module, ServiceUnavailableException } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { ChatbotService, searchTerms } from '../src/chatbot/chatbot.service';
 import { ChatContactDto, ChatMessageDto } from '../src/chatbot/chatbot.dto';
@@ -20,7 +21,7 @@ function setup(settings: Record<string, string> = {}, rows = [course]) {
   const service = new ChatbotService({ curso: courses, servicio: empty, preguntaFrecuente: empty, contacto: contacts } as any, config);
   return { service, calls, saved: () => saved };
 }
-const pipe = new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true, transformOptions: { enableImplicitConversion: true } });
+const pipe = createValidationPipe();
 const validate = (value: unknown, metatype: any) => pipe.transform(value, { type: 'body', metatype });
 
 test('chat input validates lengths, nested roles, whitespace and unknown fields', async () => {

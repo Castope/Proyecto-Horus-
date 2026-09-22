@@ -31,12 +31,10 @@ export class ContactoService {
         mensaje: 'Mensaje enviado correctamente. Nos pondremos en contacto pronto.',
         id: nuevo.id,
       };
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Error desconocido';
+    } catch {
       throw new InternalServerErrorException({
         ok: false,
         mensaje: 'Error al enviar el mensaje. Intente más tarde.',
-        error: msg,
       });
     }
   }

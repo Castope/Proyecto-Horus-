@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect } from 'react'
-import type { ChangeEvent, FormEvent } from 'react'
+import type { ChangeEvent, SubmitEvent } from 'react'
 import { Link } from 'react-router-dom'
 import useFadeUp from '../../hooks/useFadeUp'
 import { registrarReclamo } from '../../api'
@@ -111,7 +111,7 @@ export default function LibroReclamaciones() {
     setPaso(3)
   }
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!form.aceptaTerminos) return
     setLoading(true)

@@ -10,23 +10,11 @@ export class NewsletterService {
 
   async subscribe(dto: SubscribeNewsletterDto) {
     const email = dto.email.toLowerCase().trim();
-    const existing = await this.prisma.newsletter.findFirst({ where: { email } });
-
-    if (existing) {
-      if (!existing.activo) {
-        await this.prisma.newsletter.update({ where: { id: existing.id }, data: { activo: true, interes: dto.interes || existing.interes } });
-      }
-      return {
-        ok: true,
-        mensaje: '¡Gracias! Tu correo ya se encuentra registrado para recibir novedades.',
-      };
-    }
-
-    await this.prisma.newsletter.create({ data: {
-      email,
-      interes: dto.interes || 'market',
-      activo: true,
-    } });
+    await this.prisma.newsletter.upsert({
+      where: { email },
+      create: { email, interes: dto.interes || 'market', activo: true },
+      update: { activo: true, ...(dto.interes ? { interes: dto.interes } : {}) },
+    });
 
     return {
       ok: true,

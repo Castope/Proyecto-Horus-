@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { AdminItem } from '@prisma/client';
 import { CreateItemDto } from './dto/create-item.dto';
@@ -36,6 +36,9 @@ export class ItemsService {
   }
 
   async update(id: number, dto: UpdateItemDto) {
+    if (!Object.values(dto).some(value => value !== undefined) || Object.values(dto).some(value => value === null)) {
+      throw new BadRequestException({ ok: false, mensaje: 'Envía al menos un campo válido; no se aceptan valores null.' });
+    }
     let item = await this.prisma.adminItem.findUnique({ where: { id } });
     if (!item) {
       throw new NotFoundException({ ok: false, mensaje: 'Elemento no encontrado.' });

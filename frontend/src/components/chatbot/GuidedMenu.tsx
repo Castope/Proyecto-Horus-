@@ -36,11 +36,10 @@ export default function GuidedMenu({ onAnswer, onContact, onWrite }: {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 15000);
     let current = true;
-    setLoading(true); setError(''); setItems([]); setSelected(''); setCategory('');
     const load = async () => {
       const records: Item[] = [];
       let page = 1;
-      let pages = 1;
+      let pages: number;
       do {
         const data = await get<{ items: Item[]; pagination: { pages: number } }>(section + '?limit=100&page=' + page, controller.signal);
         records.push(...data.items); pages = data.pagination.pages; page++;
@@ -57,7 +56,7 @@ export default function GuidedMenu({ onAnswer, onContact, onWrite }: {
   const name = (item: Item) => item.titulo || item.pregunta || 'Sin título';
   const selectSection = (value: Section | null) => {
     actionController.current?.abort(); actionController.current = null; actionLock.current = false; setBusy(false);
-    setItems([]); setSelected(''); setCategory(''); setError(''); setSection(value);
+    setItems([]); setSelected(''); setCategory(''); setError(''); setLoading(value !== null); setSection(value);
   };
   const answer = async (action: Action, label: string) => {
     if (!section || !selectedItem || actionLock.current) return;
@@ -125,7 +124,7 @@ export default function GuidedMenu({ onAnswer, onContact, onWrite }: {
         </div>}
       </fieldset>}
       {busy && <p role="status">Consultando información…</p>}
-      {error && <p className="hc-guide-error" role="alert">{error} <button type="button" onClick={() => setReload(value => value + 1)} disabled={loading || busy}>Recargar opciones</button></p>}
+      {error && <p className="hc-guide-error" role="alert">{error} <button type="button" onClick={() => { setLoading(true); setError(''); setItems([]); setSelected(''); setCategory(''); setReload(value => value + 1); }} disabled={loading || busy}>Recargar opciones</button></p>}
       <button type="button" className="hc-back" onClick={onWrite}>Prefiero escribir mi consulta</button>
     </>}
   </section>;

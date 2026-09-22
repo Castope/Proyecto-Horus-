@@ -1,4 +1,5 @@
 import js from '@eslint/js'
+import tseslint from 'typescript-eslint'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
@@ -16,6 +17,16 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
+    },
+  },
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [tseslint.configs.eslintRecommended],
+    languageOptions: { parser: tseslint.parser },
+    plugins: { '@typescript-eslint': tseslint.plugin },
+    rules: {
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
     },
   },
 ])

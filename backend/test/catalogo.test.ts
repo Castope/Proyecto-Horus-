@@ -1,9 +1,10 @@
 import 'reflect-metadata';
+import { createValidationPipe } from '../src/common/validation';
 import { test } from 'node:test';
 import * as assert from 'node:assert/strict';
-import { ValidationPipe, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { GUARDS_METADATA } from '@nestjs/common/constants';
-import { Prisma } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { CatalogoService } from '../src/catalogo/catalogo.service';
 import { CatalogoQueryDto, CreateCursoDto, UpdateCursoDto, CreatePreguntaFrecuenteDto } from '../src/catalogo/catalogo.dto';
 import { AdminCursoController, AdminServicioController, AdminPreguntaFrecuenteController } from '../src/catalogo/catalogo.controllers';
@@ -11,10 +12,7 @@ import { JwtAuthGuard } from '../src/common/guards/jwt-auth.guard';
 import { AuthController } from '../src/admin/auth/auth.controller';
 import { GaleriaService } from '../src/galeria/galeria.service';
 
-const pipe = new ValidationPipe({
-  whitelist: true, forbidNonWhitelisted: true, transform: true,
-  transformOptions: { enableImplicitConversion: true },
-});
+const pipe = createValidationPipe();
 const validate = (value: unknown, metatype: any) => pipe.transform(value, { type: 'body', metatype });
 function service(model: object) { return new CatalogoService({ curso: model, servicio: model, preguntaFrecuente: model } as any); }
 
@@ -75,7 +73,7 @@ test('archive preserves record and changes state', async () => {
 });
 
 test('duplicate slugs become HTTP 409 and empty updates are rejected', async () => {
-  const api = service({ create: async () => { throw new Prisma.PrismaClientKnownRequestError('Duplicate', { code: 'P2002', clientVersion: '6.19.0' }); } });
+  const api = service({ create: async () => { throw new PrismaClientKnownRequestError('Duplicate', { code: 'P2002', clientVersion: '6.19.0' }); } });
   await assert.rejects(() => api.create('cursos', { slug: 'duplicado' }), ConflictException);
   await assert.rejects(() => api.update('cursos', 1, {}), BadRequestException);
 });

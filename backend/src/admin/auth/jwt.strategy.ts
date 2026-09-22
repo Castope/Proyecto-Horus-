@@ -30,6 +30,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
+    if (!payload || !Number.isSafeInteger(payload.id) || payload.id <= 0) {
+      throw new UnauthorizedException({ ok: false, mensaje: 'Identidad no válida.' });
+    }
     const user = await this.prisma.adminUser.findUnique({ where: { id: payload.id } });
     if (!user) {
       throw new UnauthorizedException({ ok: false, mensaje: 'Usuario no encontrado o inactivo.' });

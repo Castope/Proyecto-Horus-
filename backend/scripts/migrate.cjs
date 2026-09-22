@@ -1,30 +1,34 @@
-const { DataTypes, QueryTypes } = require('sequelize');
+const { readFileSync } = require('node:fs');
+const { join } = require('node:path');
 const { connect } = require('./database.cjs');
-async function run() {
-  const db = connect();
+const versions = ['20260909-create-catalogo', '20260921-create-cotizaciones'];
+async function applySql(db, name) {
+  const sql = readFileSync(join(__dirname, '../migrations', name + '.sql'), 'utf8');
+  for (const statement of sql.split(';').map(s => s.trim()).filter(Boolean)) await db.query(statement);
+}
+async function migrate() {
+  const db = await connect();
   let locked = false;
   try {
-    const [result] = await db.query("SELECT GET_LOCK('horus_catalogo_migrations', 10) AS acquired", { type: QueryTypes.SELECT });
+    const [[result]] = await db.query("SELECT GET_LOCK('horus_catalogo_migrations', 10) AS acquired");
     if (Number(result.acquired) !== 1) throw new Error('Otra migración está en ejecución.');
     locked = true;
-    const qi = db.getQueryInterface();
-    await qi.createTable('horus_migrations', {
-      name: { type: DataTypes.STRING(190), primaryKey: true, allowNull: false },
-      applied_at: { type: DataTypes.DATE, allowNull: false },
-    });
-    for (const name of ['20260909-create-catalogo', '20260921-create-cotizaciones']) {
-    const existing = await db.query('SELECT name FROM horus_migrations WHERE name = :name', {
-      replacements: { name }, type: QueryTypes.SELECT,
-    });
-    if (!existing.length) {
-      await require('../migrations/' + name + '.cjs').up(qi);
-      await qi.bulkInsert('horus_migrations', [{ name, applied_at: new Date() }]);
+    await db.query('CREATE TABLE IF NOT EXISTS horus_migrations (name VARCHAR(190) NOT NULL PRIMARY KEY, applied_at DATETIME NOT NULL)');
+    for (const name of versions) {
+      const [existing] = await db.execute('SELECT name FROM horus_migrations WHERE name = ?', [name]);
+      if (!existing.length) {
+        await applySql(db, name);
+        await db.execute('INSERT INTO horus_migrations (name, applied_at) VALUES (?, ?)', [name, new Date()]);
+      }
     }
-    }
-    console.log('Migraciones de catálogo aplicadas. No se insertaron datos de ejemplo.');
+    console.log('Migraciones aplicadas. Se conservó el historial y no se insertaron datos de ejemplo.');
   } finally {
     try { if (locked) await db.query("SELECT RELEASE_LOCK('horus_catalogo_migrations')"); }
-    finally { await db.close(); }
+    finally { await db.end(); }
   }
 }
-run().catch(() => { console.error('No se pudo aplicar la migración. Revisa la conexión, permisos y esquema de MySQL.'); process.exitCode = 1; });
+if (require.main === module) migrate().catch(() => {
+  console.error('No se pudo aplicar la migración. Revisa conexión, permisos y esquema de MySQL.');
+  process.exitCode = 1;
+});
+module.exports = { applySql, migrate };

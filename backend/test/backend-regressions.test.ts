@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { test } from 'node:test';
 import * as assert from 'node:assert/strict';
 import { BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common';
-import { UniqueConstraintError } from 'sequelize';
+import { Prisma } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { createValidationPipe } from '../src/common/validation';
 import { RegisterDto } from '../src/admin/auth/dto/register.dto';
@@ -37,12 +37,12 @@ test('auth normalizes identity, preserves password spaces and rejects bcrypt tru
 });
 
 test('registration handles a unique-key race as 409', async () => {
-  const service = new AuthService({ findOne: async () => null, create: async () => { throw new UniqueConstraintError({ errors: [] }); } } as any, {} as any);
+  const service = new AuthService({ adminUser: { findFirst: async () => null, create: async () => { throw new Prisma.PrismaClientKnownRequestError('Duplicate', { code: 'P2002', clientVersion: '6.19.0' }); } } } as any, {} as any);
   await assert.rejects(() => service.register(account), ConflictException);
 });
 
 test('JWT rejects malformed identities before querying the database', async () => {
-  const strategy = new JwtStrategy(new ConfigService({ JWT_SECRET: 'x'.repeat(32) }), { findByPk: () => assert.fail('must not query') } as any);
+  const strategy = new JwtStrategy(new ConfigService({ JWT_SECRET: 'x'.repeat(32) }), { adminUser: { findUnique: () => assert.fail('must not query') } } as any);
   for (const id of [undefined, null, '1', -1, 0, 1.2]) await assert.rejects(() => strategy.validate({ id, email: 'a@example.com' } as any), UnauthorizedException);
 });
 
@@ -60,8 +60,8 @@ test('boolean false stays false, strings cannot silently publish gallery entries
 });
 
 test('gallery and items reject empty updates before database access', async () => {
-  await assert.rejects(() => new ItemsService({} as any).update(1, {}), BadRequestException);
-  await assert.rejects(() => new GaleriaService({} as any).update(1, {}), BadRequestException);
+  await assert.rejects(() => new ItemsService({ adminItem: {} } as any).update(1, {}), BadRequestException);
+  await assert.rejects(() => new GaleriaService({ galeriaItem: {} } as any).update(1, {}), BadRequestException);
 });
 
 test('complaints validate calendar dates and communication consent', async () => {
@@ -72,14 +72,14 @@ test('complaints validate calendar dates and communication consent', async () =>
 
 test('admin messages without phone comply with the existing NOT NULL column', async () => {
   let saved: any;
-  const service = new MessagesService({ create: async (dto: any) => (saved = dto) } as any);
+  const service = new MessagesService({ contacto: { create: async ({ data: dto }: any) => (saved = dto) } } as any);
   await service.create({ nombre: 'Alex', email: 'alex@example.com', asunto: 'Consulta', mensaje: 'Mensaje de prueba' });
   assert.equal(saved.telefono, ''); assert.equal(saved.estado, 'nuevo');
 });
 
 test('public form errors do not disclose database internals', async () => {
   const model = { create: async () => { throw new Error('secret database query'); } } as any;
-  for (const service of [new ContactoService(model, {} as any), new ReclamacionesService(model, {} as any)]) {
+  for (const service of [new ContactoService({ contacto: model } as any, {} as any), new ReclamacionesService({ reclamacion: model } as any, {} as any)]) {
     try { await service.create({} as any); assert.fail('expected error'); }
     catch (error) { assert.equal(error.getStatus(), 500); assert.ok(!JSON.stringify(error.getResponse()).includes('secret')); }
   }
@@ -87,7 +87,7 @@ test('public form errors do not disclose database internals', async () => {
 
 test('complaint reference has a UUID instead of a four-digit collision space', async () => {
   const references: string[] = [];
-  const service = new ReclamacionesService({ create: async (dto: any) => { references.push(dto.numero_reclamo); return { id: 1 }; } } as any, { sendReclamoConstancia: async () => {} } as any);
+  const service = new ReclamacionesService({ reclamacion: { create: async ({ data: dto }: any) => { references.push(dto.numero_reclamo); return { id: 1 }; } } } as any, { sendReclamoConstancia: async () => {} } as any);
   await service.create({} as any); await service.create({} as any);
   assert.notEqual(references[0], references[1]);
   assert.match(references[0], /^HG-\d{8}-[0-9a-f-]{36}$/);
@@ -95,23 +95,23 @@ test('complaint reference has a UUID instead of a four-digit collision space', a
 
 test('newsletter reactivates existing subscriptions through atomic findOrCreate', async () => {
   let updates: any;
-  const service = new NewsletterService({ findOrCreate: async (options: any) => {
+  const service = new NewsletterService({ newsletter: { findOrCreate: async (options: any) => {
     assert.equal(options.where.email, 'alex@example.com');
     return [{ activo: false, interes: 'market', update: async (value: any) => { updates = value; } }, false];
-  } } as any);
+  } } } as any);
   assert.equal((await service.subscribe({ email: ' ALEX@example.com ' })).ok, true);
   assert.deepEqual(updates, { activo: true, interes: 'market' });
 });
 
 test('settings reads never seed sample values or expose unknown keys', async () => {
-  const service = new SettingsService({ findAll: async () => [{ clave: 'empresa_nombre', valor: 'Mi empresa' }, { clave: 'internal_key', valor: 'private' }] } as any);
+  const service = new SettingsService({ setting: { findMany: async () => [{ clave: 'empresa_nombre', valor: 'Mi empresa' }, { clave: 'internal_key', valor: 'private' }] } } as any);
   const { settings } = await service.getPublicSettings();
   assert.equal(settings.empresa_nombre, 'Mi empresa'); assert.equal(settings.telefono_principal, '');
   assert.equal(settings.internal_key, undefined);
 });
 
 test('settings validate the whole payload before writing', async () => {
-  const service = new SettingsService({} as any);
+  const service = new SettingsService({ setting: {} } as any);
   for (const ajustes of [{}, { unknown: 'a' }, { empresa_nombre: {} }, { email_contacto: 'invalid' }, { facebook_url: 'javascript:alert(1)' }, { whatsapp: 'invalid' }]) {
     await assert.rejects(() => service.updateSettings({ ajustes } as any), BadRequestException);
   }
@@ -119,7 +119,7 @@ test('settings validate the whole payload before writing', async () => {
 
 test('all settings writes share one transaction', async () => {
   const transaction = {}; const saved: any[] = [];
-  const service = new SettingsService({ sequelize: { transaction: async (fn: any) => fn(transaction) }, upsert: async (value: any, options: any) => { assert.equal(options.transaction, transaction); saved.push(value); } } as any);
+  const service = new SettingsService({ $transaction: async (fn: any) => fn({ setting: { upsert: async ({ create }: any) => { saved.push(create); } } }) } as any);
   const result = await service.updateSettings({ ajustes: { empresa_nombre: ' Empresa ', email_contacto: 'info@example.com' } });
   assert.equal(result.actualizados, 2); assert.equal(saved[0].valor, 'Empresa');
 });

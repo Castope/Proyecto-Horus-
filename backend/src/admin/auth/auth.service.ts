@@ -1,16 +1,15 @@
 import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
+import { PrismaService } from '../../database/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
-import { AdminUser } from './admin-user.model';
+import { AdminUser } from '@prisma/client';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectModel(AdminUser)
-    private readonly adminUserModel: typeof AdminUser,
+    private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -19,17 +18,17 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto) {
-    const exists = await this.adminUserModel.findOne({ where: { email: dto.email.toLowerCase() } });
+    const exists = await this.prisma.adminUser.findFirst({ where: { email: dto.email.toLowerCase() } });
     if (exists) {
       throw new ConflictException({ ok: false, mensaje: 'Ya existe un administrador con ese correo.' });
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, 12);
-    const user = await this.adminUserModel.create({
+    const user = await this.prisma.adminUser.create({ data: {
       nombre: dto.nombre.trim(),
       email: dto.email.toLowerCase().trim(),
       password: hashedPassword,
-    });
+    } });
 
     const token = this.generateToken(user);
 
@@ -42,7 +41,7 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const user = await this.adminUserModel.findOne({ where: { email: dto.email.toLowerCase().trim() } });
+    const user = await this.prisma.adminUser.findFirst({ where: { email: dto.email.toLowerCase().trim() } });
     if (!user || !(await bcrypt.compare(dto.password, user.password))) {
       throw new UnauthorizedException({ ok: false, mensaje: 'Credenciales incorrectas.' });
     }

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { Setting } from './settings.model';
+import { PrismaService } from '../database/prisma.service';
+import { Setting } from '@prisma/client';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 
 const DEFAULT_SETTINGS: Record<string, { valor: string; descripcion: string; grupo: string }> = {
@@ -19,12 +19,11 @@ const DEFAULT_SETTINGS: Record<string, { valor: string; descripcion: string; gru
 @Injectable()
 export class SettingsService {
   constructor(
-    @InjectModel(Setting)
-    private readonly settingModel: typeof Setting,
+    private readonly prisma: PrismaService,
   ) {}
 
   private async ensureDefaults(): Promise<void> {
-    const count = await this.settingModel.count();
+    const count = await this.prisma.setting.count();
     if (count === 0) {
       const records = Object.entries(DEFAULT_SETTINGS).map(([clave, data]) => ({
         clave,
@@ -32,13 +31,13 @@ export class SettingsService {
         descripcion: data.descripcion,
         grupo: data.grupo,
       }));
-      await this.settingModel.bulkCreate(records);
+      await this.prisma.setting.createMany({ data: records, skipDuplicates: true });
     }
   }
 
   async getPublicSettings(): Promise<{ ok: boolean; settings: Record<string, string> }> {
     await this.ensureDefaults();
-    const rows = await this.settingModel.findAll();
+    const rows = await this.prisma.setting.findMany();
     const settings: Record<string, string> = {};
     for (const row of rows) {
       settings[row.clave] = row.valor;
@@ -48,11 +47,8 @@ export class SettingsService {
 
   async getAllSettingsAdmin(): Promise<{ ok: boolean; settings: Setting[] }> {
     await this.ensureDefaults();
-    const settings = await this.settingModel.findAll({
-      order: [
-        ['grupo', 'ASC'],
-        ['clave', 'ASC'],
-      ],
+    const settings = await this.prisma.setting.findMany({
+      orderBy: [{ grupo: 'asc' }, { clave: 'asc' }],
     });
     return { ok: true, settings };
   }
@@ -60,16 +56,16 @@ export class SettingsService {
   async updateSettings(dto: UpdateSettingsDto): Promise<{ ok: boolean; mensaje: string; actualizados: number }> {
     let count = 0;
     for (const [clave, valor] of Object.entries(dto.ajustes)) {
-      const existing = await this.settingModel.findOne({ where: { clave } });
+      const existing = await this.prisma.setting.findFirst({ where: { clave } });
       if (existing) {
-        await existing.update({ valor: String(valor) });
+        await this.prisma.setting.update({ where: { id: existing.id }, data: { valor: String(valor) } });
       } else {
-        await this.settingModel.create({
+        await this.prisma.setting.create({ data: {
           clave,
           valor: String(valor),
           descripcion: `Configuración de ${clave}`,
           grupo: 'general',
-        });
+        } });
       }
       count++;
     }

@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import * as assert from 'node:assert/strict';
 import { ValidationPipe, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { GUARDS_METADATA } from '@nestjs/common/constants';
-import { UniqueConstraintError } from 'sequelize';
+import { Prisma } from '@prisma/client';
 import { CatalogoService } from '../src/catalogo/catalogo.service';
 import { CatalogoQueryDto, CreateCursoDto, UpdateCursoDto, CreatePreguntaFrecuenteDto } from '../src/catalogo/catalogo.dto';
 import { AdminCursoController, AdminServicioController, AdminPreguntaFrecuenteController } from '../src/catalogo/catalogo.controllers';
@@ -16,20 +16,20 @@ const pipe = new ValidationPipe({
   transformOptions: { enableImplicitConversion: true },
 });
 const validate = (value: unknown, metatype: any) => pipe.transform(value, { type: 'body', metatype });
-function service(model: object) { return new CatalogoService(model as any, model as any, model as any); }
+function service(model: object) { return new CatalogoService({ curso: model, servicio: model, preguntaFrecuente: model } as any); }
 
 test('public list cannot reveal drafts through the estado query', async () => {
   let options: any;
-  const api = service({ findAndCountAll: async (input: any) => { options = input; return { rows: [], count: 0 }; } });
+  const api = service({ findMany: async (input: any) => { options = input; return []; }, count: async () => 0 });
   const result = await api.list('cursos', { page: 2, limit: 10, estado: 'borrador' }, true);
   assert.equal(options.where.estado, 'publicado');
-  assert.equal(options.offset, 10);
+  assert.equal(options.skip, 10);
   assert.equal(result.pagination.total, 0);
   assert.deepEqual(result.items, []);
 });
 
 test('public detail filters publication and responds 404 for missing content', async () => {
-  const api = service({ findOne: async ({ where }: any) => {
+  const api = service({ findFirst: async ({ where }: any) => {
     assert.deepEqual(where, { id: 7, estado: 'publicado' });
     return null;
   } });
@@ -37,11 +37,11 @@ test('public detail filters publication and responds 404 for missing content', a
 });
 
 test('admin detail can access drafts', async () => {
-  const api = service({ findOne: async ({ where }: any) => {
+  const api = service({ findFirst: async ({ where }: any) => {
     assert.deepEqual(where, { id: 7 });
     return { id: 7, estado: 'borrador' };
   } });
-  assert.equal((await api.detail('cursos', 7)).item.get ? false : true, true);
+  assert.equal((await api.detail('cursos', 7)).item.estado, 'borrador');
 });
 
 test('pagination rejects zero, negative, non-integer and excessive limits', async () => {
@@ -69,13 +69,13 @@ test('FAQ requires a real question and answer', async () => {
 
 test('archive preserves record and changes state', async () => {
   let updates: any;
-  const item = { update: async (value: any) => { updates = value; } };
-  await service({ findOne: async () => item }).archive('cursos', 4);
+  const item = { id: 4 };
+  await service({ findFirst: async () => item, update: async ({ data }: any) => { updates = data; return { ...item, ...data }; } }).archive('cursos', 4);
   assert.deepEqual(updates, { estado: 'archivado' });
 });
 
 test('duplicate slugs become HTTP 409 and empty updates are rejected', async () => {
-  const api = service({ create: async () => { throw new UniqueConstraintError({ errors: [] }); } });
+  const api = service({ create: async () => { throw new Prisma.PrismaClientKnownRequestError('Duplicate', { code: 'P2002', clientVersion: '6.19.0' }); } });
   await assert.rejects(() => api.create('cursos', { slug: 'duplicado' }), ConflictException);
   await assert.rejects(() => api.update('cursos', 1, {}), BadRequestException);
 });
@@ -88,10 +88,10 @@ test('administrative content requires JWT, but admin registration is public', ()
 });
 
 test('gallery public detail excludes inactive entries', async () => {
-  const gallery = new GaleriaService({ findOne: async ({ where }: any) => {
+  const gallery = new GaleriaService({ galeriaItem: { findFirst: async ({ where }: any) => {
     assert.deepEqual(where, { id: 2, activo: true });
     return null;
-  } } as any);
+  } } } as any);
   await assert.rejects(() => gallery.findOne(2, true), NotFoundException);
 });
 

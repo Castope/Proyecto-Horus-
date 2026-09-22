@@ -1,25 +1,24 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { AdminItem } from './admin-item.model';
+import { PrismaService } from '../../database/prisma.service';
+import { AdminItem } from '@prisma/client';
 import { CreateItemDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
 
 @Injectable()
 export class ItemsService {
   constructor(
-    @InjectModel(AdminItem)
-    private readonly adminItemModel: typeof AdminItem,
+    private readonly prisma: PrismaService,
   ) {}
 
   async findAll() {
-    const items = await this.adminItemModel.findAll({
-      order: [['createdAt', 'DESC']],
+    const items = await this.prisma.adminItem.findMany({
+      orderBy: [{ createdAt: 'desc' }],
     });
     return { ok: true, items };
   }
 
   async findOne(id: number) {
-    const item = await this.adminItemModel.findByPk(id);
+    let item = await this.prisma.adminItem.findUnique({ where: { id } });
     if (!item) {
       throw new NotFoundException({ ok: false, mensaje: 'Elemento no encontrado.' });
     }
@@ -27,17 +26,17 @@ export class ItemsService {
   }
 
   async create(dto: CreateItemDto) {
-    const item = await this.adminItemModel.create({
+    let item = await this.prisma.adminItem.create({ data: {
       titulo: dto.titulo.trim(),
       descripcion: dto.descripcion.trim(),
       categoria: dto.categoria || 'general',
       estado: dto.estado || 'activo',
-    });
+    } });
     return { ok: true, mensaje: 'Elemento creado correctamente.', item };
   }
 
   async update(id: number, dto: UpdateItemDto) {
-    const item = await this.adminItemModel.findByPk(id);
+    let item = await this.prisma.adminItem.findUnique({ where: { id } });
     if (!item) {
       throw new NotFoundException({ ok: false, mensaje: 'Elemento no encontrado.' });
     }
@@ -48,16 +47,16 @@ export class ItemsService {
     if (dto.categoria !== undefined) updates.categoria = dto.categoria;
     if (dto.estado !== undefined) updates.estado = dto.estado;
 
-    await item.update(updates);
+    item = await this.prisma.adminItem.update({ where: { id }, data: updates });
     return { ok: true, mensaje: 'Elemento actualizado correctamente.', item };
   }
 
   async remove(id: number) {
-    const item = await this.adminItemModel.findByPk(id);
+    let item = await this.prisma.adminItem.findUnique({ where: { id } });
     if (!item) {
       throw new NotFoundException({ ok: false, mensaje: 'Elemento no encontrado.' });
     }
-    await item.destroy();
+    await this.prisma.adminItem.delete({ where: { id } });
     return { ok: true, mensaje: 'Elemento eliminado correctamente.' };
   }
 }

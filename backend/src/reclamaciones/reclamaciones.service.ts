@@ -1,14 +1,12 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { Reclamacion } from './reclamacion.model';
+import { PrismaService } from '../database/prisma.service';
 import { CreateReclamacionDto } from './dto/create-reclamacion.dto';
 import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class ReclamacionesService {
   constructor(
-    @InjectModel(Reclamacion)
-    private readonly reclamacionModel: typeof Reclamacion,
+    private readonly prisma: PrismaService,
     private readonly mailService: MailService,
   ) {}
 
@@ -23,10 +21,11 @@ export class ReclamacionesService {
     try {
       const numero_reclamo = this.generarNumeroReclamo();
 
-      const registro = await this.reclamacionModel.create({
+      const registro = await this.prisma.reclamacion.create({ data: {
         ...dto,
+        fecha_incidente: new Date(dto.fecha_incidente),
         numero_reclamo,
-      });
+      } });
 
       // Esperar al correo antes de finalizar la función en Vercel.
       await this.mailService.sendReclamoConstancia({

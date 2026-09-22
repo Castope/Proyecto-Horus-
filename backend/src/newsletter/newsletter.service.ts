@@ -1,22 +1,20 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { Newsletter } from './newsletter.model';
+import { PrismaService } from '../database/prisma.service';
 import { SubscribeNewsletterDto } from './dto/subscribe-newsletter.dto';
 
 @Injectable()
 export class NewsletterService {
   constructor(
-    @InjectModel(Newsletter)
-    private readonly newsletterModel: typeof Newsletter,
+    private readonly prisma: PrismaService,
   ) {}
 
   async subscribe(dto: SubscribeNewsletterDto) {
     const email = dto.email.toLowerCase().trim();
-    const existing = await this.newsletterModel.findOne({ where: { email } });
+    const existing = await this.prisma.newsletter.findFirst({ where: { email } });
 
     if (existing) {
       if (!existing.activo) {
-        await existing.update({ activo: true, interes: dto.interes || existing.interes });
+        await this.prisma.newsletter.update({ where: { id: existing.id }, data: { activo: true, interes: dto.interes || existing.interes } });
       }
       return {
         ok: true,
@@ -24,11 +22,11 @@ export class NewsletterService {
       };
     }
 
-    await this.newsletterModel.create({
+    await this.prisma.newsletter.create({ data: {
       email,
       interes: dto.interes || 'market',
       activo: true,
-    });
+    } });
 
     return {
       ok: true,
@@ -37,8 +35,8 @@ export class NewsletterService {
   }
 
   async findAll() {
-    const subscribers = await this.newsletterModel.findAll({
-      order: [['createdAt', 'DESC']],
+    const subscribers = await this.prisma.newsletter.findMany({
+      orderBy: [{ createdAt: 'desc' }],
     });
     return {
       ok: true,
@@ -48,11 +46,11 @@ export class NewsletterService {
   }
 
   async remove(id: number) {
-    const subscriber = await this.newsletterModel.findByPk(id);
+    const subscriber = await this.prisma.newsletter.findUnique({ where: { id } });
     if (!subscriber) {
       throw new NotFoundException({ ok: false, mensaje: 'Suscriptor no encontrado.' });
     }
-    await subscriber.destroy();
+    await this.prisma.newsletter.delete({ where: { id } });
     return {
       ok: true,
       mensaje: 'Suscriptor eliminado correctamente.',

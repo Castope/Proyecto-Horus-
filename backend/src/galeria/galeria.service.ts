@@ -1,14 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { GaleriaItem } from './galeria.model';
+import { PrismaService } from '../database/prisma.service';
 import { CreateGaleriaDto } from './dto/create-galeria.dto';
 import { UpdateGaleriaDto } from './dto/update-galeria.dto';
 
 @Injectable()
 export class GaleriaService {
   constructor(
-    @InjectModel(GaleriaItem)
-    private readonly galeriaModel: typeof GaleriaItem,
+    private readonly prisma: PrismaService,
   ) {}
 
   async findPublic(categoria?: string) {
@@ -17,12 +15,9 @@ export class GaleriaService {
       where.categoria = categoria;
     }
 
-    const items = await this.galeriaModel.findAll({
+    const items = await this.prisma.galeriaItem.findMany({
       where,
-      order: [
-        ['orden', 'ASC'],
-        ['createdAt', 'DESC'],
-      ],
+      orderBy: [{ orden: 'asc' }, { createdAt: 'desc' }],
     });
 
     return {
@@ -38,12 +33,9 @@ export class GaleriaService {
       where.categoria = categoria;
     }
 
-    const items = await this.galeriaModel.findAll({
+    const items = await this.prisma.galeriaItem.findMany({
       where,
-      order: [
-        ['orden', 'ASC'],
-        ['createdAt', 'DESC'],
-      ],
+      orderBy: [{ orden: 'asc' }, { createdAt: 'desc' }],
     });
 
     return {
@@ -54,7 +46,7 @@ export class GaleriaService {
   }
 
   async findOne(id: number, publico = false) {
-    const item = await this.galeriaModel.findOne({ where: publico ? { id, activo: true } : { id } });
+    let item = await this.prisma.galeriaItem.findFirst({ where: publico ? { id, activo: true } : { id } });
     if (!item) {
       throw new NotFoundException({ ok: false, mensaje: 'Elemento de galería no encontrado.' });
     }
@@ -62,12 +54,12 @@ export class GaleriaService {
   }
 
   async create(dto: CreateGaleriaDto) {
-    const item = await this.galeriaModel.create({
+    let item = await this.prisma.galeriaItem.create({ data: {
       ...dto,
       categoria: dto.categoria.trim().toLowerCase(),
       activo: dto.activo !== undefined ? dto.activo : true,
       orden: dto.orden || 0,
-    });
+    } });
     return {
       ok: true,
       mensaje: 'Elemento de galería creado exitosamente.',
@@ -76,7 +68,7 @@ export class GaleriaService {
   }
 
   async update(id: number, dto: UpdateGaleriaDto) {
-    const item = await this.galeriaModel.findByPk(id);
+    let item = await this.prisma.galeriaItem.findUnique({ where: { id } });
     if (!item) {
       throw new NotFoundException({ ok: false, mensaje: 'Elemento de galería no encontrado.' });
     }
@@ -89,7 +81,7 @@ export class GaleriaService {
     if (dto.orden !== undefined) updates.orden = dto.orden;
     if (dto.activo !== undefined) updates.activo = dto.activo;
 
-    await item.update(updates);
+    item = await this.prisma.galeriaItem.update({ where: { id }, data: updates });
     return {
       ok: true,
       mensaje: 'Elemento de galería actualizado exitosamente.',
@@ -98,11 +90,11 @@ export class GaleriaService {
   }
 
   async remove(id: number) {
-    const item = await this.galeriaModel.findByPk(id);
+    let item = await this.prisma.galeriaItem.findUnique({ where: { id } });
     if (!item) {
       throw new NotFoundException({ ok: false, mensaje: 'Elemento de galería no encontrado.' });
     }
-    await item.destroy();
+    await this.prisma.galeriaItem.delete({ where: { id } });
     return {
       ok: true,
       mensaje: 'Elemento de galería eliminado exitosamente.',

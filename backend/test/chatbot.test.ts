@@ -1,4 +1,3 @@
-import { Op } from 'sequelize';
 import 'reflect-metadata';
 import { test } from 'node:test';
 import * as assert from 'node:assert/strict';
@@ -14,10 +13,11 @@ const course = { id: 1, titulo: 'Curso de redes', descripcion: 'Aprende redes lo
 function setup(settings: Record<string, string> = {}, rows = [course]) {
   const calls: any[] = [];
   let saved: any;
-  const courses = { findAll: async (options: any) => { calls.push(options); return rows; } };
-  const empty = { findAll: async (options: any) => { calls.push(options); return []; } };
-  const contacts = { create: async (data: any) => { saved = data; return { id: 42 }; } };
-  const service = new ChatbotService(courses as any, empty as any, empty as any, contacts as any, new ConfigService(settings));
+  const courses = { findMany: async (options: any) => { calls.push(options); return rows; } };
+  const empty = { findMany: async (options: any) => { calls.push(options); return []; } };
+  const contacts = { create: async ({ data }: any) => { saved = data; return { id: 42 }; } };
+  const config = { get: (key: string) => settings[key] } as ConfigService;
+  const service = new ChatbotService({ curso: courses, servicio: empty, preguntaFrecuente: empty, contacto: contacts } as any, config);
   return { service, calls, saved: () => saved };
 }
 const pipe = new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true, transformOptions: { enableImplicitConversion: true } });
@@ -41,9 +41,9 @@ test('retrieval always enforces publication and explicitly selects only public c
   assert.equal(calls.length, 3);
   for (const call of calls) {
     assert.equal(call.where.estado, 'publicado');
-    assert.ok(Array.isArray(call.attributes));
-    assert.ok(call.limit <= 18);
-    assert.ok(!call.attributes.includes('email'));
+    assert.ok(typeof call.select === 'object');
+    assert.ok(call.take <= 18);
+    assert.ok(!('email' in call.select));
   }
   assert.equal(result.sources[0].id, 'curso-1');
 });
@@ -63,8 +63,8 @@ test('greeting avoids database and model requests; accents normalize', async () 
 });
 
 test('database errors are sanitized', async () => {
-  const model = { findAll: async () => { throw new Error('password=private'); } };
-  const service = new ChatbotService(model as any, model as any, model as any, {} as any, new ConfigService());
+  const model = { findMany: async () => { throw new Error('password=private'); } };
+  const service = new ChatbotService({ curso: model, servicio: model, preguntaFrecuente: model } as any, new ConfigService());
   await assert.rejects(() => service.reply({ message: 'cursos' }), (err: ServiceUnavailableException) => {
     assert.equal(err.getStatus(), 503);
     assert.ok(!JSON.stringify(err.getResponse()).includes('private'));
@@ -165,5 +165,5 @@ test('generic service question retrieves catalogue without requiring a literal s
   const fixture = setup();
   await fixture.service.reply({ message: '¿Qué servicios ofrecen?' });
   assert.equal(fixture.calls[1].where.estado, 'publicado');
-  assert.equal(fixture.calls[1].where[Op.or], undefined);
+  assert.equal(fixture.calls[1].where.OR, undefined);
 });

@@ -1,20 +1,16 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { AdminAuthContext } from './adminAuth';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { getCurrentAdmin } from '../services';
 import type { AdminUser } from '../types';
-interface AdminAuthContextValue {
- user: AdminUser | null; token: string | null; isAuthenticated: boolean; checking: boolean;
- login: (value: string) => void; logout: () => void;
-}
 const STORAGE_KEY = 'horus-admin-token';
-const AdminAuthContext = createContext<AdminAuthContextValue | undefined>(undefined);
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
  const [token, setToken] = useState<string | null>(() => localStorage.getItem(STORAGE_KEY));
  const [user, setUser] = useState<AdminUser | null>(null);
  const [checking, setChecking] = useState(() => Boolean(localStorage.getItem(STORAGE_KEY)));
  useEffect(() => {
    let cancelled = false;
-   if (!token) { setUser(null); setChecking(false); return; }
-   setChecking(true); localStorage.setItem(STORAGE_KEY, token);
+   if (!token) return;
+   localStorage.setItem(STORAGE_KEY, token);
    getCurrentAdmin(token).then(response => {
      if (cancelled) return;
      if (response.ok && response.user) setUser(response.user);
@@ -34,9 +30,4 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
    logout: () => { localStorage.removeItem(STORAGE_KEY); setToken(null); setUser(null); setChecking(false); },
  }), [user, token, checking]);
  return <AdminAuthContext.Provider value={value}>{children}</AdminAuthContext.Provider>;
-}
-export function useAdminAuth() {
- const value = useContext(AdminAuthContext);
- if (!value) throw new Error('useAdminAuth debe usarse dentro de AdminAuthProvider');
- return value;
 }

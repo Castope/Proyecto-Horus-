@@ -10,7 +10,8 @@
     "strict": false
   },
   "include": [
-    "backend/src/**/*"
+    "backend/src/**/*",
+    "backend/test/**/*.ts"
   ],
   "exclude": [
     "node_modules",

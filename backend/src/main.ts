@@ -1,6 +1,7 @@
+import { createValidationPipe } from './common/validation';
 import { corsOrigins } from './deployment.config';
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
@@ -20,16 +21,7 @@ async function bootstrap() {
   });
 
   // Validación y transformación automática de DTOs con class-validator
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: {
-        enableImplicitConversion: true,
-      },
-    }),
-  );
+  app.useGlobalPipes(createValidationPipe());
 
   // Documentación OpenAPI / Swagger
   const swaggerConfig = new DocumentBuilder()

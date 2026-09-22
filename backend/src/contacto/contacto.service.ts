@@ -1,23 +1,21 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { Contacto } from './contacto.model';
+import { PrismaService } from '../database/prisma.service';
 import { CreateContactoDto } from './dto/create-contacto.dto';
 import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class ContactoService {
   constructor(
-    @InjectModel(Contacto)
-    private readonly contactoModel: typeof Contacto,
+    private readonly prisma: PrismaService,
     private readonly mailService: MailService,
   ) {}
 
   async create(dto: CreateContactoDto) {
     try {
-      const nuevo = await this.contactoModel.create({
+      const nuevo = await this.prisma.contacto.create({ data: {
         ...dto,
         estado: 'nuevo',
-      });
+      } });
 
       // Esperar al correo antes de finalizar la función en Vercel.
       await this.mailService.sendContactoNotificacion({
@@ -33,12 +31,10 @@ export class ContactoService {
         mensaje: 'Mensaje enviado correctamente. Nos pondremos en contacto pronto.',
         id: nuevo.id,
       };
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Error desconocido';
+    } catch {
       throw new InternalServerErrorException({
         ok: false,
         mensaje: 'Error al enviar el mensaje. Intente más tarde.',
-        error: msg,
       });
     }
   }

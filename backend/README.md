@@ -1,17 +1,18 @@
 # Backend Horus
 
-NestJS + Sequelize + MySQL. El catálogo no contiene datos de ejemplo: los registros se crean desde la API administrativa. Una base vacía devuelve listas vacías y contadores en cero.
+NestJS + Prisma + MySQL. El catálogo no contiene datos de ejemplo: los registros se crean desde la API administrativa. Una base vacía devuelve listas vacías y contadores en cero.
 
-## Instalación y esquema
+## Instalacion y esquema
 
-1. Ejecutar `npm ci`.
-2. Configurar `.env` a partir de `.env.example`, conservando tus credenciales locales.
-3. En una instalación existente, ejecutar `npm run db:migrate`: crea las tablas `cursos`, `servicios`, `preguntas_frecuentes` y el registro `horus_migrations`. No cambia las tablas anteriores ni inserta contenido.
-4. Ejecutar `npm run start:dev`. Swagger: `http://localhost:3000/api/docs`.
+Consulta [la guia de migracion a Prisma](PRISMA.md) antes de activar el cambio sobre una base existente.
 
-La migración requiere que la base de datos ya exista. Para una instalación nueva sin las tablas anteriores, inicializarlas en desarrollo con `DB_SYNC=true` al arrancar una vez; después volver a `DB_SYNC=false`. La sincronización solo crea tablas faltantes, nunca usa alter, y está desactivada en producción. El esquema anterior aún necesita una migración base antes de desplegar una instalación completamente nueva en producción.
+1. Ejecutar `npm ci` (genera el cliente Prisma).
+2. Configurar `.env` desde `.env.example`; se mantienen DB_* y TLS.
+3. Ejecutar `npm run db:check` y revisar cualquier diferencia. Para tablas de catalogo/cotizaciones pendientes, revisar y ejecutar `npm run db:migrate`.
+4. Para una base completamente vacia, usar `npm run db:init` antes de `db:migrate`.
+5. Ejecutar `npm run start:dev`. Swagger: `http://localhost:3000/api/docs`.
 
-Las migraciones MySQL DDL no ofrecen rollback transaccional; respaldar la base antes de desplegar. El comando usa un bloqueo de migración y registra la versión después de crear las tablas. Volver a ejecutarlo no inserta registros de negocio.
+El arranque no sincroniza tablas. Los builds no ejecutan migraciones. Las versiones anteriores en `horus_migrations` se conservan.
 
 ## Autenticación
 
@@ -53,4 +54,4 @@ Respuesta: `{ ok: true, items: [...], pagination: { page, limit, total, pages } 
 
 ## Alcance
 
-Esta entrega amplía el backend. Las páginas públicas y el panel aún deben conectarse a estos endpoints; el contenido actual del frontend no se importa automáticamente. Quedan pendientes roles granulares, archivos, seguimiento ampliado de reclamaciones/cotizaciones y recuperación de contraseña. Las pruebas usan sustitutos de base de datos solo dentro de test; el servidor usa modelos MySQL reales.
+Esta entrega amplía el backend. Las páginas públicas y el panel aún deben conectarse a estos endpoints; el contenido actual del frontend no se importa automáticamente. Quedan pendientes roles granulares, archivos, seguimiento ampliado de reclamaciones/cotizaciones y recuperación de contraseña. Las pruebas usan sustitutos de base de datos solo dentro de test; el servidor usa Prisma con MySQL real.

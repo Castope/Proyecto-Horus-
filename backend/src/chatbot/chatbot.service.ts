@@ -1,9 +1,6 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
-import { Curso, Servicio, PreguntaFrecuente } from '../catalogo/catalogo.models';
-import { Contacto } from '../contacto/contacto.model';
+import { PrismaService } from '../database/prisma.service';
 import { ChatContactDto, ChatMessageDto } from './chatbot.dto';
 
 type Source = { id: string; title: string; text: string };
@@ -20,10 +17,7 @@ export class ChatbotService {
   private readonly logger = new Logger(ChatbotService.name);
   private active = 0;
   constructor(
-    @InjectModel(Curso) private readonly cursos: typeof Curso,
-    @InjectModel(Servicio) private readonly servicios: typeof Servicio,
-    @InjectModel(PreguntaFrecuente) private readonly preguntas: typeof PreguntaFrecuente,
-    @InjectModel(Contacto) private readonly contactos: typeof Contacto,
+    private readonly prisma: PrismaService,
     private readonly config: ConfigService,
   ) {}
 
@@ -33,17 +27,17 @@ export class ChatbotService {
     const courseIntent = /curso|capacitacion|formacion/.test(normalize(query));
     const serviceIntent = /servicio|solucion/.test(normalize(query));
     const specific = words.filter(word => !['curso', 'capacitacione', 'capacitacion', 'formacion', 'servicio', 'solucione'].includes(word));
-    const where = (fields: string[], generic: boolean) => ({
+    const where = (fields: string[], generic: boolean): any => ({
       estado: 'publicado',
-      ...(!generic && words.length ? { [Op.or]: fields.flatMap(field => words.map(word => ({ [field]: { [Op.like]: '%' + word + '%' } }))) } : {}),
+      ...(!generic && words.length ? { OR: fields.flatMap(field => words.map(word => ({ [field]: field === 'modalidad' ? { in: ['presencial', 'virtual', 'hibrida'].filter(value => value.includes(word)) } : field === 'categoria' && fields.includes('alcance') ? { in: ['cableado', 'camaras', 'soporte', 'asesoramiento', 'otros'].filter(value => value.includes(word)) } : { contains: word } }))) } : {}),
     });
     const [courses, services, faqs] = await Promise.all([
-      this.cursos.findAll({ where: where(['titulo', 'descripcion', 'temario', 'modalidad'], courseIntent && !specific.length),
-        attributes: ['id', 'titulo', 'descripcion', 'tipo', 'modalidad', 'duracion', 'fecha_inicio', 'temario'], limit: 18, order: [['updatedAt', 'DESC']] }),
-      this.servicios.findAll({ where: where(['titulo', 'descripcion', 'categoria', 'alcance'], serviceIntent && !specific.length),
-        attributes: ['id', 'titulo', 'descripcion', 'categoria', 'alcance'], limit: 18, order: [['updatedAt', 'DESC']] }),
-      this.preguntas.findAll({ where: where(['pregunta', 'respuesta', 'categoria'], false),
-        attributes: ['id', 'pregunta', 'respuesta', 'categoria'], limit: 18, order: [['orden', 'ASC']] }),
+      this.prisma.curso.findMany({ where: where(['titulo', 'descripcion', 'temario', 'modalidad'], courseIntent && !specific.length),
+        select: { id: true, titulo: true, descripcion: true, tipo: true, modalidad: true, duracion: true, fecha_inicio: true, temario: true }, take: 18, orderBy: [{ updatedAt: 'desc' }] }),
+      this.prisma.servicio.findMany({ where: where(['titulo', 'descripcion', 'categoria', 'alcance'], serviceIntent && !specific.length),
+        select: { id: true, titulo: true, descripcion: true, categoria: true, alcance: true }, take: 18, orderBy: [{ updatedAt: 'desc' }] }),
+      this.prisma.preguntaFrecuente.findMany({ where: where(['pregunta', 'respuesta', 'categoria'], false),
+        select: { id: true, pregunta: true, respuesta: true, categoria: true }, take: 18, orderBy: [{ orden: 'asc' }] }),
     ]);
     const sources: Source[] = [
       ...courses.map(row => ({ id: 'curso-' + row.id, title: plain(row.titulo, 160),
@@ -130,12 +124,12 @@ export class ChatbotService {
 
   async contact(dto: ChatContactDto) {
     // This endpoint only writes a contact; the model cannot call it or read contacts.
-    const item = await this.contactos.create({
+    let item = await this.prisma.contacto.create({ data: {
       nombre: dto.nombre.trim(), email: dto.email.trim(), telefono: dto.telefono.trim(),
       asunto: ('[Chatbot] ' + dto.asunto.trim()).slice(0, 150),
       mensaje: dto.mensaje.trim() + '\n\nSolicitud enviada desde el chatbot. El visitante autorizó el contacto.',
       estado: 'nuevo',
-    });
+    } });
     return { ok: true, id: item.id, mensaje: 'Solicitud registrada. El equipo podrá atenderla desde su bandeja de mensajes.' };
   }
 }

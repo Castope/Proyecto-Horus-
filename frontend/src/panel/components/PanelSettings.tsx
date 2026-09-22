@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useRequestStatus } from '../hooks/useRequestStatus';
+import { useEffect, useRef, useState, type SubmitEvent } from 'react';
 import { useAdminAuth } from '../context';
 import { panelRequest, errorMessage } from '../services/panelApi';
 import PanelIcon from './PanelIcon';
@@ -7,21 +8,20 @@ export default function PanelSettings() {
   const { token } = useAdminAuth();
   const [settings, setSettings] = useState<Setting[]>([]);
   const [values, setValues] = useState<Record<string, string>>({});
-  const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const lock = useRef(false);
   const [reload, setReload] = useState(0);
+  const { loading, error, setLoading, setError } = useRequestStatus(JSON.stringify([token, reload]));
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true); setError('');
     panelRequest<{ settings: Setting[] }>('settings', token!, 'GET', undefined, controller.signal).then(data => {
+      if (controller.signal.aborted) return;
       setSettings(data.settings); setValues(Object.fromEntries(data.settings.map(s => [s.clave, s.valor])));
     }).catch(err => { if (!controller.signal.aborted) setError(errorMessage(err)); }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [token, reload]);
-  const save = async (event: FormEvent) => {
+  }, [token, reload, setLoading, setError]);
+  const save = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault(); if (lock.current) return; lock.current = true; setSaving(true); setError(''); setNotice('');
     try {
       await panelRequest('settings', token!, 'PUT', { ajustes: values });

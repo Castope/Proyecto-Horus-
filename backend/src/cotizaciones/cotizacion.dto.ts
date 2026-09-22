@@ -30,8 +30,8 @@ export class EstadoCotizacionDto {
   @IsInt() @Min(1) revision: number;
 }
 export class CotizacionQueryDto {
-  @IsInt() @Min(1) page: number = 1;
-  @IsInt() @Min(1) @Max(100) limit: number = 12;
+  @Type(() => Number) @IsInt() @Min(1) page: number = 1;
+  @Type(() => Number) @IsInt() @Min(1) @Max(100) limit: number = 12;
   @IsString() @Length(0, 100) search: string = '';
   @IsIn(['', 'borrador', 'enviada', 'aceptada', 'rechazada', 'anulada']) estado: string = '';
 }

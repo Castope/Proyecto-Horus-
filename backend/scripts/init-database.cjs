@@ -1,27 +1,21 @@
-// Explicit initialization of an EMPTY database. Never run during Vercel builds.
-const { Sequelize } = require('sequelize-typescript');
+// Explicit initialization of an EMPTY database. Never run during builds.
 const { connect } = require('./database.cjs');
-const models = [
-  require('../dist/contacto/contacto.model').Contacto,
-  require('../dist/reclamaciones/reclamacion.model').Reclamacion,
-  require('../dist/admin/auth/admin-user.model').AdminUser,
-  require('../dist/admin/items/admin-item.model').AdminItem,
-  require('../dist/galeria/galeria.model').GaleriaItem,
-  require('../dist/newsletter/newsletter.model').Newsletter,
-  require('../dist/settings/settings.model').Setting,
-  ...Object.values(require('../dist/catalogo/catalogo.models')),
-];
+const { applySql } = require('./migrate.cjs');
 async function init() {
-  const connection = connect();
-  let db;
+  const db = await connect();
+  let locked = false;
   try {
-    const tables = await connection.getQueryInterface().showAllTables();
-    if (tables.length) throw new Error('La base no está vacía. Usa las migraciones para una base existente.');
-    db = new Sequelize({ ...connection.options, database: connection.config.database,
-      username: connection.config.username, password: connection.config.password, models });
-    await db.sync({ force: false, alter: false });
-    console.log('Tablas creadas sin datos de ejemplo. Ejecuta db:migrate y después admin:create.');
-  } finally { if (db) await db.close(); await connection.close(); }
+    const [[result]] = await db.query("SELECT GET_LOCK('horus_catalogo_migrations', 10) AS acquired");
+    if (Number(result.acquired) !== 1) throw new Error('Otra migración está en ejecución.');
+    locked = true;
+    const [tables] = await db.query('SHOW TABLES');
+    if (tables.length) throw new Error('La base no está vacía. Usa db:migrate para una base existente.');
+    await applySql(db, '00000000-initial');
+    console.log('Tablas creadas sin datos. Ejecuta db:migrate y después admin:create.');
+  } finally {
+    try { if (locked) await db.query("SELECT RELEASE_LOCK('horus_catalogo_migrations')"); }
+    finally { await db.end(); }
+  }
 }
 init().catch(error => {
   console.error(error.message?.startsWith('La base no está vacía') ? error.message : 'No se pudo inicializar la base. Revisa conexión, TLS y permisos.');

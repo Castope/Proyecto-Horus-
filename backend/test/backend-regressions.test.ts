@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { CotizacionQueryDto } from '../src/cotizaciones/cotizacion.dto';
 import { test } from 'node:test';
 import * as assert from 'node:assert/strict';
-import { BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { ConfigService } from '@nestjs/config';
 import { createValidationPipe } from '../src/common/validation';
@@ -82,7 +82,11 @@ test('public form errors do not disclose database internals', async () => {
   const model = { create: async () => { throw new Error('secret database query'); } } as any;
   for (const service of [new ContactoService({ contacto: model } as any, {} as any), new ReclamacionesService({ reclamacion: model } as any, {} as any)]) {
     try { await service.create({} as any); assert.fail('expected error'); }
-    catch (error) { assert.equal(error.getStatus(), 500); assert.ok(!JSON.stringify(error.getResponse()).includes('secret')); }
+    catch (error: unknown) {
+      assert.ok(error instanceof InternalServerErrorException);
+      assert.equal(error.getStatus(), 500);
+      assert.ok(!JSON.stringify(error.getResponse()).includes('secret'));
+    }
   }
 });
 

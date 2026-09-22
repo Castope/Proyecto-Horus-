@@ -1,14 +1,12 @@
+import { serializeComplaint } from '../../database/serialization';
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
-import { Reclamacion } from '../../reclamaciones/reclamacion.model';
+import { PrismaService } from '../../database/prisma.service';
 import { QueryReclamacionesDto } from './dto/query-reclamaciones.dto';
 
 @Injectable()
 export class AdminReclamacionesService {
   constructor(
-    @InjectModel(Reclamacion)
-    private readonly reclamacionModel: typeof Reclamacion,
+    private readonly prisma: PrismaService,
   ) {}
 
   async findAll(query: QueryReclamacionesDto) {
@@ -19,42 +17,42 @@ export class AdminReclamacionesService {
     }
 
     if (query.search) {
-      const term = `%${query.search.trim()}%`;
-      where[Op.or] = [
-        { numero_reclamo: { [Op.like]: term } },
-        { nombres: { [Op.like]: term } },
-        { apellidos: { [Op.like]: term } },
-        { email: { [Op.like]: term } },
-        { num_doc: { [Op.like]: term } },
+      const term = query.search.trim();
+      where.OR = [
+        { numero_reclamo: { contains: term } },
+        { nombres: { contains: term } },
+        { apellidos: { contains: term } },
+        { email: { contains: term } },
+        { num_doc: { contains: term } },
       ];
     }
 
-    const reclamaciones = await this.reclamacionModel.findAll({
+    const reclamaciones = await this.prisma.reclamacion.findMany({
       where,
-      order: [['createdAt', 'DESC']],
+      orderBy: [{ createdAt: 'desc' }],
     });
 
     return {
       ok: true,
       total: reclamaciones.length,
-      reclamaciones,
+      reclamaciones: reclamaciones.map(serializeComplaint),
     };
   }
 
   async findOne(id: number) {
-    const reclamacion = await this.reclamacionModel.findByPk(id);
+    const reclamacion = await this.prisma.reclamacion.findUnique({ where: { id } });
     if (!reclamacion) {
       throw new NotFoundException({ ok: false, mensaje: 'Reclamación no encontrada.' });
     }
-    return { ok: true, reclamacion };
+    return { ok: true, reclamacion: serializeComplaint(reclamacion) };
   }
 
   async remove(id: number) {
-    const reclamacion = await this.reclamacionModel.findByPk(id);
+    const reclamacion = await this.prisma.reclamacion.findUnique({ where: { id } });
     if (!reclamacion) {
       throw new NotFoundException({ ok: false, mensaje: 'Reclamación no encontrada.' });
     }
-    await reclamacion.destroy();
+    await this.prisma.reclamacion.delete({ where: { id } });
     return { ok: true, mensaje: 'Reclamación eliminada correctamente.' };
   }
 }

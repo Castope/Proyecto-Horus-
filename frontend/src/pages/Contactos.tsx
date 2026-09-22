@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import type { ChangeEvent, FormEvent } from 'react'
+import type { ChangeEvent, SubmitEvent } from 'react'
 import useFadeUp from '../hooks/useFadeUp'
 import { enviarContacto } from '../api'
 
@@ -37,7 +37,7 @@ export default function Contactos() {
     }
   }
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     const e2: ContactErrors = {}
     if (!form.nombre.trim())   e2.nombre   = 'Ingresa tu nombre'

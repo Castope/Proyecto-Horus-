@@ -1,8 +1,7 @@
 const { createInterface } = require('node:readline/promises');
 const { stdin, stdout } = require('node:process');
 const bcrypt = require('bcryptjs');
-const { QueryTypes } = require('sequelize');
-const { connect } = require('./database.cjs');
+const { prisma } = require('./database.cjs');
 async function run() {
   const prompt = createInterface({ input: stdin, output: stdout });
   let nombre, email;
@@ -16,16 +15,14 @@ async function run() {
       email.length > 254 || !password || password.length < 8 || Buffer.byteLength(password, 'utf8') > 72) {
     throw new Error('invalid input');
   }
-  const db = connect();
+  const db = prisma();
   try {
-    const existing = await db.query('SELECT id FROM admin_users WHERE email = :email', {
-      replacements: { email }, type: QueryTypes.SELECT,
-    });
-    if (existing.length) throw new Error('existing account');
-    await db.getQueryInterface().bulkInsert('admin_users', [{
+    const existing = await db.adminUser.findUnique({ where: { email } });
+    if (existing) throw new Error('existing account');
+    await db.adminUser.create({ data: {
       nombre, email, password: await bcrypt.hash(password, 12), createdAt: new Date(), updatedAt: new Date(),
-    }]);
+    } });
     console.log('Administrador creado.');
-  } finally { await db.close(); }
+  } finally { await db.$disconnect(); }
 }
 run().catch(() => { console.error('No se creó la cuenta. Revisa los datos, ADMIN_INITIAL_PASSWORD, duplicados y conexión a MySQL.'); process.exitCode = 1; });

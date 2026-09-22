@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type SubmitEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { chatRequest, type ChatReply, type ChatTurn } from './chatApi';
 import './chatbot.css';
@@ -82,7 +82,7 @@ export default function Chatbot() {
     }));
     setContactOpen(true);
   };
-  const submitContact = async (event: FormEvent<HTMLFormElement>) => {
+  const submitContact = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (locked.current || !contact.consentimiento) return;
     locked.current = true; setBusy(true); setError('');

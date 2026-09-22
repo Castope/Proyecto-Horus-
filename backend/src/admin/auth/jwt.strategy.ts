@@ -2,8 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
-import { InjectModel } from '@nestjs/sequelize';
-import { AdminUser } from './admin-user.model';
+import { PrismaService } from '../../database/prisma.service';
 
 export interface JwtPayload {
   id: number;
@@ -14,8 +13,7 @@ export interface JwtPayload {
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private readonly configService: ConfigService,
-    @InjectModel(AdminUser)
-    private readonly adminUserModel: typeof AdminUser,
+    private readonly prisma: PrismaService,
   ) {
     const secret = configService.get<string>('JWT_SECRET');
     if (!secret || secret.length < 32) {
@@ -32,7 +30,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
-    const user = await this.adminUserModel.findByPk(payload.id);
+    if (!payload || !Number.isSafeInteger(payload.id) || payload.id <= 0) {
+      throw new UnauthorizedException({ ok: false, mensaje: 'Identidad no válida.' });
+    }
+    const user = await this.prisma.adminUser.findUnique({ where: { id: payload.id } });
     if (!user) {
       throw new UnauthorizedException({ ok: false, mensaje: 'Usuario no encontrado o inactivo.' });
     }

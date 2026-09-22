@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { ChangeEvent, FormEvent } from 'react';
+import type { ChangeEvent, SubmitEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAdminAuth } from '../context';
@@ -24,7 +24,7 @@ export default function AdminRegister() {
     setMensaje('');
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (loading) return;
     if (form.nombre.trim().length < 2) {

@@ -17,6 +17,17 @@ export function corsOrigins(env: Record<string, unknown>): string[] {
 export function validateDeployment(env: Record<string, unknown>) {
   const hosted = env.VERCEL === '1' || env.NODE_ENV === 'production';
   corsOrigins(env);
+  for (const key of ['PORT', 'DB_PORT']) {
+    if (env[key] !== undefined && (!/^\d+$/.test(String(env[key])) || Number(env[key]) < 1 || Number(env[key]) > 65535)) {
+      throw new Error(key + ' debe ser un puerto entre 1 y 65535.');
+    }
+  }
+  for (const key of ['DB_SSL', 'DB_SYNC']) {
+    if (env[key] !== undefined && !['true', 'false'].includes(String(env[key]))) throw new Error(key + ' debe ser true o false.');
+  }
+  if (env.JWT_SECRET !== undefined && (typeof env.JWT_SECRET !== 'string' || env.JWT_SECRET.length < 32)) {
+    throw new Error('JWT_SECRET debe tener al menos 32 caracteres.');
+  }
   if (hosted) {
     for (const key of ['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASS', 'JWT_SECRET']) {
       if (typeof env[key] !== 'string' || !String(env[key]).trim()) throw new Error('Falta configurar ' + key + ' en producción.');

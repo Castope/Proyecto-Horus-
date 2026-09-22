@@ -4,8 +4,9 @@ export default function PanelDialog({ title, children, onClose, busy = false }: 
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const previous = document.activeElement as HTMLElement;
-    ref.current?.showModal();
-    return () => { ref.current?.close(); previous?.focus(); };
+    const dialog = ref.current;
+    dialog?.showModal();
+    return () => { dialog?.close(); previous?.focus(); };
   }, []);
   return <dialog ref={ref} className="hp-dialog" aria-labelledby="panel-dialog-title"
     onCancel={e => { e.preventDefault(); if (!busy) onClose(); }}>

@@ -25,7 +25,7 @@ export default function AdminLogin() {
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+    event.preventDefault(); 
     if (loading) return;
     setLoading(true);
     setMensaje('');

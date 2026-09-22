@@ -1,0 +1,212 @@
+generator client {
+  provider = "prisma-client-js"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "mysql"
+  url = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id Int @id @default(autoincrement())
+  nombre String @db.VarChar(100)
+  email String @unique(map: "email") @db.VarChar(254)
+  password String @db.VarChar(255)
+  createdAt DateTime @default(now()) @db.DateTime(0)
+  updatedAt DateTime @updatedAt @db.DateTime(0)
+  @@map("admin_users")
+}
+
+model AdminItem {
+  id Int @id @default(autoincrement())
+  titulo String @db.VarChar(150)
+  descripcion String @db.Text
+  categoria String @default("general") @db.VarChar(50)
+  estado String @default("activo") @db.VarChar(20)
+  createdAt DateTime @default(now()) @db.DateTime(0)
+  updatedAt DateTime @updatedAt @db.DateTime(0)
+  @@map("admin_items")
+}
+
+model Curso {
+  id Int @id @default(autoincrement())
+  titulo String @db.VarChar(160)
+  slug String @unique(map: "slug") @db.VarChar(180)
+  descripcion String @db.Text
+  tipo CursoTipo
+  modalidad CursoModalidad
+  duracion String @db.VarChar(120)
+  temario String? @db.Text
+  imagen_url String? @db.VarChar(2048)
+  fecha_inicio DateTime? @db.DateTime(0)
+  estado CursoEstado @default(borrador)
+  createdAt DateTime @default(now()) @db.DateTime(0)
+  updatedAt DateTime @updatedAt @db.DateTime(0)
+  @@map("cursos")
+}
+
+model Servicio {
+  id Int @id @default(autoincrement())
+  titulo String @db.VarChar(160)
+  slug String @unique(map: "slug") @db.VarChar(180)
+  descripcion String @db.Text
+  categoria ServicioCategoria
+  alcance String? @db.Text
+  imagen_url String? @db.VarChar(2048)
+  estado ServicioEstado @default(borrador)
+  createdAt DateTime @default(now()) @db.DateTime(0)
+  updatedAt DateTime @updatedAt @db.DateTime(0)
+  @@map("servicios")
+}
+
+model PreguntaFrecuente {
+  id Int @id @default(autoincrement())
+  pregunta String @db.VarChar(300)
+  respuesta String @db.Text
+  categoria String @db.VarChar(100)
+  orden Int @default(0)
+  estado PreguntaFrecuenteEstado @default(borrador)
+  createdAt DateTime @default(now()) @db.DateTime(0)
+  updatedAt DateTime @updatedAt @db.DateTime(0)
+  @@map("preguntas_frecuentes")
+}
+
+model Contacto {
+  id Int @id @default(autoincrement())
+  nombre String @db.VarChar(255)
+  email String @db.VarChar(255)
+  telefono String @db.VarChar(255)
+  asunto String @db.VarChar(255)
+  mensaje String @db.Text
+  estado String @default("nuevo") @db.VarChar(255)
+  createdAt DateTime @default(now()) @db.DateTime(0)
+  updatedAt DateTime @updatedAt @db.DateTime(0)
+  @@map("contactos")
+}
+
+model Cotizacion {
+  id Int @id @default(autoincrement())
+  numero String @unique(map: "numero") @db.VarChar(60)
+  cliente String @db.VarChar(160)
+  email String @db.VarChar(254)
+  telefono String @db.VarChar(30)
+  documento String @db.VarChar(30)
+  direccion String @db.VarChar(300)
+  emisor String @db.VarChar(160)
+  datos_emisor String @db.VarChar(500)
+  moneda String @db.VarChar(3)
+  validez DateTime @db.Date
+  condiciones String @db.Text
+  conceptos Json
+  subtotal Decimal @db.Decimal(14,2)
+  descuento Decimal @db.Decimal(14,2)
+  tasa Decimal @db.Decimal(5,2)
+  impuesto Decimal @db.Decimal(14,2)
+  total Decimal @db.Decimal(14,2)
+  estado String @default("borrador") @db.VarChar(20)
+  contacto_id Int?
+  revision Int @default(1)
+  historial Json
+  createdAt DateTime @default(now()) @db.DateTime(0)
+  updatedAt DateTime @updatedAt @db.DateTime(0)
+  @@map("cotizaciones")
+}
+
+model GaleriaItem {
+  id Int @id @default(autoincrement())
+  titulo String @db.VarChar(150)
+  descripcion String? @db.Text
+  categoria String @default("general") @db.VarChar(50)
+  imagen_url String @db.VarChar(500)
+  orden Int? @default(0)
+  activo Boolean? @default(true)
+  createdAt DateTime @default(now()) @db.DateTime(0)
+  updatedAt DateTime @updatedAt @db.DateTime(0)
+  @@map("galeria_items")
+}
+
+model Newsletter {
+  id Int @id @default(autoincrement())
+  email String @unique(map: "email") @db.VarChar(254)
+  interes String @default("market") @db.VarChar(100)
+  activo Boolean? @default(true)
+  createdAt DateTime @default(now()) @db.DateTime(0)
+  updatedAt DateTime @updatedAt @db.DateTime(0)
+  @@map("newsletter_subscribers")
+}
+
+model Reclamacion {
+  id Int @id @default(autoincrement())
+  numero_reclamo String? @unique(map: "numero_reclamo") @db.VarChar(255)
+  nombres String @db.VarChar(255)
+  apellidos String @db.VarChar(255)
+  tipo_doc String? @db.VarChar(255)
+  num_doc String? @db.VarChar(255)
+  email String @db.VarChar(255)
+  telefono String @db.VarChar(255)
+  direccion String? @db.VarChar(255)
+  tipo_registro ReclamacionTipo_registro
+  area String @db.VarChar(255)
+  fecha_incidente DateTime @db.Date
+  descripcion_bien String @db.Text
+  detalle_reclamo String @db.Text
+  acepta_comunicaciones Boolean? @default(false)
+  createdAt DateTime @default(now()) @db.DateTime(0)
+  updatedAt DateTime @updatedAt @db.DateTime(0)
+  @@map("reclamaciones")
+}
+
+model Setting {
+  id Int @id @default(autoincrement())
+  clave String @unique(map: "clave") @db.VarChar(50)
+  valor String @db.Text
+  descripcion String? @db.VarChar(200)
+  grupo String @default("general") @db.VarChar(50)
+  createdAt DateTime @default(now()) @db.DateTime(0)
+  updatedAt DateTime @updatedAt @db.DateTime(0)
+  @@map("empresa_settings")
+}
+
+enum CursoTipo {
+  curso
+  capacitacion
+}
+
+enum CursoModalidad {
+  presencial
+  virtual
+  hibrida
+}
+
+enum CursoEstado {
+  borrador
+  publicado
+  archivado
+}
+
+enum ServicioCategoria {
+  cableado
+  camaras
+  soporte
+  asesoramiento
+  otros
+}
+
+enum ServicioEstado {
+  borrador
+  publicado
+  archivado
+}
+
+enum PreguntaFrecuenteEstado {
+  borrador
+  publicado
+  archivado
+}
+
+enum ReclamacionTipo_registro {
+  reclamo
+  queja
+}
+

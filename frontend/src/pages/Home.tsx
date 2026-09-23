@@ -8,11 +8,9 @@ import slide1 from '../assets/images/galeria/nuestro servicio tecnico/imagen 1.j
 import slide2 from '../assets/images/galeria/colegio de enfermeros/imagen 1.jpg'
 import slide3 from '../assets/images/galeria/practicas de primeros auxilios/imagen 1.jpg'
 
-import logoAbogados      from '../assets/images/logos/logo-convenio-abogados.png'
 import logoAdministracion from '../assets/images/logos/logo-convenio-administracion.jpg'
 import logoEconomistas   from '../assets/images/logos/logo-convenio-economistas.jpg'
 import logoEnfermeros    from '../assets/images/logos/logo-convenio-enfermeros.png'
-import logoObstetras     from '../assets/images/logos/logo-convenio-obstetras.jpg'
 import logoIsam          from '../assets/images/logos/logo-convenio-isam.png'
 
 import imgCableado       from '../assets/images/tecnologias/cableado.jpg'
@@ -21,14 +19,13 @@ import imgCapacitaciones from '../assets/images/capacitaciones/Capacítate.jpg'
 const SLIDES = [slide0, slide1, slide2, slide3]
 
 const CONVENIOS = [
-  { img: logoAbogados,       sigla: 'ICAC',    nombre: 'Colegio de Abogados',       desc: 'Convenio para capacitaciones jurídicas y formación continua de abogados colegiados en Cajamarca.' },
-  { img: logoAdministracion, sigla: 'CORLAD',  nombre: 'Colegio de Administradores', desc: 'Alianza para el desarrollo profesional de administradores con capacitaciones especializadas.' },
-  { img: logoEconomistas,    sigla: 'CEC',     nombre: 'Colegio de Economistas',     desc: 'Convenio para la formación continua de economistas con certificaciones en gestión económica.' },
-  { img: logoEnfermeros,     sigla: 'CR XIII', nombre: 'Colegio de Enfermeros',      desc: 'Alianza para capacitaciones en salud y gestión hospitalaria para el personal de enfermería.' },
-  { img: logoObstetras,      sigla: 'CRO XIV', nombre: 'Colegio de Obstetras',       desc: 'Convenio para capacitaciones en obstetricia y salud materna con certificación oficial.' },
-  { img: logoIsam,           sigla: 'ISAM',    nombre: 'Instituto ISAM',             desc: 'Alianza educativa con el ISAM para programas de formación y certificaciones de alto nivel.' },
+  { img: logoAdministracion, sigla: 'CORLAD',    nombre: 'Colegio de Administradores', desc: 'Alianza para el desarrollo profesional de administradores con capacitaciones especializadas.' },
+  { img: logoEconomistas,    sigla: 'CEC',       nombre: 'Colegio de Economistas',     desc: 'Convenio para la formación continua de economistas con certificaciones en gestión económica.' },
+  { img: logoEnfermeros,     sigla: 'CEP/CR XIII', nombre: 'Colegio de Enfermeros - Cajamarca', desc: 'Alianza para capacitaciones en salud y gestión hospitalaria para el personal de enfermería.' },
+  { img: logoEnfermeros,     sigla: 'CEP/CR II',  nombre: 'Colegio de Enfermeros - La Libertad', desc: 'Alianza para capacitaciones en salud y gestión hospitalaria para el personal de enfermería.' },
+  { img: logoIsam,           sigla: 'ISAM',      nombre: 'Instituto ISAM',             desc: 'Alianza educativa con el ISAM para programas de formación y certificaciones de alto nivel.' },
 ]
-
+ 
 const WHY_CARDS = [
   { num: '01', icon: 'fa-medal',          color: '#4F46E5', bg: '#EEF2FF', title: 'Experiencia comprobada',      desc: 'Más de 5 años brindando soluciones tecnológicas y educativas de calidad en Cajamarca, con cientos de clientes satisfechos.', lg: true },
   { num: '02', icon: 'fa-certificate',    color: '#FF6B47', bg: '#FFF1EE', title: 'Certificaciones oficiales',   desc: 'Programas avalados por colegios profesionales reconocidos a nivel nacional.' },

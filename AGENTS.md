@@ -37,6 +37,8 @@ El objetivo es entregar cambios completos, verificables y proporcionados a la ta
 
 Hay dos paquetes npm independientes, cada uno con su `package-lock.json`. No existe un paquete npm en la raíz.
 
+El despliegue en Railway se documenta en `RAILWAY.md`. Cada paquete tiene su `Dockerfile` y `.dockerignore`; `frontend/Caddyfile` sirve React y redirige `/api` al backend privado mediante `BACKEND_UPSTREAM`. La inicialización de MySQL es explícita, fuera de la compilación y del arranque.
+
 ## Entorno y comandos
 
 Usa npm y respeta los lockfiles. El backend declara Node.js 22.x; verifica la versión y los requisitos de las dependencias antes de instalar. Ejecuta cada comando desde la carpeta indicada.
@@ -113,9 +115,9 @@ El proyecto utiliza Prisma con `engineType = "client"`, el adaptador MariaDB/MyS
 ## Seguridad, configuración y dependencias
 
 - Nunca publiques valores de `.env`, tokens, contraseñas, certificados privados o datos personales en código, logs, pruebas o respuestas. Documenta nombres de variables y ejemplos ficticios.
-- Conserva la validación de configuración en `deployment.config.ts`, los orígenes CORS exactos y la verificación TLS.
+- Conserva la validación de configuración en `deployment.config.ts`, los orígenes CORS exactos y la verificación TLS. Para MySQL sin TLS, `DB_RSA_PUBLIC_KEY` permite fijar una clave pública RSA confiable; nunca activar recuperación indiscriminada de claves. La API comprueba `SELECT 1` antes de escuchar. `TRUSTED_PROXY_CIDRS` enumera proxies explícitos; Caddy reemplaza X-Forwarded-For con la IP validada antes de enviarla a la API.
 - No retires guards ni alteres el acceso a rutas como efecto secundario de otra corrección.
-- Hay una discrepancia documental: `backend/README.md` describe el registro como protegido, pero `AuthController.register` y el test de catálogo actualmente lo mantienen público. No cambies esta política incidentalmente; si la tarea trata de acceso, resuelve explícitamente el comportamiento esperado y alinea código, pruebas y documentación.
+- El registro administrativo requiere un JWT válido de un administrador existente. La primera cuenta se crea con `npm run admin:create`; no habilitar registro anónimo. El formulario `/admin/register` está protegido y usa el manejo centralizado de HTTP 401.
 - Inspecciona las versiones instaladas antes de atribuir errores a una API. No mezcles soluciones de versiones distintas.
 - Añade dependencias solo con una necesidad concreta y actualiza el lockfile correspondiente. Evita `npm audit fix --force` y saltos de versión mayor sin revisar compatibilidad y alcance.
 

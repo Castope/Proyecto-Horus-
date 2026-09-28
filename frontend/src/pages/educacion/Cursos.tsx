@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import useFadeUp from '../../hooks/useFadeUp'
+import CatalogoCursos from '../../components/CatalogoCursos'
 
 import imgCursos from '../../assets/images/galeria/capacitaciones/imagen 1.jpg'
 
@@ -23,7 +24,7 @@ export default function Cursos() {
             <h1>Aprende a tu<br />ritmo, con<br /><span>certificado real</span></h1>
             <p>Soy los cursos. Presencial, semipresencial o virtual. Tú eliges cómo aprender, yo me adapto a ti.</p>
             <div className="ed-hero-btns">
-              <Link to="/contactos" className="btn-coral"><i className="fas fa-book-open" /> Consultar disponibilidad</Link>
+              <a href="#catalogo-cursos" className="btn-coral"><i className="fas fa-book-open" /> Ver cursos</a>
               <a href="#ed-detail" className="ed-ghost"><i className="fas fa-arrow-down" /> Ver modalidades</a>
             </div>
           </div>
@@ -37,6 +38,8 @@ export default function Cursos() {
           </div>
         </div>
       </section>
+
+      <CatalogoCursos />
 
       <section className="ed-modalities" id="ed-detail">
         <div className="container">

@@ -1,4 +1,9 @@
 const paths: Record<string, string> = {
+  lock: 'M5 10h14v11H5z M8 10V6a4 4 0 0 1 8 0v4 M12 14v3',
+  shield: 'M12 3 3 6v6c0 5 9 9 9 9s9-4 9-9V6z m-5 9 3 3 6-6',
+  user: 'M20 21v-2a6 6 0 0 0-6-6h-4a6 6 0 0 0-6 6v2 M16 6a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
+  'user-plus': 'M16 21v-2a6 6 0 0 0-6-6H8a6 6 0 0 0-6 6v2 M13 6a4 4 0 1 1-8 0 4 4 0 0 1 8 0 M20 8v6 M17 11h6',
+  'eye-off': 'm3 3 18 18 M10 5h2c6 0 10 7 10 7a20 20 0 0 1-3 4 M6 6a22 22 0 0 0-4 6s4 7 10 7a13 13 0 0 0 5-1 M10 10a3 3 0 0 0 4 4',
   calendar: 'M3 5h18v16H3z M3 10h18 M7 3v4 M17 3v4 M7 14h2 M15 14h2 M7 18h2',
   copy: 'M8 8h13v13H8z M16 8V3H3v13h5',
   home: 'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z',

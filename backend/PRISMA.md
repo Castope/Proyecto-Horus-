@@ -21,6 +21,7 @@ Crear una base vacía y configurar DB_HOST, DB_PORT, DB_NAME, DB_USER y DB_PASS.
 
 - Se mantienen DB_SSL y DB_SSL_CA (PEM con saltos de línea o `\\n`); la validación del certificado sigue activa.
 - El servidor usa un cliente compartido y hasta dos conexiones, en UTC.
+- Al iniciar, la API ejecuta `SELECT 1` antes de escuchar. Para autenticación MySQL 8 sin TLS en una red privada confiable, `DB_RSA_PUBLIC_KEY` fija el PEM público del servidor y evita depender de la caché de autenticación. Se comparte su validación entre API y scripts; no se aceptan claves privadas ni rutas de archivos. TLS conserva la verificación del certificado. Consultar `../RAILWAY.md` para configuración y prueba de reinicio.
 - DATABASE_URL solo aparece en el esquema para las herramientas de Prisma. El comando de generación proporciona una URL ficticia sin abrir conexión. La aplicación y los scripts usan DB_*.
 - No ejecutar prisma db push ni prisma migrate reset sobre una base existente.
 - Las migraciones siguen siendo SQL versionado con horus_migrations; no se ha cambiado a Prisma Migrate. Adoptar ese motor sería un paso separado con una línea base validada contra la base real.

@@ -7,9 +7,9 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "npm run prisma:generate && nest build",
-    "start": "nest start",
-    "start:dev": "nest start --watch",
-    "start:debug": "nest start --debug --watch",
+    "start": "nest start --path tsconfig.dev.json",
+    "start:dev": "nest start --watch --path tsconfig.dev.json",
+    "start:debug": "nest start --debug --watch --path tsconfig.dev.json",
     "start:prod": "node dist/main",
     "test": "node --test -r ts-node/register test/*.test.ts",
     "db:migrate": "node scripts/migrate.cjs",

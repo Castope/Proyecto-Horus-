@@ -39,7 +39,7 @@ test('proxy configuration requires explicit addresses, not wildcard or hop count
   }
 });
 
-test('registration rejects anonymous, invalid, expired and revoked JWT before calling the service', async () => {
+test('public registration validates input while current account still requires a valid JWT', async () => {
   let writes = 0;
   @Module({
     imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
@@ -56,16 +56,27 @@ test('registration rejects anonymous, invalid, expired and revoked JWT before ca
   await app.listen(0, '127.0.0.1');
   const jwt = new JwtService({ secret, signOptions: { issuer: 'horus-api', audience: 'horus-panel' } });
   const url = await app.getUrl();
-  const post = (token?: string) => fetch(url + '/admin/register', {
-    method: 'POST', headers: {'Content-Type':'application/json', ...(token ? {Authorization:'Bearer '+token}: {})},
-    body: JSON.stringify({nombre:'Nuevo Admin',email:'new@example.test',password:'Password-for-test-123'}),
+  const valid = { nombre: 'Nuevo Admin', email: 'new@example.test', password: 'Password-for-test-123' };
+  const post = (body: object) => fetch(url + '/admin/register', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const me = (token?: string) => fetch(url + '/admin/me', {
+    headers: token ? { Authorization: 'Bearer ' + token } : {},
   });
   try {
-    for (const token of [undefined, 'invalid', jwt.sign({id:1},{expiresIn:-1}), jwt.sign({id:2})]) {
-      assert.equal((await post(token)).status, 401);
+    for (const body of [{}, { ...valid, nombre: ' ' }, { ...valid, email: 'invalid' }, { ...valid, password: 'short' }, { ...valid, role: 'admin' }]) {
+      assert.equal((await post(body)).status, 400);
     }
     assert.equal(writes, 0);
-    assert.equal((await post(jwt.sign({id:1}))).status, 201);
+    const registered = await post(valid);
+    assert.equal(registered.status, 201);
+    assert.deepEqual(await registered.json(), { ok: true });
+    assert.equal(writes, 1);
+    for (const token of [undefined, 'invalid', jwt.sign({id:1},{expiresIn:-1}), jwt.sign({id:2})]) {
+      assert.equal((await me(token)).status, 401);
+    }
+    assert.equal((await me(jwt.sign({id:1}))).status, 200);
     assert.equal(writes, 1);
   } finally { await app.close(); }
 });

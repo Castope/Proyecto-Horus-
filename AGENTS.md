@@ -46,7 +46,7 @@ Usa npm y respeta los lockfiles. El backend declara Node.js 22.x; verifica la ve
 | Carpeta | Comando | Uso |
 | --- | --- | --- |
 | `backend/` | `npm ci` | Instalación reproducible; también genera Prisma mediante postinstall |
-| `backend/` | `npm run start:dev` | Desarrollo de la API |
+| `backend/` | `npm run start:dev` | Desarrollo de la API; compila en `dist-dev/` |
 | `backend/` | `node node_modules/typescript/bin/tsc --noEmit --incremental false` | Revisar tipos, incluidos los tests, sin generar archivos |
 | `backend/` | `npm test` | Pruebas aisladas, sin requerir MySQL |
 | `backend/` | `npm run build` | Generar Prisma y compilar NestJS |
@@ -59,6 +59,8 @@ Usa npm y respeta los lockfiles. El backend declara Node.js 22.x; verifica la ve
 | `frontend/` | `npm run lint` | Comprobar ESLint, TypeScript y reglas de React |
 | `frontend/` | `npm run build` | Comprobar tipos y generar el frontend |
 | `frontend/` | `npm run preview` | Revisar el frontend compilado |
+
+El backend separa las salidas de compilación: `npm start`, `start:dev` y `start:debug` usan `tsconfig.dev.json` y `dist-dev/`, incluida su caché incremental. `npm run build` y `start:prod` usan `dist/`. Mantén esta separación: una compilación limpia no debe borrar los módulos de un servidor de desarrollo en ejecución.
 
 La API usa el prefijo `/api` y el puerto 3000 por defecto. Swagger se publica en `/api/docs`. Vite redirige las peticiones locales de `/api` al backend mediante `frontend/vite.config.js`.
 
@@ -117,7 +119,7 @@ El proyecto utiliza Prisma con `engineType = "client"`, el adaptador MariaDB/MyS
 - Nunca publiques valores de `.env`, tokens, contraseñas, certificados privados o datos personales en código, logs, pruebas o respuestas. Documenta nombres de variables y ejemplos ficticios.
 - Conserva la validación de configuración en `deployment.config.ts`, los orígenes CORS exactos y la verificación TLS. Para MySQL sin TLS, `DB_RSA_PUBLIC_KEY` permite fijar una clave pública RSA confiable; nunca activar recuperación indiscriminada de claves. La API comprueba `SELECT 1` antes de escuchar. `TRUSTED_PROXY_CIDRS` enumera proxies explícitos; Caddy reemplaza X-Forwarded-For con la IP validada antes de enviarla a la API.
 - No retires guards ni alteres el acceso a rutas como efecto secundario de otra corrección.
-- El registro administrativo requiere un JWT válido de un administrador existente. La primera cuenta se crea con `npm run admin:create`; no habilitar registro anónimo. El formulario `/admin/register` está protegido y usa el manejo centralizado de HTTP 401.
+- Por decisión explícita del proyecto, el registro administrativo está abierto: `/admin/register` y `POST /api/admin/register` permiten crear cuentas sin sesión previa. Login y registro son pantallas separadas; un visitante vuelve al login tras registrarse. Conserva la validación de datos, contraseñas y correos únicos. El panel, `/api/admin/me` y las demás operaciones administrativas mantienen sus guards y el manejo centralizado de HTTP 401. `npm run admin:create` sigue disponible como alternativa para crear una cuenta.
 - Inspecciona las versiones instaladas antes de atribuir errores a una API. No mezcles soluciones de versiones distintas.
 - Añade dependencias solo con una necesidad concreta y actualiza el lockfile correspondiente. Evita `npm audit fix --force` y saltos de versión mayor sin revisar compatibilidad y alcance.
 

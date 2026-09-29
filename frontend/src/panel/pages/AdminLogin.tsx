@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type {ChangeEvent, SubmitEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAdminAuth } from '../context';
 import { loginAdmin } from '../services';
@@ -73,8 +73,8 @@ export default function AdminLogin() {
           {!loading && <span aria-hidden="true">→</span>}
         </button>
       </form>
-      <p className="admin-auth__switch">Solicita tu acceso al administrador de Horus.</p>
-      <div className="admin-auth__note admin-auth__note--access"><PanelIcon name="shield" size={16} /><span>Acceso exclusivo para el equipo de Horus.</span></div>
+      <p className="admin-auth__switch">¿No tienes una cuenta? <Link to="/admin/register">Crear cuenta</Link></p>
+      <div className="admin-auth__note admin-auth__note--access"><PanelIcon name="shield" size={16} /><span>Tu espacio para gestionar Horus Group.</span></div>
     </AdminAuthLayout>
   );
 }

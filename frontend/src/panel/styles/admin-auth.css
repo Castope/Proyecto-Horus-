@@ -65,6 +65,20 @@
   box-shadow: 0 16px 48px #1c334508, 0 2px 8px #1c334503;
 }
 .admin-auth__mobile-brand { display: none; }
+.admin-auth__navigation {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px;
+  padding: 4px; margin-bottom: 24px; border: 1px solid #e4e8ed; border-radius: 12px;
+  background: #f4f6f8;
+}
+.admin-auth__navigation a {
+  display: flex; align-items: center; justify-content: center; min-height: 44px;
+  padding: 8px; border-radius: 8px; color: var(--auth-muted);
+  font-size: 13px; font-weight: 600; text-align: center;
+}
+.admin-auth__navigation a:hover { color: var(--auth-ink); background: #e9eef3; }
+.admin-auth__navigation a[aria-current="page"] {
+  color: #193950; background: #fff; box-shadow: 0 2px 6px #19395012;
+}
 .admin-auth__form-icon {
   display: grid; place-items: center; width: 52px; height: 52px; margin-bottom: 24px;
   background: #f6f2e8; color: #87672e; border: 1px solid #e9dfc8; border-radius: 15px;

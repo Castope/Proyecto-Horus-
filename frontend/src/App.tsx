@@ -61,10 +61,9 @@ export default function App() {
           </Route>
 
           <Route path="/admin/login" element={<AdminLogin />} />
-
+          <Route path="/admin/register" element={<AdminRegister />} />
 
           <Route element={<AdminRoute />}>
-            <Route path="/admin/register" element={<AdminRegister />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/messages" element={<AdminMessages />} />
           </Route>

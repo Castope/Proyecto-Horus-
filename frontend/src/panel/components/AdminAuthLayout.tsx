@@ -9,9 +9,10 @@ interface AdminAuthLayoutProps {
   title: string;
   description: string;
   registration?: boolean;
+  backToPanel?: boolean;
 }
 
-export default function AdminAuthLayout({ children, eyebrow, title, description, registration = false }: AdminAuthLayoutProps) {
+export default function AdminAuthLayout({ children, eyebrow, title, description, registration = false, backToPanel = registration }: AdminAuthLayoutProps) {
   useEffect(() => {
     document.title = `${title} — Horus Group`;
   }, [title]);
@@ -39,13 +40,17 @@ export default function AdminAuthLayout({ children, eyebrow, title, description,
       </section>
       <section className="admin-auth__form-side" aria-labelledby="auth-title">
         <div className="admin-auth__topline">
-          <Link className="admin-auth__back" to={registration ? '/admin/dashboard' : '/'}>
-            <span aria-hidden="true">←</span> {registration ? 'Volver al panel' : 'Volver al sitio web'}
+          <Link className="admin-auth__back" to={backToPanel ? '/admin/dashboard' : '/'}>
+            <span aria-hidden="true">←</span> {backToPanel ? 'Volver al panel' : 'Volver al sitio web'}
           </Link>
           <span className="admin-auth__access"><PanelIcon name="shield" size={15} />Administración</span>
         </div>
         <div className="admin-auth__form-wrap">
           <Link className="admin-auth__mobile-brand" to="/" aria-label="Ir al inicio de Horus Group"><HorusBrand /></Link>
+          <nav className="admin-auth__navigation" aria-label="Acceso administrativo">
+            <Link to="/admin/login" aria-current={!registration ? 'page' : undefined}>Iniciar sesión</Link>
+            <Link to="/admin/register" aria-current={registration ? 'page' : undefined}>Registro</Link>
+          </nav>
           <div className="admin-auth__form-icon"><PanelIcon name={registration ? 'user-plus' : 'lock'} size={25} /></div>
           <span className="admin-auth__eyebrow admin-auth__eyebrow--dark">{eyebrow}</span>
           <h1 id="auth-title">{title}</h1>

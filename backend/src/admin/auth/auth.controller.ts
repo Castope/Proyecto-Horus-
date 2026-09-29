@@ -12,9 +12,6 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiResponse({ status: 401, description: 'Se requiere una sesión administrativa válida' })
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Registrar nuevo administrador' })
   @ApiResponse({ status: 201, description: 'Administrador creado exitosamente' })

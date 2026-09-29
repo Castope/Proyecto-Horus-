@@ -85,7 +85,7 @@ Para el primer administrador, configurar temporalmente `ADMIN_INITIAL_PASSWORD` 
 - Formularios y chatbot: probar estados de éxito/error y el envío de correo con datos de prueba controlados.
 - MySQL: confirmar que `db:check` pasa y configurar respaldos del volumen antes de recibir datos reales.
 
-El registro administrativo exige JWT. La primera cuenta se crea con `admin:create`; los administradores autenticados pueden crear las siguientes desde Crear administrador en el panel. `/admin/register` redirige a login sin una sesión válida.
+El registro administrativo está abierto en `/admin/register` y `POST /api/admin/register`, sin requerir una sesión previa. Tras registrarse, un visitante vuelve a `/admin/login`. `admin:create` sigue disponible como alternativa para crear una cuenta. El panel y las demás operaciones administrativas requieren una sesión válida.
 
 El chatbot usa la IP validada por Express. Configurar `TRUSTED_PROXY_CIDRS` en cada servicio como se indica abajo; no usar `*`, `true`, cantidades de saltos ni rangos /0. Los límites permanecen en memoria por instancia: para varias réplicas, usar un almacenamiento compartido antes de escalarlas.
 

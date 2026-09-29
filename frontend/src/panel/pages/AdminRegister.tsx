@@ -10,7 +10,7 @@ import PanelIcon from '../components/PanelIcon';
 
 export default function AdminRegister() {
   const navigate = useNavigate();
-  const { token } = useAdminAuth();
+  const { isAuthenticated } = useAdminAuth();
   const [form, setForm] = useState({ nombre: '', email: '', password: '', confirmPassword: '' });
   const [mensaje, setMensaje] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,7 +24,7 @@ export default function AdminRegister() {
 
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (loading || !token) return;
+    if (loading) return;
     if (form.nombre.trim().length < 2) {
       const message = 'Ingresa un nombre de al menos 2 caracteres.';
       setMensaje(message);
@@ -42,12 +42,12 @@ export default function AdminRegister() {
     try {
       const response = await registerAdmin({
         nombre: form.nombre.trim(), email: form.email.trim(), password: form.password,
-      }, token);
+      });
       if (response.ok) {
         const successMessage = response.mensaje || 'Administrador creado correctamente.';
         setMensaje(successMessage);
         toast.success(successMessage);
-        navigate('/admin/dashboard', { replace: true });
+        navigate(isAuthenticated ? '/admin/dashboard' : '/admin/login', { replace: true });
       } else {
 
         const errorMessage = response.mensaje || 'No se pudo crear la cuenta. Revisa tus datos.';
@@ -64,8 +64,8 @@ export default function AdminRegister() {
   };
 
   return (
-    <AdminAuthLayout registration eyebrow="Haz crecer tu equipo" title="Crear administrador"
-      description="Crea una cuenta para una persona autorizada a administrar Horus Group.">
+    <AdminAuthLayout registration backToPanel={isAuthenticated} eyebrow="Comienza aquí" title="Crea tu cuenta"
+      description="Completa tus datos para registrarte en el panel de Horus Group.">
       <form className="admin-auth__form" onSubmit={handleSubmit} aria-busy={loading}>
         <fieldset className="admin-auth__fields" disabled={loading}>
           <legend className="admin-auth__sr-only">Datos de la nueva cuenta</legend>
@@ -91,7 +91,7 @@ export default function AdminRegister() {
           {!loading && <span aria-hidden="true">→</span>}
         </button>
       </form>
-      <p className="admin-auth__switch"><Link to="/admin/dashboard">Volver al panel</Link></p>
+      <p className="admin-auth__switch">{isAuthenticated ? <Link to="/admin/dashboard">Volver al panel</Link> : <>¿Ya tienes una cuenta? <Link to="/admin/login">Iniciar sesión</Link></>}</p>
       <p className="admin-auth__note">Conoce cómo tratamos tus datos en nuestra <Link to="/politicas/privacidad">política de privacidad</Link>.</p>
     </AdminAuthLayout>
   );

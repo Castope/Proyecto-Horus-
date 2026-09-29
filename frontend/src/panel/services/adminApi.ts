@@ -18,8 +18,8 @@ export async function loginAdmin(payload: { email: string; password: string }) {
   return response.json();
 }
 
-export async function registerAdmin(payload: { nombre: string; email: string; password: string }, token: string) {
-  return panelRequest<{ ok: boolean; mensaje?: string }>('register', token, 'POST', payload);
+export async function registerAdmin(payload: { nombre: string; email: string; password: string }) {
+  return panelRequest<{ ok: boolean; mensaje?: string }>('register', null, 'POST', payload);
 }
 
 export async function getCurrentAdmin(token: string) {

@@ -22,6 +22,8 @@ export default function GuidedMenu({ onAnswer, onContact, onWrite }: {
   const [section, setSection] = useState<Section | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [category, setCategory] = useState('');
+  const [search, setSearch] = useState('');
+  const [modality, setModality] = useState('');
   const [selected, setSelected] = useState('');
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -56,7 +58,7 @@ export default function GuidedMenu({ onAnswer, onContact, onWrite }: {
   const name = (item: Item) => item.titulo || item.pregunta || 'Sin título';
   const selectSection = (value: Section | null) => {
     actionController.current?.abort(); actionController.current = null; actionLock.current = false; setBusy(false);
-    setItems([]); setSelected(''); setCategory(''); setError(''); setLoading(value !== null); setSection(value);
+    setItems([]); setSelected(''); setCategory(''); setSearch(''); setModality(''); setError(''); setLoading(value !== null); setSection(value);
   };
   const answer = async (action: Action, label: string) => {
     if (!section || !selectedItem || actionLock.current) return;
@@ -85,6 +87,10 @@ export default function GuidedMenu({ onAnswer, onContact, onWrite }: {
     }
   };
 
+  const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase();
+  const visible = items.filter(item => (!category || (item.categoria || 'General') === category) &&
+    (!modality || item.modalidad === modality) && (!search.trim() || normalize(name(item)).includes(normalize(search.trim()))));
+
   return <section className="hc-guide" aria-label="Opciones del asistente">
     <div className="hc-guide-heading"><strong>{section ? titles[section] : 'Elige una opción para comenzar'}</strong>
       {section && <button type="button" onClick={() => selectSection(null)}>← Menú</button>}</div>
@@ -97,6 +103,9 @@ export default function GuidedMenu({ onAnswer, onContact, onWrite }: {
     </div> : <>
       {loading ? <p role="status">Cargando opciones publicadas…</p> : !error && !items.length ? <p>No hay opciones publicadas por ahora. Puedes escribir tu consulta o solicitar atención.</p> : null}
       {!!items.length && <fieldset disabled={loading || busy}>
+        <label>Buscar por nombre<input type="search" maxLength={100} placeholder="Escribe para filtrar las opciones" value={search} onChange={event => { setSearch(event.target.value); setSelected(''); }} /></label>
+        {section === 'cursos' && <label>Modalidad<select value={modality} onChange={event => { setModality(event.target.value); setSelected(''); }}><option value="">Todas las modalidades</option><option value="virtual">Virtual</option><option value="presencial">Presencial</option><option value="hibrida">Híbrida</option></select></label>}
+        <p className="hc-filter-count" role="status">{visible.length ? visible.length + ' opciones para consultar' : 'No hay coincidencias. Prueba otro nombre o cambia los filtros.'}</p>
         {section === 'preguntas-frecuentes' && <label>Categoría
           <select value={category} onChange={event => { setCategory(event.target.value); setSelected(''); }}>
             <option value="">Todas las categorías</option>
@@ -106,7 +115,7 @@ export default function GuidedMenu({ onAnswer, onContact, onWrite }: {
         <label>{section === 'cursos' ? 'Selecciona un curso o capacitación' : section === 'servicios' ? 'Selecciona un servicio' : 'Selecciona una pregunta'}
           <select value={selected} onChange={event => setSelected(event.target.value)}>
             <option value="">Elige una opción</option>
-            {items.filter(item => !category || (item.categoria || 'General') === category).map(item => <option key={item.id} value={item.id}>{name(item)}</option>)}
+            {visible.map(item => <option key={item.id} value={item.id}>{name(item)}</option>)}
           </select>
         </label>
         {selectedItem && <div className="hc-guide-actions">

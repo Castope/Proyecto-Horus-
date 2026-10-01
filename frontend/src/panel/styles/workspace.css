@@ -65,3 +65,5 @@
 @media(max-width:760px){.hw-cards{grid-template-columns:1fr;padding:0 16px 16px}.hw-viewbar,.hw-faq{padding-inline:16px}.hw-insights{gap:8px}.hw-insights>article,.hw-insights>button{padding:13px}.hw-insights strong{font-size:23px}.hw-insights span{font-size:11px}.hw-agenda{padding-inline:16px}.hw-timeline>button{flex-wrap:wrap;gap:10px}.hw-date-tile{min-width:100%;font-size:12px}.hw-inbox{grid-template-columns:1fr}.hw-inbox-list{max-height:290px;border-right:0;border-bottom:1px solid #e0e8f1}.hw-inbox-detail{padding:20px}.hw-contact-data{grid-template-columns:1fr}.hw-review{gap:12px}.hw-review>strong{width:100%}.hw-preview{margin:16px}.hw-resource h3{font-size:17px}.hw-work-grid>a{padding:14px}}
 
 @media(max-width:480px){.hw-insights{grid-template-columns:1fr}.hw-insights>article,.hw-insights>button{flex-direction:row;align-items:center;justify-content:space-between}.hw-resource footer{flex-wrap:wrap}.hw-inbox-meta{flex-wrap:wrap}}
+
+.hw-record-value{white-space:pre-wrap;overflow-wrap:anywhere}

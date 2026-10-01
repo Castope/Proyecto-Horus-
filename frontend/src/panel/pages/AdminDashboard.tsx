@@ -8,6 +8,7 @@ import PanelOverview from '../components/PanelOverview';
 import ResourceManager from '../components/ResourceManager';
 import PanelSettings from '../components/PanelSettings';
 import MessageInbox from '../components/workspace/MessageInbox';
+import CommunityRecords from '../components/workspace/CommunityRecords';
 import '../styles/workspace.css';
 
 const mobileQuery = '(max-width: 760px)';
@@ -23,7 +24,7 @@ export default function AdminDashboard() {
   const location = useLocation();
   const [params] = useSearchParams();
   const requested = location.pathname === '/admin/messages' ? 'mensajes' : params.get('section') || 'resumen';
-  const section = resources[requested] || requested === 'ajustes' ? requested : 'resumen';
+  const section = resources[requested] || ['ajustes', 'newsletter', 'reclamaciones'].includes(requested) ? requested : 'resumen';
   const [menuLocation, setMenuLocation] = useState<string | null>(null);
   const menu = menuLocation === location.key;
   const mobile = useSyncExternalStore(subscribeToViewport, () => window.matchMedia(mobileQuery).matches, () => false);
@@ -52,7 +53,7 @@ export default function AdminDashboard() {
       trigger?.focus();
     };
   }, [menu, mobile]);
-  const title = resources[section]?.label || (section === 'ajustes' ? 'Empresa' : 'Resumen');
+  const title = resources[section]?.label || (section === 'ajustes' ? 'Empresa' : section === 'newsletter' ? 'Suscripciones' : section === 'reclamaciones' ? 'Reclamaciones' : 'Resumen');
   useEffect(() => { document.title = title + ' — Panel Horus'; window.scrollTo(0, 0); }, [title]);
   useEffect(() => {
     const close = (event: KeyboardEvent) => { if (event.key === 'Escape') setMenuLocation(null); };
@@ -71,12 +72,12 @@ export default function AdminDashboard() {
       <div className="hp-workspace-label"><span className="hp-workspace-mark"><PanelIcon name="shield" size={18} /></span><div><strong>Panel de administración</strong><small>Tu espacio de trabajo</small></div></div>
       <nav aria-label="Navegación del panel"><p className="hp-nav-label">PRINCIPAL</p>{nav('resumen', 'Resumen', 'home')}
         <p className="hp-nav-label">GESTIÓN DE CONTENIDO</p>{['cursos', 'servicios', 'galeria', 'faq', 'contenido'].map(key => nav(key, resources[key].label, resources[key].icon))}
-        <p className="hp-nav-label">ATENCIÓN Y EMPRESA</p>{nav('mensajes', 'Mensajes', 'mail')}{nav('ajustes', 'Información de empresa', 'settings')}</nav>
+        <p className="hp-nav-label">ATENCIÓN Y EMPRESA</p>{nav('mensajes', 'Mensajes', 'mail')}{nav('newsletter', 'Suscripciones', 'user')}{nav('reclamaciones', 'Reclamaciones', 'file')}{nav('ajustes', 'Información de empresa', 'settings')}</nav>
       <div className="hp-sidebar-bottom"><Link to="/admin/register"><PanelIcon name="user-plus" />Crear administrador</Link><a href="/" target="_blank" rel="noreferrer"><PanelIcon name="arrow" />Visitar sitio web</a><button onClick={() => { logout(); navigate('/admin/login'); }}><PanelIcon name="logout" />Cerrar sesión</button></div>
       <div className="hp-profile"><span className="hp-avatar">{user?.nombre?.charAt(0).toUpperCase()}</span><div><strong>{user?.nombre}</strong><small>{user?.email}</small></div></div>
     </aside>
     <div className="hp-body" inert={mobile && menu}><header className="hp-topbar"><div><button ref={menuButtonRef} className="hp-icon-btn hp-menu-toggle" aria-label={menu ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menu} aria-controls="panel-sidebar" onClick={() => setMenuLocation(menu ? null : location.key)}><PanelIcon name="menu" /></button><span className="hp-breadcrumb">Mi espacio <span>/</span> <strong>{title}</strong></span></div><div><span className="hp-date"><PanelIcon name="calendar" size={16} />{new Date().toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' })}</span><span className="hp-topbar-divider" /><span className="hp-avatar">{user?.nombre?.charAt(0).toUpperCase()}</span></div></header>
-      <main id="panel-content" className="hp-main" tabIndex={-1}>{section === 'resumen' ? <PanelOverview go={go} /> : section === 'ajustes' ? <PanelSettings /> : section === 'mensajes' && params.get('crear') !== '1' && params.get('vista') !== 'tabla' ? <MessageInbox /> :
+      <main id="panel-content" className="hp-main" tabIndex={-1}>{section === 'resumen' ? <PanelOverview go={go} /> : section === 'ajustes' ? <PanelSettings /> : section === 'newsletter' || section === 'reclamaciones' ? <CommunityRecords key={section} kind={section} /> : section === 'mensajes' && params.get('crear') !== '1' && params.get('vista') !== 'tabla' ? <MessageInbox /> :
         <ResourceManager key={section + (params.get('crear') || '') + (params.get('estado') || '') + (params.get('vista') || '')} resource={resources[section]} autoCreate={params.get('crear') === '1'} />}</main>
       <footer className="hp-footer"><span>© {new Date().getFullYear()} Horus Group SRL</span><span>Hecho para conectar tecnología y personas.</span></footer>
     </div>

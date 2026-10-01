@@ -1,3 +1,4 @@
+import { API_BASE } from '../../apiBase';
 export class PanelApiError extends Error {
   constructor(message: string, public status: number) { super(message); }
 }

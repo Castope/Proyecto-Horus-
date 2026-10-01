@@ -104,7 +104,7 @@ Se ha implementado un diseño responsive completo en la sección de educación c
 - Todos los breakpoints tienen estilos completos
 - Los estilos evitan código duplicado usando selectores y propiedades CSS
 - Se usa `clamp()` para tipografía fluida
-- Las imágenes son responsive con object-fit
+- Las imágenes son reIsponsive con object-fit
 
 ---
 

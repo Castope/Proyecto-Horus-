@@ -1,4 +1,4 @@
-const BASE = '/api'
+import { API_BASE as BASE } from './apiBase'
 
 export async function enviarContacto(datos) {
   const res = await fetch(`${BASE}/contacto`, {

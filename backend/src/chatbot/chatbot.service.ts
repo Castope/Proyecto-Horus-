@@ -2,6 +2,7 @@ import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../database/prisma.service';
 import { ChatContactDto, ChatMessageDto } from './chatbot.dto';
+import { retrievalQuery } from './chatbot-context';
 
 type Source = { id: string; title: string; text: string };
 const normalize = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -63,10 +64,7 @@ export class ChatbotService {
     if (/^(hola|buenas|buenos dias|buenas tardes|gracias)[!.?\s]*$/.test(normalized)) {
       return { ok: true, mode: 'catalogo', answer: '¡Hola! Soy el asistente de Horus. Puedo ayudarte a consultar cursos, servicios y preguntas frecuentes. ¿Qué te interesa?', sources: [] };
     }
-    // Only use a previous user question to resolve short follow-ups.
-    const previous = [...(dto.history || [])].reverse().find(turn => turn.role === 'user');
-    const followUp = /^(y\b|cuanto|cuando|que modalidad|que duracion|cual es su|tiene cupos)/.test(normalized);
-    const query = dto.message + (followUp && previous ? ' ' + previous.content : '');
+    const query = retrievalQuery(dto);
     let sources: Source[];
     try { sources = await this.retrieve(query); }
     catch {

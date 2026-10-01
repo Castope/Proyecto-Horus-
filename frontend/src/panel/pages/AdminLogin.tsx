@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import type {ChangeEvent, FormEvent } from 'react';
+import type {ChangeEvent, SubmitEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAdminAuth } from '../context';
 import { loginAdmin } from '../services';
 import AdminAuthLayout from '../components/AdminAuthLayout';
 import AdminPasswordField from '../components/AdminPasswordField';
+import PanelIcon from '../components/PanelIcon';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -24,8 +25,8 @@ export default function AdminLogin() {
     setMensaje('');
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault(); 
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault();
     if (loading) return;
     setLoading(true);
     setMensaje('');
@@ -59,8 +60,8 @@ export default function AdminLogin() {
           <legend className="admin-auth__sr-only">Datos de inicio de sesión</legend>
           <div className="admin-auth__field">
             <label htmlFor="email">Correo electrónico</label>
-            <input id="email" name="email" type="email" value={form.email} onChange={handleChange}
-              autoComplete="username" autoCapitalize="none" spellCheck={false} placeholder="nombre@ejemplo.com" required />
+            <div className="admin-auth__input"><PanelIcon name="mail" size={18} /><input id="email" name="email" type="email" value={form.email} onChange={handleChange}
+              autoComplete="username" autoCapitalize="none" spellCheck={false} placeholder="nombre@ejemplo.com" required /></div>
           </div>
           <AdminPasswordField id="password" label="Contraseña" value={form.password}
             onChange={handleChange} autoComplete="current-password" />
@@ -72,8 +73,8 @@ export default function AdminLogin() {
           {!loading && <span aria-hidden="true">→</span>}
         </button>
       </form>
-      <p className="admin-auth__switch">¿Aún no tienes una cuenta? <Link to="/admin/register">Crear cuenta</Link></p>
-      <div className="admin-auth__note">Un espacio para administrar contenido y atender a tu comunidad.</div>
+      <p className="admin-auth__switch">¿No tienes una cuenta? <Link to="/admin/register">Crear cuenta</Link></p>
+      <div className="admin-auth__note admin-auth__note--access"><PanelIcon name="shield" size={16} /><span>Tu espacio para gestionar Horus Group.</span></div>
     </AdminAuthLayout>
   );
 }

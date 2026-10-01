@@ -15,9 +15,9 @@ export function useCollection(endpoint: string, catalog = false, revision = 0) {
       const records: Row[] = [];
       let page = 1, pages: number;
       do {
-        const data = await panelRequest<{ items?: Row[]; messages?: Row[]; pagination?: { pages: number } }>(
+        const data = await panelRequest<{ items?: Row[]; messages?: Row[]; subscribers?: Row[]; reclamaciones?: Row[]; pagination?: { pages: number } }>(
           endpoint + (catalog ? '?limit=100&page=' + page : ''), token, 'GET', undefined, controller.signal);
-        records.push(...(data.items || data.messages || []));
+        records.push(...(data.items || data.messages || data.subscribers || data.reclamaciones || []));
         pages = catalog ? data.pagination?.pages || 0 : 1; page++;
       } while (page <= pages);
       if (!controller.signal.aborted) setRows([...new Map(records.map(row => [row.id, row])).values()]);

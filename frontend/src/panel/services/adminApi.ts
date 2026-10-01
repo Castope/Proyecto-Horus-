@@ -1,4 +1,5 @@
 import type { AdminItem, AdminMessage, AdminUser } from '../types';
+import { panelRequest } from './panelApi';
 
 import { API_BASE as PUBLIC_API_BASE } from '../../apiBase';
 const API_BASE = PUBLIC_API_BASE + '/admin';
@@ -19,12 +20,7 @@ export async function loginAdmin(payload: { email: string; password: string }) {
 }
 
 export async function registerAdmin(payload: { nombre: string; email: string; password: string }) {
-  const response = await fetch(`${API_BASE}/register`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(payload),
-  });
-  return response.json();
+  return panelRequest<{ ok: boolean; mensaje?: string }>('register', null, 'POST', payload);
 }
 
 export async function getCurrentAdmin(token: string) {

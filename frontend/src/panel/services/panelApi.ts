@@ -4,7 +4,7 @@ export class PanelApiError extends Error {
 }
 
 export async function panelRequest<T>(path: string, token: string | null, method = 'GET', body?: unknown, signal?: AbortSignal): Promise<T> {
-  const response = await fetch('/api/admin/' + path, {
+  const response = await fetch(API_BASE + '/admin/' + path, {
     method, signal,
     headers: { ...(token ? { Authorization: 'Bearer ' + token } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) },
     ...(body ? { body: JSON.stringify(body) } : {}),

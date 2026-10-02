@@ -19,6 +19,7 @@
     "postinstall": "npm run prisma:generate",
     "db:check": "node scripts/check-database.cjs",
     "content:restore": "node scripts/restore-original.cjs",
+    "convenios:import": "node scripts/import-convenios.cjs",
     "test:integration": "npm run build && node --test test/prisma.integration.cjs"
   },
   "dependencies": {

@@ -14,11 +14,13 @@ export default function MainLayout() {
 
   return (
     <CompanySettingsProvider>
-      <Navbar />
-      <main>
-        <Outlet />
-      </main>
-      <Footer />
+      <div className={pathname === '/' ? 'home-layout' : undefined}>
+        <Navbar />
+        <main>
+          <Outlet />
+        </main>
+        <Footer />
+      </div>
       <Chatbot />
     </CompanySettingsProvider>
   )

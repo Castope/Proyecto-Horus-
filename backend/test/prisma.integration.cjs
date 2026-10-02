@@ -53,6 +53,62 @@ test('Prisma works against MySQL and legacy-compatible SQL in an isolated databa
         assert.equal(row.name, name);
       } finally { await app.close(); }
     });
+
+    await t.test('convenios API enforces JWT, visibility, paginated totals, photo ownership, order rollback and cascade', async () => {
+      const { AppModule } = require('../dist/app.module');
+      const { createValidationPipe } = require('../dist/common/validation');
+      const app = await NestFactory.create(AppModule, { logger: false, abortOnError: false });
+      app.setGlobalPrefix('api'); app.useGlobalPipes(createValidationPipe());
+      await app.listen(0, '127.0.0.1');
+      const origin = await app.getUrl();
+      const auth = await app.get(AuthService).register({ nombre: 'Convenios test', email: 'convenios-test@example.com', password: 'Temporary-test-123!' });
+      const request = async (route, method = 'GET', body, authenticated = false) => {
+        const response = await fetch(origin + '/api/' + route, { method, headers: {
+          ...(authenticated ? { Authorization: 'Bearer ' + auth.token } : {}),
+          ...(body ? { 'Content-Type': 'application/json' } : {}),
+        }, ...(body ? { body: JSON.stringify(body) } : {}) });
+        return { status: response.status, data: await response.json() };
+      };
+      try {
+        assert.equal((await request('admin/convenios')).status, 401);
+        assert.equal((await request('admin/convenios', 'POST', { nombre: 'Sin token', descripcion_corta: 'Prueba' })).status, 401);
+        const empty = await request('convenios?estado=oculto');
+        assert.deepEqual(empty.data.items, []); assert.equal(empty.data.pagination.total, 0);
+        assert.equal(await client.convenio.count(), 0, 'Las lecturas no importan contenido');
+        const first = await request('admin/convenios', 'POST', { nombre: 'Entidad A', descripcion_corta: 'Descripción A', orden: 10 }, true);
+        assert.equal(first.status, 201); assert.equal(first.data.item.visible, false);
+        const id = first.data.item.id;
+        const second = await request('admin/convenios', 'POST', { nombre: 'Entidad B', descripcion_corta: 'Descripción B', orden: 2, visible: true }, true);
+        const otherId = second.data.item.id;
+        assert.equal((await request('convenios/' + id)).status, 404);
+        assert.equal((await request('convenios?estado=oculto')).data.pagination.total, 1);
+        assert.equal((await request('admin/convenios/' + id, 'PUT', {}, true)).status, 400);
+        assert.equal((await request('admin/convenios/' + id, 'PUT', { sigla: null }, true)).status, 400);
+        assert.equal((await request('admin/convenios/' + id, 'PUT', { visible: 'true' }, true)).status, 400);
+        assert.equal((await request('admin/convenios/' + id, 'PUT', { visible: true, descripcion_completa: 'Información completa', informacion_adicional: 'Más información' }, true)).status, 200);
+        const page = await request('convenios?page=1&limit=1');
+        assert.equal(page.data.items[0].id, otherId); assert.equal(page.data.pagination.total, 2); assert.equal(page.data.pagination.pages, 2);
+        assert.equal('origen_local' in page.data.items[0], false);
+        const photo = async orden => (await request('admin/convenios/' + id + '/fotos', 'POST', { imagen_url: 'https://example.com/' + orden + '.png', orden }, true)).data.item;
+        const p1 = await photo(3), p2 = await photo(1);
+        assert.deepEqual((await request('convenios/' + id)).data.item.fotos.map(x => x.id), [p2.id, p1.id]);
+        assert.equal((await request('admin/convenios/' + otherId + '/fotos/' + p1.id, 'DELETE', undefined, true)).status, 404);
+        assert.equal((await request('admin/convenios/' + id + '/fotos/orden', 'PUT', { fotos: [{ id: p1.id, orden: 0 }, { id: 2147483647, orden: 1 }] }, true)).status, 404);
+        assert.equal((await client.convenioFoto.findUnique({ where: { id: p1.id } })).orden, 3, 'Orden fallido revierte la transacción');
+        assert.equal((await request('admin/convenios/' + id + '/fotos/orden', 'PUT', { fotos: [{ id: p1.id, orden: 0 }, { id: p2.id, orden: 1 }] }, true)).status, 200);
+        assert.deepEqual((await request('convenios/' + id)).data.item.fotos.map(x => x.id), [p1.id, p2.id]);
+        assert.equal((await request('admin/convenios/' + id + '/fotos/' + p2.id, 'PUT', { orden: 0 }, true)).status, 200);
+        assert.equal((await request('admin/convenios/' + id + '/fotos/' + p2.id, 'DELETE', undefined, true)).status, 200);
+        assert.equal((await request('admin/convenios/' + id, 'PUT', { visible: false, logo_url: '', descripcion_completa: '', informacion_adicional: '' }, true)).status, 200);
+        assert.equal((await request('convenios/' + id)).status, 404);
+        assert.equal((await request('admin/convenios/' + id, 'DELETE', undefined, true)).status, 200);
+        assert.equal(await client.convenioFoto.count({ where: { convenio_id: id } }), 0);
+        assert.equal((await request('admin/convenios/' + otherId, 'DELETE', undefined, true)).status, 200);
+        assert.equal((await request('convenios')).data.pagination.total, 0);
+        await client.adminUser.update({ where: { id: auth.user.id }, data: { activo: false } });
+        assert.equal((await request('admin/convenios', 'GET', undefined, true)).status, 401);
+      } finally { await app.close(); await client.adminUser.delete({ where: { id: auth.user.id } }); }
+    });
     await t.test('catalog publication, search, dates, duplicate slug and archive', async () => {
       const { item } = await catalog.create('cursos', { titulo: 'Curso de redes', slug: 'redes', descripcion: 'Redes locales', tipo: 'curso', modalidad: 'virtual', duracion: '20 horas', fecha_inicio: '2026-09-21' });
       assert.equal(item.estado, 'borrador');

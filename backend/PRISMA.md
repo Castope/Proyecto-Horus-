@@ -31,3 +31,7 @@ Crear una base vacía y configurar `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` y 
 `npm run test:integration` compila y crea/elimina exclusivamente una base `horus_prisma_test_<UUID>`. Requiere CREATE/DROP DATABASE. El destino debe ser local; un servidor remoto de pruebas exige autorización y `ALLOW_INTEGRATION_DB=true`.
 
 Las pruebas cubren módulos, CRUD, publicación, fechas, importes, concurrencia, seguimiento, cuotas compartidas, recuperación de contraseña y referencias. Los correos de esas pruebas están sustituidos; no acreditan entrega SMTP real. La base configurada original no se migra durante estas comprobaciones.
+
+## Convenios
+
+Convenio y ConvenioFoto se crean mediante 20261002-create-convenios.sql, registrada en el ejecutor existente. Las fotos tienen FK con borrado en cascada de registros y permanecen separadas de GaleriaItem. Ninguna lectura, compilación o arranque importa datos. La carga inicial de los cinco convenios es un mantenimiento explícito e idempotente. Consulta [Convenios](CONVENIOS.md) para contratos, activación manual y vista previa.

@@ -1,3 +1,4 @@
+import { ConveniosModule } from './convenios/convenios.module';
 import { OriginalContentModule } from './content-original/content-original.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { AttentionModule } from './attention/attention.module';
@@ -31,6 +32,7 @@ import { SettingsModule } from './settings/settings.module';
     AttentionModule,
     UploadsModule,
     OriginalContentModule,
+    ConveniosModule,
     CatalogoModule,
     ChatbotModule,
     MailModule,

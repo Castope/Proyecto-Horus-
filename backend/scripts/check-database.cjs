@@ -18,7 +18,19 @@ function expectedColumns() {
     ...[['id','varchar(64)'],['count','int'],['expiresAt','datetime']].map(([name,type])=>['rate_limit_buckets',name,type,false]),
   ].map(([table,name,type,nullable])=>({table,name,type,nullable,unique:name==='id'}));
   const visual=[...['cursos','servicios'].map(table=>({table,name:'origen_original',type:'varchar(150)',nullable:true,unique:true})),...['area','certificacion','icono','color'].map((name,i)=>({table:'cursos',name,type:['varchar(80)','varchar(150)','varchar(30)','varchar(20)'][i],nullable:name!=='color',unique:false})),{table:'cursos',name:'orden',type:'int',nullable:false,unique:false},...['presentacion','nombre_corto','destacado','dato_principal','dato_secundario','etiquetas','icono','color','orden'].map((name,i)=>({table:'servicios',name,type:['varchar(30)','varchar(80)','varchar(100)','varchar(40)','varchar(100)','text','varchar(30)','varchar(20)','int'][i],nullable:!['presentacion','color','orden'].includes(name),unique:false})),{table:'galeria_items',name:'origen_original',type:'varchar(150)',nullable:true,unique:true}];
-  return [...legacy.map(column=>column.table==='cursos'&&['modalidad','duracion'].includes(column.name)?{...column,nullable:true}:column),...added,...visual];
+  const convenios = [
+    ...[
+      ['id','int',false], ['nombre','varchar(160)',false], ['sigla','varchar(50)',true],
+      ['logo_url','varchar(2048)',true], ['descripcion_corta','text',false],
+      ['descripcion_completa','text',true], ['informacion_adicional','text',true],
+      ['orden','int',false], ['visible','tinyint',false], ['origen_local','varchar(150)',true],
+      ['createdAt','datetime',false], ['updatedAt','datetime',false],
+    ].map(([name,type,nullable])=>({table:'convenios',name,type,nullable,unique:['id','origen_local'].includes(name)})),
+    ...[
+      ['id','int'], ['convenio_id','int'], ['imagen_url','varchar(2048)'], ['orden','int'], ['createdAt','datetime'],
+    ].map(([name,type])=>({table:'convenio_fotos',name,type,nullable:false,unique:name==='id'})),
+  ];
+  return [...convenios, ...legacy.map(column=>column.table==='cursos'&&['modalidad','duracion'].includes(column.name)?{...column,nullable:true}:column),...added,...visual];
 }
 function normalizeType(type) { return type.toLowerCase().replace(/\binteger\b/g, 'int').replace(/int\(\d+\)/g, 'int').replace(/\s/g, ''); }
 async function check(db) {
@@ -38,6 +50,8 @@ async function check(db) {
   if (!constraints.some(row=>row.TABLE_NAME==='cotizaciones'&&row.REFERENCED_TABLE_NAME==='contactos'&&['RESTRICT','NO ACTION'].includes(row.DELETE_RULE))) problems.push('cotizaciones.contacto_id: falta protección de referencia');
   for(const referenced of ['contactos','reclamaciones']) if(!constraints.some(row=>row.TABLE_NAME==='attention_records'&&row.REFERENCED_TABLE_NAME===referenced&&['RESTRICT','NO ACTION'].includes(row.DELETE_RULE))) problems.push('attention_records: falta protección de referencia a '+referenced);
   if (!indexes.some(row=>row.TABLE_NAME==='attention_records'&&row.INDEX_NAME==='attention_record_resource'&&Number(row.NON_UNIQUE)===0)) problems.push('attention_records: falta índice único de recurso');
+  if (!constraints.some(row=>row.TABLE_NAME==='convenio_fotos'&&row.REFERENCED_TABLE_NAME==='convenios'&&row.DELETE_RULE==='CASCADE')) problems.push('convenio_fotos: falta referencia con borrado en cascada');
+  for (const [table,index] of [['convenios','convenios_visible_orden_idx'],['convenios','convenios_orden_idx'],['convenio_fotos','convenio_fotos_convenio_orden_idx']]) if(!indexes.some(row=>row.TABLE_NAME===table&&row.INDEX_NAME===index)) problems.push(table+': falta índice '+index);
   return problems;
 }
 if (require.main === module) (async () => {

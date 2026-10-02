@@ -18,6 +18,7 @@ import { CreateGaleriaDto } from './dto/create-galeria.dto';
 import { UpdateGaleriaDto } from './dto/update-galeria.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 
+import { ListQueryDto } from '../common/list-query.dto';
 @ApiTags('Admin - Galería')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -29,8 +30,8 @@ export class AdminGaleriaController {
   @ApiOperation({ summary: 'Listar todos los elementos de galería para administración' })
   @ApiQuery({ name: 'categoria', required: false })
   @ApiResponse({ status: 200, description: 'Listado completo para el panel' })
-  async findAll(@Query('categoria') categoria?: string) {
-    return this.galeriaService.findAllAdmin(categoria);
+  async findAll(@Query() q: ListQueryDto) {
+    return this.galeriaService.findAllAdmin(q.categoria, q);
   }
 
   @Post()

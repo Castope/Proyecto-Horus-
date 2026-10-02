@@ -15,7 +15,7 @@ export class AuthService {
   ) {}
 
   private generateToken(user: AdminUser): string {
-    return this.jwtService.sign({ id: user.id, email: user.email });
+    return this.jwtService.sign({ id: user.id, email: user.email, version: user.session_version });
   }
 
   async register(dto: RegisterDto) {
@@ -49,7 +49,7 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const user = await this.prisma.adminUser.findFirst({ where: { email: dto.email.toLowerCase().trim() } });
-    if (!user || !(await bcrypt.compare(dto.password, user.password))) {
+    if (!user || user.activo === false || !(await bcrypt.compare(dto.password, user.password))) {
       throw new UnauthorizedException({ ok: false, mensaje: 'Credenciales incorrectas.' });
     }
 

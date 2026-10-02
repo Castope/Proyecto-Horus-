@@ -8,6 +8,8 @@ import ResourcePreview from './workspace/ResourcePreview';
 import { panelRequest, errorMessage } from '../services/panelApi';
 import { type Resource, type Row, label, rowState } from '../types/workspace';
 import PanelIcon from './PanelIcon';
+import ImageUpload from './ImageUpload';
+import OriginalContentImport from './OriginalContentImport';
 import PanelDialog from './PanelDialog';
 
 type ListResponse = { items?: Row[]; messages?: Row[]; pagination?: { total: number; pages: number } };
@@ -48,10 +50,10 @@ export default function ResourceManager({ resource: r, autoCreate }: Props) {
     const params = new URLSearchParams({ page: String(page), limit: String(pageSize) });
     if (query.trim()) params.set('search', query.trim());
     if (status) params.set('estado', status);
-    panelRequest<ListResponse>(r.endpoint + (r.catalog ? '?' + params : ''), token, 'GET', undefined, controller.signal)
+    panelRequest<ListResponse>(r.endpoint + '?' + params, token, 'GET', undefined, controller.signal)
       .then(data => {
         if (controller.signal.aborted) return;
-        if (r.catalog) {
+        if (data.pagination) {
           setRows(data.items || []); setTotal(data.pagination?.total || 0); setPages(data.pagination?.pages || 0);
           if (page > 1 && page > (data.pagination?.pages || 0)) setPage(Math.max(1, data.pagination?.pages || 1));
         } else {
@@ -102,13 +104,24 @@ export default function ResourceManager({ resource: r, autoCreate }: Props) {
     actionLock.current = true; setBusy(true); setFormError('');
     try {
       let payload: Record<string, unknown> = {};
+      const limpiar: string[] = [];
       for (const field of r.fields) {
         const value = (form[field.key] ?? '').trim();
-        if (!value && !field.required && !editor?.row?.[field.key]) continue;
+        const required=field.required&&(!field.courseOnly||form.tipo!=='capacitacion');
+        if (!value && !required && r.catalog) {
+          if (editor?.row?.[field.key]) limpiar.push(field.key);
+          continue;
+        }
+        if (!value && !required && !editor?.row?.[field.key]) continue;
         payload[field.key] = field.key === 'activo' ? value === 'activo' : field.type === 'number' ? Number(value) : value;
       }
+      if (limpiar.length) payload.limpiar = limpiar;
       if (r.endpoint === 'messages' && editor?.row) payload = { estado: form.estado };
-      await panelRequest(r.endpoint + (editor?.row ? '/' + editor.row.id : ''), token, editor?.row ? 'PUT' : 'POST', payload);
+      if(r.endpoint==='messages' && editor?.row){
+        const path='seguimiento/messages/'+editor.row.id;
+        const {item}=await panelRequest<{item:{revision:number;responsable:string;notas:string;respuesta:string}}>(path,token);
+        await panelRequest(path,token,'PUT',{estado:form.estado,revision:item.revision,responsable:item.responsable,notas:item.notas,respuesta:item.respuesta});
+      }else await panelRequest(r.endpoint + (editor?.row ? '/' + editor.row.id : ''), token, editor?.row ? 'PUT' : 'POST', payload);
       setEditor(null); setNotice('Cambios guardados correctamente.'); setReload(n => n + 1);
     } catch (err) { setFormError(errorMessage(err)); }
     finally { actionLock.current = false; setBusy(false); }
@@ -127,7 +140,7 @@ export default function ResourceManager({ resource: r, autoCreate }: Props) {
     const cols = ['id', ...r.fields.map(field => field.key)];
     const escape = (value: unknown) => {
       let str = String(value ?? '');
-      if (/^[=+@\-\t\r\n]/.test(str)) str = "'" + str;
+      if (/^[\s]*[=+@-]|^[\t\r\n]/.test(str)) str = "'" + str;
       return '"' + str.replace(/"/g, '""') + '"';
     };
     const csv = '\uFEFF' + [cols, ...rows.map(row => cols.map(key => row[key]))].map(row => row.map(escape).join(',')).join('\r\n');
@@ -138,6 +151,7 @@ export default function ResourceManager({ resource: r, autoCreate }: Props) {
   return <>
     <div className="hp-heading"><div><p className="hp-kicker">ESPACIO DE TRABAJO</p><h1>{r.label}</h1><p>{r.description}</p></div>
       <button className="hp-btn hp-btn-primary" onClick={openNew} disabled={busy}><PanelIcon name="plus" />Crear {r.singular}</button></div>
+    {['servicios','cursos','galeria'].includes(r.endpoint)&&<div className="hp-actions"><OriginalContentImport section={r.endpoint==='cursos'?'capacitaciones':r.endpoint} onRestored={message=>{setNotice(message);setReload(n=>n+1)}}/></div>}
     {r.endpoint === 'messages' && <p className="hw-caption"><Link className="hp-text-btn" to="/admin/messages">← Volver al centro de consultas</Link></p>}
     {notice && <div className="hp-notice" role="status"><PanelIcon name="check" />{notice}<button aria-label="Cerrar aviso" onClick={() => setNotice('')}><PanelIcon name="close" size={16} /></button></div>}
     <section className="hp-card">
@@ -176,13 +190,14 @@ export default function ResourceManager({ resource: r, autoCreate }: Props) {
         <fieldset className="hp-form-grid" disabled={busy}><legend className="hp-sr">Datos del registro</legend>
         {r.fields.map(field => {
           const locked = r.endpoint === 'messages' && !!editor.row;
-          const common = { id: 'field-' + field.key, value: form[field.key] || '', required: field.required, disabled: locked,
+          const common = { id: 'field-' + field.key, value: form[field.key] || '', required: field.required&&(!field.courseOnly||form.tipo!=='capacitacion'), disabled: locked,
             onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setForm(prev => ({ ...prev, [field.key]: event.target.value })) };
-          return <label key={field.key} className={field.type === 'textarea' ? 'hp-full' : ''} htmlFor={common.id}>{field.label}{field.required && <span className="hp-required"> *</span>}
+          return <label key={field.key} className={field.type === 'textarea' ? 'hp-full' : ''} htmlFor={common.id}>{field.label}{common.required && <span className="hp-required"> *</span>}
             {field.type === 'textarea' ? <textarea {...common} rows={4} minLength={field.min} maxLength={field.max} /> :
               field.type === 'select' ? <select {...common}>{field.options?.map(o => <option key={o} value={o}>{label(o)}</option>)}</select> :
-              <input {...common} type={field.type || 'text'} minLength={field.type === 'number' ? undefined : field.min} maxLength={field.type === 'number' ? undefined : field.max} min={field.type === 'number' ? field.min : undefined} max={field.type === 'number' ? field.max : undefined}
+              <input {...common} type={field.key==='imagen_url'?'text':field.type || 'text'} minLength={field.type === 'number' ? undefined : field.min} maxLength={field.type === 'number' ? undefined : field.max} min={field.type === 'number' ? field.min : undefined} max={field.type === 'number' ? field.max : undefined}
                 pattern={field.key === 'slug' ? '[a-z0-9]+(-[a-z0-9]+)*' : undefined} />}
+            {field.key === 'imagen_url' && <ImageUpload onUploaded={url => setForm(prev => ({ ...prev, imagen_url: url }))} />}
             {field.key === 'slug' && <small>Minúsculas y guiones. <button type="button" className="hp-text-btn" onClick={() => setForm(prev => ({ ...prev, slug: (prev.titulo || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 180) }))}>Generar desde el título</button></small>}
           </label>;
         })}

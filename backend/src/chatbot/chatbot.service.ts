@@ -11,6 +11,7 @@ export function searchTerms(text: string) {
   return [...new Set(normalize(text).match(/[a-z0-9]{3,}/g) || [])]
     .filter(word => !stopWords.has(word)).map(word => word.replace(/s$/, '')).slice(0, 10);
 }
+export const redactPersonalData = (text: string) => text.replace(/[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9.-]+\.[a-z]{2,}/gi, '[correo oculto]').replace(/(?:\+?\d[\d ()-]{5,}\d)/g, '[número oculto]');
 const plain = (value: unknown, max = 1800) => String(value ?? '').replace(/<[^>]*>/g, '').slice(0, max);
 
 @Injectable()
@@ -32,6 +33,8 @@ export class ChatbotService {
       estado: 'publicado',
       ...(!generic && words.length ? { OR: fields.flatMap(field => words.map(word => ({ [field]: field === 'modalidad' ? { in: ['presencial', 'virtual', 'hibrida'].filter(value => value.includes(word)) } : field === 'categoria' && fields.includes('alcance') ? { in: ['cableado', 'camaras', 'soporte', 'asesoramiento', 'otros'].filter(value => value.includes(word)) } : { contains: word } }))) } : {}),
     });
+    const institutional = /contact|telefono|correo|direccion|ubicaci|whatsapp|horario|ruc|empresa|razon social/.test(normalize(query));
+    const settings = institutional ? await this.prisma.setting.findMany({where:{clave:{in:['empresa_nombre','ruc','email_contacto','telefono_principal','whatsapp','direccion','horario_atencion']}},select:{clave:true,valor:true}}) : [];
     const [courses, services, faqs] = await Promise.all([
       this.prisma.curso.findMany({ where: where(['titulo', 'descripcion', 'temario', 'modalidad'], courseIntent && !specific.length),
         select: { id: true, titulo: true, descripcion: true, tipo: true, modalidad: true, duracion: true, fecha_inicio: true, temario: true }, take: 18, orderBy: [{ updatedAt: 'desc' }] }),
@@ -41,6 +44,7 @@ export class ChatbotService {
         select: { id: true, pregunta: true, respuesta: true, categoria: true }, take: 18, orderBy: [{ orden: 'asc' }] }),
     ]);
     const sources: Source[] = [
+      ...(settings.some(row=>row.valor.trim()) ? [{id:'empresa',title:'Información institucional de contacto',text:settings.filter(row=>row.valor.trim()).map(row=>row.clave.replace(/_/g,' ')+': '+plain(row.valor)).join('\n')}] : []),
       ...courses.map(row => ({ id: 'curso-' + row.id, title: plain(row.titulo, 160),
         text: [plain(row.descripcion), 'Modalidad: ' + plain(row.modalidad), 'Duración: ' + plain(row.duracion),
           row.fecha_inicio ? 'Fecha publicada: ' + new Date(row.fecha_inicio).toISOString().slice(0, 10) : 'Sin fecha de inicio publicada.',
@@ -53,6 +57,7 @@ export class ChatbotService {
       const title = normalize(source.title);
       const body = normalize(source.text);
       return words.reduce((sum, word) => sum + (title.includes(word) ? 4 : body.includes(word) ? 1 : 0), 0)
+        + (institutional && source.id==='empresa' ? 4 : 0)
         + (courseIntent && source.id.startsWith('curso-') ? 2 : 0)
         + (serviceIntent && source.id.startsWith('servicio-') ? 2 : 0);
     };
@@ -103,7 +108,7 @@ export class ChatbotService {
             'Fecha actual UTC: ' + new Date().toISOString().slice(0, 10),
           ].join('\n'),
           input: [{ role: 'user', content: JSON.stringify({
-            historial: dto.history || [], pregunta: dto.message, FUENTES: sources,
+            historial: (dto.history || []).map(turn => ({ ...turn, content: redactPersonalData(turn.content) })), pregunta: redactPersonalData(dto.message), FUENTES: sources,
           }) }],
         }),
       });

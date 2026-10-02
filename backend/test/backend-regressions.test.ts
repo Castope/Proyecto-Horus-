@@ -135,7 +135,7 @@ test('all settings writes share one transaction', async () => {
 
 test('email templates escape user HTML without sending real mail', async () => {
   const service = new MailService(new ConfigService({})); const messages: any[] = [];
-  service.sendMail = async (message: any) => { messages.push(message); };
+  service.sendMail = async (message: any) => { messages.push(message); return true; };
   await service.sendContactoNotificacion({ nombre: '<img src=x>', email: 'a@example.com', asunto: '<b>test</b>', mensaje: '<a href="bad">click</a>' });
   await service.sendReclamoConstancia({ email: 'a@example.com', nombres: '<img src=x>', apellidos: 'Perez', tipo_registro: 'reclamo', numero_reclamo: 'HG-test', area: '<b>test</b>', detalle_reclamo: '<script>bad</script>' });
   assert.equal(messages.length, 3);

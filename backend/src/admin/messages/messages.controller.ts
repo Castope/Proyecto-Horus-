@@ -17,6 +17,8 @@ import { CreateAdminMessageDto } from './dto/create-message.dto';
 import { UpdateMessageStatusDto } from './dto/update-message-status.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
+import { Query } from '@nestjs/common';
+import { ListQueryDto } from '../../common/list-query.dto';
 @ApiTags('Admin - Mensajes')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -27,8 +29,8 @@ export class MessagesController {
   @Get()
   @ApiOperation({ summary: 'Listar todos los mensajes de contacto' })
   @ApiResponse({ status: 200, description: 'Lista de mensajes obtenida exitosamente' })
-  async findAll() {
-    return this.messagesService.findAll();
+  async findAll(@Query() query: ListQueryDto) {
+    return this.messagesService.findAll(query);
   }
 
   @Get(':id')

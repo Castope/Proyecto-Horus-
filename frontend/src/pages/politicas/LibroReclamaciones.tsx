@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { ChangeEvent, SubmitEvent } from 'react'
 import { Link } from 'react-router-dom'
 import useFadeUp from '../../hooks/useFadeUp'
@@ -43,7 +43,7 @@ function validarPaso1(f: FormData): FormErrors {
   if (!f.nombres.trim())    e.nombres   = 'Ingresa tus nombres'
   if (!f.apellidos.trim())  e.apellidos = 'Ingresa tus apellidos'
   if (!f.email.trim())      e.email     = 'Ingresa tu correo'
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) e.email = 'Correo inválido'
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) e.email = 'Correo inválido'
   if (!f.telefono.trim())   e.telefono  = 'Ingresa tu teléfono'
   if (!f.tipoDoc)           e.tipoDoc   = 'Selecciona el tipo de documento'
   if (!f.numDoc.trim())     e.numDoc    = 'Ingresa el número de documento'
@@ -65,7 +65,7 @@ function Campo({ id, label, required = false, children, full = false, error }: C
     <div className={`lr-field${full ? ' lr-field-full' : ''}`}>
       <label htmlFor={id}>{label} {required && <span className="lr-req">*</span>}</label>
       {children}
-      {error && <span className="lr-field-error"><i className="fas fa-exclamation-circle" /> {error}</span>}
+      {error && <span id={id+"-error"} role="alert" className="lr-field-error"><i className="fas fa-exclamation-circle" /> {error}</span>}
     </div>
   )
 }
@@ -79,6 +79,9 @@ export default function LibroReclamaciones() {
   const [numRec,  setNumRec]  = useState('')
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState('')
+  const submitLock=useRef(false)
+  const [mailSent,setMailSent]=useState(false)
+  useEffect(()=>{ const first=Object.keys(errores)[0]; if(first) document.getElementById(first)?.focus() },[errores,paso])
   const chars = form.detalleReclamo.length
 
   useEffect(() => { document.title = 'Libro de Reclamaciones — Horus Group SRL' }, [])
@@ -113,7 +116,11 @@ export default function LibroReclamaciones() {
 
   const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (!form.aceptaTerminos) return
+    if (!form.aceptaTerminos || submitLock.current) return
+    const errors1=validarPaso1(form), errors2=validarPaso2(form)
+    if(Object.keys(errors1).length){setErrores(errors1);setPaso(1);return}
+    if(Object.keys(errors2).length){setErrores(errors2);setPaso(2);return}
+    submitLock.current=true
     setLoading(true)
     setError('')
     try {
@@ -132,11 +139,12 @@ export default function LibroReclamaciones() {
         detalle_reclamo:       form.detalleReclamo,
         acepta_comunicaciones: form.aceptaComunicaciones,
       })
-      if (res.ok) { setNumRec(res.numero_reclamo); setExito(true) }
+      if (res.ok) { setNumRec(res.numero_reclamo || ''); setMailSent(res.correo_enviado === true); setExito(true) }
       else setError(res.mensaje || 'Error al registrar el reclamo.')
-    } catch {
-      setError('No se pudo conectar con el servidor.')
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'No se pudo conectar con el servidor.')
     } finally {
+      submitLock.current=false
       setLoading(false)
     }
   }
@@ -144,7 +152,7 @@ export default function LibroReclamaciones() {
 
 
   if (exito) return (
-    <main>
+    <>
       <section className="lr-hero"><div className="container"><div className="lr-hero-inner">
         <div className="lr-hero-badge"><i className="fas fa-book-open" /> Ley N° 29571 — INDECOPI</div>
         <h1>Libro de<br /><span>Reclamaciones</span></h1>
@@ -152,7 +160,7 @@ export default function LibroReclamaciones() {
       <section className="lr-main"><div className="container">
         <div className="lr-exito">
           <div className="lr-exito-icon"><i className="fas fa-check-circle" /></div>
-          <h2>Reclamo Registrado</h2>
+          <h2 tabIndex={-1}>Reclamo Registrado</h2><p role="status">{mailSent ? 'Constancia enviada a tu correo.' : 'El registro se guardó, pero la constancia por correo no pudo enviarse. Conserva este código y contacta con el equipo; no necesitas registrar otro reclamo.'}</p><button className="lr-btn lr-btn-primary" onClick={()=>window.print()}>Imprimir constancia</button>
           <p>Tu reclamo ha sido recibido correctamente. Te responderemos en un plazo máximo de <strong>15 días hábiles</strong>.</p>
           <div className="lr-exito-num">
             <span>Número de Reclamo</span>
@@ -163,11 +171,11 @@ export default function LibroReclamaciones() {
           </Link>
         </div>
       </div></section>
-    </main>
+    </>
   )
 
   return (
-    <main>
+    <>
       <section className="lr-hero">
         <div className="container">
           <div className="lr-hero-inner">
@@ -238,16 +246,16 @@ export default function LibroReclamaciones() {
                     </div>
                     <div className="lr-grid">
                       <Campo id="nombres" label="Nombres" required error={errores.nombres}>
-                        <input type="text" id="nombres" name="nombres" value={form.nombres} onChange={handleChange} placeholder="Tus nombres" className={errores.nombres ? 'lr-input-error' : ''} />
+                        <input type="text" id="nombres" name="nombres" maxLength={255} aria-invalid={!!errores.nombres} aria-describedby={errores.nombres ? 'nombres-error' : undefined} value={form.nombres} onChange={handleChange} placeholder="Tus nombres" className={errores.nombres ? 'lr-input-error' : ''} />
                       </Campo>
                       <Campo id="apellidos" label="Apellidos" required error={errores.apellidos}>
-                        <input type="text" id="apellidos" name="apellidos" value={form.apellidos} onChange={handleChange} placeholder="Tus apellidos" className={errores.apellidos ? 'lr-input-error' : ''} />
+                        <input type="text" id="apellidos" name="apellidos" maxLength={255} aria-invalid={!!errores.apellidos} aria-describedby={errores.apellidos ? 'apellidos-error' : undefined} value={form.apellidos} onChange={handleChange} placeholder="Tus apellidos" className={errores.apellidos ? 'lr-input-error' : ''} />
                       </Campo>
                       <Campo id="email" label="Correo Electrónico" required error={errores.email}>
-                        <input type="email" id="email" name="email" value={form.email} onChange={handleChange} placeholder="correo@ejemplo.com" className={errores.email ? 'lr-input-error' : ''} />
+                        <input type="email" id="email" name="email" maxLength={255} aria-invalid={!!errores.email} aria-describedby={errores.email ? 'email-error' : undefined} value={form.email} onChange={handleChange} placeholder="correo@ejemplo.com" className={errores.email ? 'lr-input-error' : ''} />
                       </Campo>
                       <Campo id="telefono" label="Teléfono" required error={errores.telefono}>
-                        <input type="tel" id="telefono" name="telefono" value={form.telefono} onChange={handleChange} placeholder="987654321" className={errores.telefono ? 'lr-input-error' : ''} />
+                        <input type="tel" id="telefono" name="telefono" maxLength={255} aria-invalid={!!errores.telefono} aria-describedby={errores.telefono ? 'telefono-error' : undefined} value={form.telefono} onChange={handleChange} placeholder="987654321" className={errores.telefono ? 'lr-input-error' : ''} />
                       </Campo>
                       <Campo id="tipoDoc" label="Tipo de Documento" required error={errores.tipoDoc}>
                         <select id="tipoDoc" name="tipoDoc" value={form.tipoDoc} onChange={handleChange} className={errores.tipoDoc ? 'lr-input-error' : ''}>
@@ -262,7 +270,7 @@ export default function LibroReclamaciones() {
                         <input type="text" id="numDoc" name="numDoc" value={form.numDoc} onChange={handleChange} placeholder="Ej: 12345678" maxLength={15} className={errores.numDoc ? 'lr-input-error' : ''} />
                       </Campo>
                       <Campo id="direccion" label="Dirección" full>
-                        <input type="text" id="direccion" name="direccion" value={form.direccion} onChange={handleChange} placeholder="Calle, número, distrito, ciudad" />
+                        <input type="text" id="direccion" name="direccion" maxLength={255} aria-invalid={!!errores.direccion} aria-describedby={errores.direccion ? 'direccion-error' : undefined} value={form.direccion} onChange={handleChange} placeholder="Calle, número, distrito, ciudad" />
                       </Campo>
                     </div>
                     <div className="lr-nav">
@@ -301,13 +309,13 @@ export default function LibroReclamaciones() {
                         </select>
                       </Campo>
                       <Campo id="fechaIncidente" label="Fecha del Incidente" required error={errores.fechaIncidente}>
-                        <input type="date" id="fechaIncidente" name="fechaIncidente" value={form.fechaIncidente} onChange={handleChange} max={new Date().toISOString().split('T')[0]} className={errores.fechaIncidente ? 'lr-input-error' : ''} />
+                        <input type="date" id="fechaIncidente" name="fechaIncidente" value={form.fechaIncidente} onChange={handleChange} max={new Date().toLocaleDateString('en-CA',{timeZone:'America/Lima'})} className={errores.fechaIncidente ? 'lr-input-error' : ''} />
                       </Campo>
                       <Campo id="descripcionBien" label="Descripción del Bien / Servicio" required full error={errores.descripcionBien}>
-                        <textarea id="descripcionBien" name="descripcionBien" value={form.descripcionBien} onChange={handleChange} rows={3} placeholder="Describe el producto o servicio adquirido..." className={errores.descripcionBien ? 'lr-input-error' : ''} />
+                        <textarea id="descripcionBien" name="descripcionBien" maxLength={5000} value={form.descripcionBien} onChange={handleChange} rows={3} placeholder="Describe el producto o servicio adquirido..." className={errores.descripcionBien ? 'lr-input-error' : ''} />
                       </Campo>
                       <Campo id="detalleReclamo" label="Detalle del Reclamo / Queja" required full error={errores.detalleReclamo}>
-                        <textarea id="detalleReclamo" name="detalleReclamo" value={form.detalleReclamo} onChange={handleChange} rows={5} placeholder="Describe detalladamente lo ocurrido..." maxLength={1000} className={errores.detalleReclamo ? 'lr-input-error' : ''} />
+                        <textarea id="detalleReclamo" name="detalleReclamo" value={form.detalleReclamo} onChange={handleChange} rows={5} placeholder="Describe detalladamente lo ocurrido..." maxLength={5000} className={errores.detalleReclamo ? 'lr-input-error' : ''} />
                         <small className="lr-counter">{chars} / 1000 caracteres</small>
                       </Campo>
                     </div>
@@ -389,6 +397,6 @@ export default function LibroReclamaciones() {
           </div>
         </div>
       </section>
-    </main>
+    </>
   )
 }

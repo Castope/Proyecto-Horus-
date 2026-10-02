@@ -56,7 +56,7 @@ export default function PoliticasPrivacidad() {
           </nav>
         </aside>
 
-        <main className="pp-content">
+        <div className="pp-content">
           <div className="pp-intro">
             <p>La presente <strong>"POLÍTICA DE PRIVACIDAD"</strong> tiene por finalidad informar cómo <strong>Horus Group-Cajamarca SRL</strong> trata la información personal de todos los usuarios que visiten e interactúen en nuestro sitio web o al utilizar los diferentes servicios que brindamos.</p>
             <p>El usuario declara haber leído y aceptado de manera previa y expresa la POLÍTICA sujetándose a todas sus disposiciones.</p>
@@ -136,7 +136,7 @@ export default function PoliticasPrivacidad() {
               <p><strong>Protegemos la información que recabamos</strong> estableciendo las medidas de seguridad técnicas y administrativas señaladas en las normas legales, de forma que la información queda protegida contra el acceso, la indisponibilidad, la divulgación o el uso no autorizado.</p>
             </div>
             <ul className="pp-list">
-              <li>Los datos que compartimos son siempre <strong>datos anonimizados</strong> — no compartiremos datos de contacto como correo electrónico o número de teléfono.</li>
+              <li>Los formularios y correos utilizan los datos de contacto que proporcionas para atender tu solicitud. Si está habilitada la asistencia con IA, la consulta, el contexto de conversación y las fuentes públicas pueden enviarse al proveedor de IA. Se ocultan correos y secuencias numéricas que parecen teléfonos o documentos, pero esto no garantiza anonimato. No escribas datos personales en el chat; utiliza el formulario de atención.</li>
               <li>Si nuestro negocio entra en una empresa conjunta, compra otra empresa o se fusiona con otra entidad comercial, tus datos personales podrían ser divulgados o transferidos a la empresa de destino.</li>
               <li>En estas circunstancias, siempre informaremos a las entidades correspondientes de que solo deben usar tus datos personales para los fines descritos en esta Política de Privacidad.</li>
             </ul>
@@ -160,7 +160,7 @@ export default function PoliticasPrivacidad() {
               <Link to="/preguntas-frecuentes" className="pp-btn-outline-white"><i className="fas fa-question-circle" /> Preguntas Frecuentes</Link>
             </div>
           </div>
-        </main>
+        </div>
       </div>
     </>
   )

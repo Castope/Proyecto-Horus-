@@ -39,7 +39,7 @@ export default function Cursos() {
         </div>
       </section>
 
-      <CatalogoCursos />
+      <CatalogoCursos tipo="curso" />
 
       <section className="ed-modalities" id="ed-detail">
         <div className="container">
@@ -59,7 +59,7 @@ export default function Cursos() {
                   <ul className="ed-modality-list">
                     {m.items.map(item => <li key={item}><i className="fas fa-check" />{item}</li>)}
                   </ul>
-                  <Link to="/contactos" className="ed-modality-cta">Inscribirme</Link>
+                  <Link to={'/contactos?asunto='+encodeURIComponent('Consulta sobre cursos en modalidad '+m.title)} className="ed-modality-cta">Consultar cursos</Link>
                 </div>
               </div>
             ))}

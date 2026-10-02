@@ -1,33 +1,44 @@
 import { AdminAuthContext } from './adminAuth';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { getCurrentAdmin } from '../services';
+import { PanelApiError } from '../services/panelApi';
 import type { AdminUser } from '../types';
 const STORAGE_KEY = 'horus-admin-token';
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
- const [token, setToken] = useState<string | null>(() => localStorage.getItem(STORAGE_KEY));
- const [user, setUser] = useState<AdminUser | null>(null);
- const [checking, setChecking] = useState(() => Boolean(localStorage.getItem(STORAGE_KEY)));
- useEffect(() => {
-   let cancelled = false;
-   if (!token) return;
-   localStorage.setItem(STORAGE_KEY, token);
-   getCurrentAdmin(token).then(response => {
-     if (cancelled) return;
-     if (response.ok && response.user) setUser(response.user);
-     else { localStorage.removeItem(STORAGE_KEY); setUser(null); setToken(null); }
-   }).catch(() => { if (!cancelled) { localStorage.removeItem(STORAGE_KEY); setUser(null); setToken(null); } })
-     .finally(() => { if (!cancelled) setChecking(false); });
-   return () => { cancelled = true; };
- }, [token]);
- useEffect(() => {
-   const expire = () => { localStorage.removeItem(STORAGE_KEY); setUser(null); setToken(null); setChecking(false); };
-   window.addEventListener('horus:session-expired', expire);
-   return () => window.removeEventListener('horus:session-expired', expire);
- }, []);
- const value = useMemo(() => ({
-   user, token, checking, isAuthenticated: Boolean(token && user),
-   login: (value: string) => { setChecking(true); setUser(null); setToken(value); },
-   logout: () => { localStorage.removeItem(STORAGE_KEY); setToken(null); setUser(null); setChecking(false); },
- }), [user, token, checking]);
- return <AdminAuthContext.Provider value={value}>{children}</AdminAuthContext.Provider>;
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem(STORAGE_KEY));
+  const [user, setUser] = useState<AdminUser | null>(null);
+  const [checking, setChecking] = useState(() => Boolean(localStorage.getItem(STORAGE_KEY)));
+  const [sessionError, setSessionError] = useState('');
+  const [revision, setRevision] = useState(0);
+  useEffect(() => {
+    if (!token) return;
+    const controller = new AbortController();
+    let current = true;
+    const timeout = window.setTimeout(() => controller.abort(), 15000);
+    localStorage.setItem(STORAGE_KEY, token);
+    getCurrentAdmin(token, controller.signal).then(response => {
+      if (!current) return;
+      if (!response.user) throw new Error('No se pudo validar tu identidad.');
+      setUser(response.user); setSessionError('');
+    }).catch(error => {
+      if (!current) return;
+      setUser(null);
+      if (error instanceof PanelApiError && error.status === 401) {
+        localStorage.removeItem(STORAGE_KEY); setToken(null); setSessionError('');
+      } else setSessionError('No pudimos validar tu sesión. Puedes reintentar cuando el servidor esté disponible.');
+    }).finally(() => { window.clearTimeout(timeout); if (current) setChecking(false); });
+    return () => { current = false; controller.abort(); window.clearTimeout(timeout); };
+  }, [token, revision]);
+  useEffect(() => {
+    const expire = () => { localStorage.removeItem(STORAGE_KEY); setUser(null); setToken(null); setChecking(false); setSessionError(''); };
+    window.addEventListener('horus:session-expired', expire);
+    return () => window.removeEventListener('horus:session-expired', expire);
+  }, []);
+  const value = useMemo(() => ({
+    user, token, checking, sessionError, isAuthenticated: Boolean(token && user),
+    retrySession: () => { setChecking(true); setSessionError(''); setRevision(value => value + 1); },
+    login: (value: string) => { setChecking(true); setSessionError(''); setUser(null); setToken(value); },
+    logout: () => { localStorage.removeItem(STORAGE_KEY); setToken(null); setUser(null); setChecking(false); setSessionError(''); },
+  }), [user, token, checking, sessionError]);
+  return <AdminAuthContext.Provider value={value}>{children}</AdminAuthContext.Provider>;
 }

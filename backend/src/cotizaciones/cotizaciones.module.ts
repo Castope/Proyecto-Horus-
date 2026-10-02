@@ -4,7 +4,7 @@ import { AuthModule } from '../admin/auth/auth.module';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CotizacionesService } from './cotizaciones.service';
-import { CotizacionDto, CotizacionQueryDto, EditCotizacionDto, EstadoCotizacionDto } from './cotizacion.dto';
+import { SendCotizacionDto, CotizacionDto, CotizacionQueryDto, EditCotizacionDto, EstadoCotizacionDto } from './cotizacion.dto';
 
 @ApiTags('Admin - Cotizaciones')
 @ApiBearerAuth()
@@ -16,6 +16,7 @@ export class CotizacionesController {
   @Get(':id') detail(@Param('id', ParseIntPipe) id: number) { return this.service.detail(id); }
   @Post() create(@Body() dto: CotizacionDto, @CurrentUser('id') user: number) { return this.service.create(dto, user); }
   @Put(':id') edit(@Param('id', ParseIntPipe) id: number, @Body() dto: EditCotizacionDto, @CurrentUser('id') user: number) { return this.service.edit(id, dto, user); }
+  @Post(':id/correo') email(@Param('id', ParseIntPipe) id: number, @Body() dto: SendCotizacionDto) { return this.service.email(id, dto.revision); }
   @Post(':id/estado') status(@Param('id', ParseIntPipe) id: number, @Body() dto: EstadoCotizacionDto, @CurrentUser('id') user: number) { return this.service.status(id, dto, user); }
 }
 @Module({ imports: [AuthModule], controllers: [CotizacionesController], providers: [CotizacionesService] })

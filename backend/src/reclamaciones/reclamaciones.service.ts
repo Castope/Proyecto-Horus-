@@ -29,7 +29,7 @@ export class ReclamacionesService {
       } });
 
       // Esperar al correo antes de finalizar la función en Vercel.
-      await this.mailService.sendReclamoConstancia({
+      const correoEnviado = await this.mailService.sendReclamoConstancia({
         email: dto.email,
         nombres: dto.nombres,
         apellidos: dto.apellidos,
@@ -41,6 +41,7 @@ export class ReclamacionesService {
 
       return {
         ok: true,
+        correo_enviado: correoEnviado === true,
         mensaje: 'Su requerimiento fue registrado exitosamente.',
         numero_reclamo,
         id: registro.id,

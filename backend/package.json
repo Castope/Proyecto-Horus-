@@ -18,6 +18,7 @@
     "prisma:generate": "node scripts/prisma-generate.cjs",
     "postinstall": "npm run prisma:generate",
     "db:check": "node scripts/check-database.cjs",
+    "content:restore": "node scripts/restore-original.cjs",
     "test:integration": "npm run build && node --test test/prisma.integration.cjs"
   },
   "dependencies": {

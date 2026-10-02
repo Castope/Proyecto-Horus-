@@ -1,57 +1,43 @@
 # Backend Horus
 
-NestJS + Prisma + MySQL. El catálogo no contiene datos de ejemplo: los registros se crean desde la API administrativa. Una base vacía devuelve listas vacías y contadores en cero.
+NestJS, Prisma 6.19 y MySQL. Una base sin contenido devuelve listas vacías y contadores en cero. Usa Node 22.x y npm.
 
-## Instalacion y esquema
+## Preparación
 
-Consulta [la guia de migracion a Prisma](PRISMA.md) antes de activar el cambio sobre una base existente.
+Ejecutar `npm ci`, configurar `.env` y revisar [Prisma](PRISMA.md). Las migraciones se ejecutan explícitamente mediante `npm run db:migrate`, después de verificar y respaldar el destino. `db:init` es exclusivo de una base vacía. Build y arranque no migran MySQL.
 
-1. Ejecutar `npm ci` (genera el cliente Prisma).
-2. Configurar `.env` desde `.env.example`; se mantienen DB_* y TLS.
-3. Ejecutar `npm run db:check` y revisar cualquier diferencia. Para tablas de catalogo/cotizaciones pendientes, revisar y ejecutar `npm run db:migrate`.
-4. Para una base completamente vacia, usar `npm run db:init` antes de `db:migrate`.
-5. Ejecutar `npm run start:dev`. Swagger: `http://localhost:3000/api/docs`.
+`npm run start:dev` usa `dist-dev/`; producción usa `npm run build` y `npm run start:prod`, en `dist/`. Swagger está en `/api/docs`; utiliza Authorize con un token sin añadir Bearer.
 
-El arranque no sincroniza tablas. Los builds no ejecutan migraciones. Las versiones anteriores en `horus_migrations` se conservan.
+## Rutas y contratos
 
-## Autenticación
+- Registro abierto: `POST /api/admin/register`. Login: `POST /api/admin/login`. Las demás operaciones administrativas y `admin/me` requieren JWT y una cuenta activa.
+- Recuperación: `admin/forgot-password` y `admin/reset-password`. El enlace vence en 30 minutos, es de un solo uso y revoca sesiones anteriores. Cambio de contraseña autenticado: `POST admin/password`. Gestión de cuentas: `GET admin/users` y `PUT admin/users/:id`.
+- Catálogos `cursos`, `servicios` y `preguntas-frecuentes`: GET público paginado y detalle solo publicados; CRUD administrativo bajo `admin/`. DELETE archiva.
+- Catálogo PUT rechaza null y cuerpos vacíos. Para quitar campos opcionales, usar `limpiar`: cursos admiten `imagen_url`, `fecha_inicio`, `temario`, `area`, `certificacion`, `icono`, `modalidad`, `duracion`; servicios admiten `imagen_url`, `alcance`, `nombre_corto`, `destacado`, `dato_principal`, `dato_secundario`, `etiquetas`, `icono`. Modalidad y duración solo se pueden quitar en capacitaciones; un curso exige ambas. No se puede asignar y limpiar el mismo campo.
+- Las listas administrativas aceptan `page`, `limit` y filtros; conservan las claves anteriores de respuesta. Si se omite `page`, las listas heredadas mantienen su contrato. El panel siempre solicita páginas.
+- Seguimiento: GET/PUT `admin/seguimiento/messages/:id` o `admin/seguimiento/reclamaciones/:id`. PUT exige `revision`, `estado`, `responsable`, `notas` y `respuesta`. Una modificación obsoleta responde 409. POST `correo` envía la respuesta guardada; POST `constancia` reenvía la notificación de registro.
+- Las reclamaciones no se borran físicamente desde la API; se archivan mediante seguimiento. Los mensajes con seguimiento o cotizaciones vinculadas están protegidos contra borrado.
+- Cotizaciones: `admin/cotizaciones`, detalle, edición de borrador, `/:id/estado` y `/:id/correo`. El backend calcula importes y exige revisión. La impresión para PDF se realiza en el navegador.
+- `POST /api/newsletter` exige correo y `consentimiento:true`; reactivar conserva el interés si no se envía uno nuevo. `POST newsletter/unsubscribe` recibe un token firmado. La baja administrativa desactiva la suscripción.
+- `POST admin/uploads` recibe multipart `file`, máximo 5 MB, PNG/JPEG/WebP comprobados por firma. GET público `/api/uploads/:filename` sirve el recurso con MIME fijo. En producción se exige `UPLOAD_DIR` sobre un volumen persistente.
+- Los formularios públicos tienen cuotas atómicas compartidas en MySQL. Solo se usa la IP validada por Express.
 
-`POST /api/admin/login` continúa devolviendo un JWT. En Swagger usar Authorize con el token.
-`POST /api/admin/register` ahora requiere un JWT administrativo: el formulario público de registro anterior dejará de crear cuentas. Todos los administradores actuales conservan los mismos permisos; roles granulares quedan pendientes.
+## Diseño original editable
 
-Si no existe ningún administrador, usar `npm run admin:create`. El comando pide nombre y correo y obtiene la contraseña de la variable de entorno temporal `ADMIN_INITIAL_PASSWORD`; no acepta contraseñas como argumento ni las imprime. Establecerla de forma segura en la terminal y retirarla del entorno del shell al terminar. Requiere la tabla `admin_users` existente y no sobrescribe cuentas.
+Los catálogos incorporan color, icono y orden de presentación. Los servicios añaden diseño de tarjeta, nombre de pestaña, destacado, dato principal y secundario y características. Las capacitaciones añaden área y certificación. Los catálogos se ordenan por `orden` y luego ID; la agenda mantiene su orden por fecha.
 
-## Catálogo
+`GET /api/admin/contenido-original` presenta el inventario recuperable sin escribir. `POST /api/admin/contenido-original/:section` acepta `servicios`, `capacitaciones` o `galeria`, con `{ "estado": "publicado" }` o `borrador`. Ambas rutas exigen JWT. La importación es transaccional por sección, omite duplicados y conserva ediciones y estados mediante `origen_original`. El contenido procede de `fb2880b`; no genera ejemplos ni fechas, modalidades o duraciones desconocidas.
 
-Para cada recurso `cursos`, `servicios`, `preguntas-frecuentes`:
+Aplicar la migración `20261002-original-design` antes de usar estos campos. `npm run content:restore`, después de compilar y migrar, permite recuperar las tres secciones solo en MySQL local de desarrollo. En otros entornos, utilizar el panel. El comando no modifica ajustes institucionales.
 
-| Método | Ruta | Uso |
-| --- | --- | --- |
-| GET | /api/RECURSO | Lista pública, solo publicados |
-| GET | /api/RECURSO/:id | Detalle público, 404 si es borrador o archivado |
-| GET | /api/admin/RECURSO | Lista administrativa |
-| GET | /api/admin/RECURSO/:id | Detalle administrativo |
-| POST | /api/admin/RECURSO | Crear (borrador por defecto) |
-| PUT | /api/admin/RECURSO/:id | Editar parcialmente o publicar |
-| DELETE | /api/admin/RECURSO/:id | Archivar, sin eliminar físicamente |
+## Correos y ajustes
 
-Listas: `?page=1&limit=20&search=redes`; máximo 100 registros por página. Administración admite `estado=borrador|publicado|archivado`. En rutas públicas no se puede anular el filtro de publicación.
+`MAIL_USER` y `MAIL_PASS` configuran el transporte. Los formularios conservan el registro aunque falle SMTP y responden `correo_enviado:false`; el panel puede reenviar la notificación. El envío explícito de una propuesta/respuesta devuelve error si el correo no pudo entregarse.
 
-Respuesta: `{ ok: true, items: [...], pagination: { page, limit, total, pages } }`.
+Los ajustes públicos exponen solo claves conocidas; leerlos no escribe ejemplos. El sitio utiliza los valores configurados de contacto y pie de página, con el contenido actual como respaldo cuando están vacíos. Los datos institucionales pendientes de confirmación permanecen sin normalizar.
 
-- Cursos/capacitaciones: titulo, slug único, descripcion, tipo (curso/capacitacion), modalidad (presencial/virtual/hibrida), duracion; opcionales temario, imagen_url, fecha_inicio ISO 8601 y estado.
-- Servicios: titulo, slug único, descripcion, categoria (cableado/camaras/soporte/asesoramiento/otros); opcionales alcance, imagen_url y estado.
-- FAQ: pregunta, respuesta, categoria; opcionales orden y estado.
-- PUT rechaza cuerpos vacíos y valores null. Las URLs de imagen deben ser HTTP(S). La subida de archivos todavía no está implementada.
+## Comprobación
 
-`GET /api/admin/stats` conserva sus campos anteriores y agrega `stats.catalogo` con conteos totales, publicados, borradores y archivados por recurso.
+`node node_modules/typescript/bin/tsc --noEmit --incremental false`, `npm test`, `npm run build` y `npm run test:integration`. Para un entorno con recursos limitados, la suite puede ejecutarse secuencialmente con `node --test --test-concurrency=1 -r ts-node/register test/*.test.ts`.
 
-## Verificación
-
-- `npm run build`
-- `npm test` (pruebas aisladas de validación, publicación, archivado, contadores y protección de rutas; no requieren MySQL).
-- Con una base de pruebas: migrar, crear un borrador por API, comprobar su 404 público, publicarlo con PUT y comprobar su aparición; archivarlo y comprobar que desaparece de la consulta pública. Repetir para cada recurso. Verificar 401 sin token en administración y registro, y 409 con slug duplicado.
-
-## Alcance
-
-Esta entrega amplía el backend. Las páginas públicas y el panel aún deben conectarse a estos endpoints; el contenido actual del frontend no se importa automáticamente. Quedan pendientes roles granulares, archivos, seguimiento ampliado de reclamaciones/cotizaciones y recuperación de contraseña. Las pruebas usan sustitutos de base de datos solo dentro de test; el servidor usa Prisma con MySQL real.
+La biblioteca es interna al panel y todos los administradores conservan sus permisos. Market no incluye tienda ni pagos en esta etapa.

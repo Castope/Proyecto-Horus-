@@ -20,6 +20,8 @@ const { JwtService } = require('@nestjs/jwt');
 const { NestFactory } = require('@nestjs/core');
 
 test('Prisma works against MySQL and legacy-compatible SQL in an isolated database', async t => {
+  const local = ['localhost','127.0.0.1','::1'].includes(process.env.DB_HOST || 'localhost');
+  if (!local && process.env.ALLOW_INTEGRATION_DB !== 'true') throw new Error('La integración requiere MySQL local o un destino de pruebas autorizado con ALLOW_INTEGRATION_DB=true.');
   const db = await connect();
   const originalName = process.env.DB_NAME;
   const name = 'horus_prisma_test_' + randomUUID().replaceAll('-', '');
@@ -39,7 +41,7 @@ test('Prisma works against MySQL and legacy-compatible SQL in an isolated databa
     await db.query('USE ' + name);
     assert.deepEqual(await check(db), []);
     const [[{ total }]] = await db.query('SELECT COUNT(*) AS total FROM horus_migrations');
-    assert.equal(total, 2);
+    assert.equal(total, require('../scripts/migrate.cjs').versions.length);
     client = prisma();
     const catalog = new CatalogoService(client);
     await t.test('Nest modules initialize with the shared Prisma provider', async () => {
@@ -135,6 +137,132 @@ test('Prisma works against MySQL and legacy-compatible SQL in an isolated databa
       const rolledBack = await client.cotizacion.findUnique({ where: { id: item.id } });
       assert.equal(rolledBack.revision, 3);
       assert.equal(rolledBack.historial.length, 3);
+    });
+    await t.test('attention uses revision, preserves histories and protects complaints', async () => {
+      const { AttentionService } = require('../dist/attention/attention.service');
+      const service = new AttentionService(client, {sendMail:async()=>true}, new ConfigService({}));
+      const message = await client.contacto.findFirst();
+      const dto={revision:1,estado:'en_proceso',responsable:'Equipo',notas:'Revisión',respuesta:'Respuesta de prueba'};
+      const {item}=await service.save('messages',message.id,dto,1);
+      assert.equal(item.revision,2);assert.equal(item.historial.length,1);
+      await assert.rejects(()=>service.save('messages',message.id,dto,1),e=>e.getStatus()===409);
+      const results=await Promise.allSettled([service.save('messages',message.id,{...dto,revision:2,notas:'A'},1),service.save('messages',message.id,{...dto,revision:2,notas:'B'},2)]);
+      assert.equal(results.filter(r=>r.status==='fulfilled').length,1);
+      assert.equal(results.find(r=>r.status==='rejected').reason.getStatus(),409);
+      await assert.rejects(()=>new MessagesService(client).remove(message.id),e=>e.getStatus()===409);
+      await assert.rejects(()=>client.contacto.delete({where:{id:message.id}}),e=>e.code==='P2003');
+      const complaint=await client.reclamacion.findFirst();
+      await assert.rejects(()=>new AdminReclamacionesService(client).remove(complaint.id),e=>e.getStatus()===409);
+      await assert.rejects(()=>service.save('reclamaciones',complaint.id,{...dto,estado:'atendido',respuesta:''},1),e=>e.getStatus()===400);
+      await service.save('reclamaciones',complaint.id,{...dto,estado:'atendido'},1);
+      await assert.rejects(()=>client.reclamacion.delete({where:{id:complaint.id}}),e=>e.code==='P2003');
+    });
+    await t.test('MySQL quotas are shared across guard instances and clients cannot choose their IP',async()=>{
+      const {PublicRateLimitGuard}=require('../dist/common/public-rate-limit.guard');
+      const guards=[new PublicRateLimitGuard(client),new PublicRateLimitGuard(client)];
+      const context={switchToHttp:()=>({getRequest:()=>({method:'POST',path:'/api/contacto',ip:'192.0.2.4',socket:{remoteAddress:'192.0.2.4'},headers:{'x-forwarded-for':Math.random().toString()}})})};
+      const results=await Promise.allSettled(Array.from({length:6},(_,i)=>guards[i%2].canActivate(context)));
+      assert.equal(results.filter(r=>r.status==='fulfilled').length,5);
+      assert.equal(results.find(r=>r.status==='rejected').reason.getStatus(),429);
+      const upper={switchToHttp:()=>({getRequest:()=>({...context.switchToHttp().getRequest(),path:'/API/CONTACTO'})})};
+      await assert.rejects(()=>guards[0].canActivate(upper),e=>e.getStatus()===429);
+    });
+    await t.test('password recovery is single use and revokes previous sessions',async()=>{
+      const {AccountsService}=require('../dist/admin/auth/accounts.service');
+      const {JwtStrategy}=require('../dist/admin/auth/jwt.strategy');
+      const secret='isolated-test-secret-'.repeat(3),config=new ConfigService({_PROCESS_ENV_VALIDATED:{JWT_SECRET:secret}});
+      const jwt=new JwtService({secret,signOptions:{issuer:'horus-api',audience:'horus-panel'}});
+      const service=new AccountsService(client,jwt,config,{sendMail:async()=>true});
+      const user=await client.adminUser.findFirst();
+      const {createHmac}=require('node:crypto');
+      const token=jwt.sign({id:user.id},{secret:createHmac('sha256',secret).update('reset:'+user.password).digest('hex'),expiresIn:'30m',audience:'horus-password-reset'});
+      await service.reset({token,password:'NewPassword123'});
+      await assert.rejects(()=>service.reset({token,password:'AgainPassword123'}),e=>e.getStatus()===400);
+      const strategy=new JwtStrategy(config,client);
+      await assert.rejects(()=>strategy.validate({id:user.id,email:user.email,version:1}),e=>e.getStatus()===401);
+      assert.equal((await strategy.validate({id:user.id,email:user.email,version:2})).id,user.id);
+      await assert.rejects(()=>service.status(user.id,false,user.id),e=>e.getStatus()===409);
+      await assert.rejects(()=>service.password(user.id,{current_password:'Incorrect123',password:'AnotherPassword123'}),e=>e.getStatus()===400);
+      assert.equal((await strategy.validate({id:user.id,email:user.email,version:2})).id,user.id);
+    });
+    await t.test('quote contact foreign key prevents losing its origin',async()=>{
+      const contact=await client.contacto.create({data:{nombre:'Origen',email:'origin@example.com',telefono:'',asunto:'Origen',mensaje:'Consulta'}});
+      const quote=await client.cotizacion.findFirst();
+      await client.cotizacion.update({where:{id:quote.id},data:{contacto_id:contact.id}});
+      await assert.rejects(()=>new MessagesService(client).remove(contact.id),e=>e.getStatus()===409);
+      await assert.rejects(()=>client.contacto.delete({where:{id:contact.id}}),e=>e.code==='P2003');
+    });
+    await t.test('signed newsletter opt-out preserves history and inactive filters include legacy nulls',async()=>{
+      const {createHmac}=require('node:crypto');
+      const secret='newsletter-isolated-secret-'.repeat(2);
+      const service=new NewsletterService(client,new ConfigService({_PROCESS_ENV_VALIDATED:{JWT_SECRET:secret}}));
+      await Promise.all([service.subscribe({email:'concurrent@example.com',interes:'cursos'}),service.subscribe({email:'CONCURRENT@example.com',interes:'cursos'})]);
+      assert.equal(await client.newsletter.count({where:{email:'concurrent@example.com'}}),1);
+      const row=await client.newsletter.findUnique({where:{email:'concurrent@example.com'}});
+      assert.ok(row.consent_at instanceof Date);
+      const value=String(row.id),signature=createHmac('sha256',secret).update('newsletter:'+value).digest('base64url');
+      await assert.rejects(()=>service.unsubscribe(value+'.bad-signature'),e=>e.getStatus()===400);
+      await service.unsubscribe(value+'.'+signature);
+      const unsubscribed=await client.newsletter.findUnique({where:{id:row.id}});
+      assert.equal(unsubscribed.activo,false);assert.equal(unsubscribed.interes,'cursos');
+      await client.newsletter.update({where:{id:row.id},data:{activo:null}});
+      const filtered=await service.findAll({page:1,limit:10,estado:'inactivo',search:'concurrent'});
+      assert.equal(filtered.pagination.total,1);assert.equal(filtered.subscribers[0].id,row.id);
+      const gallery=new GaleriaService(client);
+      const {item:picture}=await gallery.create({titulo:'Imagen inactiva',categoria:'general',imagen_url:'/legacy.png'});
+      await client.galeriaItem.update({where:{id:picture.id},data:{activo:null}});
+      assert.equal((await gallery.findAllAdmin(undefined,{page:1,limit:10,estado:'inactivo',search:'inactiva'})).pagination.total,1);
+      assert.ok(!(await gallery.findPublic()).items.some(item=>item.id===picture.id));
+    });
+    await t.test('image uploads persist only accepted files and reject path traversal',async()=>{
+      const fs=require('node:fs/promises'),path=require('node:path'),os=require('node:os');
+      const tmp=await fs.realpath(os.tmpdir()),directory=await fs.mkdtemp(path.join(tmp,'horus-upload-test-'));
+      try{
+        const {UploadsService}=require('../dist/uploads/uploads.service');
+        const service=new UploadsService(new ConfigService({_PROCESS_ENV_VALIDATED:{UPLOAD_DIR:directory,NODE_ENV:'development'}}));
+        const data=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jZAAAAABJRU5ErkJggg==','base64');
+        const result=await service.save(data),filename=path.basename(result.path);
+        assert.match(filename,/^[a-f0-9-]{36}\.png$/);
+        assert.deepEqual(await fs.readFile(path.join(directory,filename)),data);
+        const file=await service.read(filename);assert.equal(file.getHeaders().type,'image/png');
+        await assert.rejects(()=>service.read('../../outside.png'),e=>e.getStatus()===404);
+        await assert.rejects(()=>service.save(Buffer.from('<svg></svg>')),e=>e.getStatus()===400);
+        assert.equal((await fs.readdir(directory)).length,1);
+      }finally{
+        assert.equal(path.dirname(directory),tmp);assert.ok(path.basename(directory).startsWith('horus-upload-test-'));
+        await fs.rm(directory,{recursive:true,force:true});
+      }
+    });
+    await t.test('original design imports explicitly, preserves edits and hides drafts',async()=>{
+      const {OriginalContentService}=require('../dist/content-original/content-original.service');
+      const restore=new OriginalContentService(client);
+      const before={services:await client.servicio.count(),programs:await client.curso.count(),gallery:await client.galeriaItem.count(),settings:await client.setting.findMany()};
+      assert.equal(restore.inventory().sections.length,3);
+      assert.equal(await client.servicio.count(),before.services);
+      const imported=await restore.restore('servicios','borrador');assert.equal(imported.created,19);
+      assert.equal((await catalog.list('servicios',{page:1,limit:100},true)).items.length,0);
+      const first=await client.servicio.findFirst({where:{origen_original:{not:null}},orderBy:{orden:'asc'}});
+      await catalog.update('servicios',first.id,{titulo:'Contenido revisado desde el panel',slug:'nuevo-enlace-revisado',estado:'publicado',nombre_corto:'Nombre revisado',etiquetas:'Etiqueta editada'});
+      const repeated=await restore.restore('servicios');assert.equal(repeated.created,0);
+      const visible=await catalog.list('servicios',{categoria:'cableado',page:1,limit:100},true);
+      assert.equal(visible.items.length,1);assert.equal(visible.items[0].titulo,'Contenido revisado desde el panel');assert.equal(visible.items[0].nombre_corto,'Nombre revisado');
+      await catalog.archive('servicios',first.id);await restore.restore('servicios');
+      assert.equal((await client.servicio.findUnique({where:{id:first.id}})).estado,'archivado');
+      assert.equal((await restore.restore('capacitaciones')).created,4);
+      const program=await client.curso.findFirst({where:{origen_original:{not:null}}});
+      assert.equal(program.modalidad,null);assert.equal(program.duracion,null);assert.equal(program.fecha_inicio,null);
+      await assert.rejects(()=>catalog.update('cursos',program.id,{tipo:'curso'}),e=>e.getStatus()===400);
+      await catalog.update('cursos',program.id,{titulo:'Programa editado',slug:'programa-editado',certificacion:'Certificación revisada'});
+      assert.equal((await restore.restore('capacitaciones')).created,0);
+      assert.equal((await client.curso.findUnique({where:{id:program.id}})).certificacion,'Certificación revisada');
+      assert.equal((await restore.restore('galeria')).created,61);
+      const photo=await client.galeriaItem.findFirst({where:{origen_original:{not:null}}});
+      const gallery=new GaleriaService(client);
+      await gallery.update(photo.id,{titulo:'Foto editada',activo:false,imagen_url:'/foto-reemplazada.png'});
+      assert.equal((await restore.restore('galeria')).created,0);
+      assert.ok(!(await gallery.findPublic(undefined,1,100)).items.some(x=>x.id===photo.id));
+      assert.deepEqual(await client.setting.findMany(),before.settings);
+      assert.equal(await client.servicio.count(),before.services+19);assert.equal(await client.curso.count(),before.programs+4);assert.equal(await client.galeriaItem.count(),before.gallery+61);
     });
     await t.test('migrations repeat safely and initialization refuses existing data', async () => {
       script('migrate.cjs');

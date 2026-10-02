@@ -147,3 +147,17 @@ Elige comprobaciones según el cambio y amplía la verificación solo si hay dep
 ## Mantenimiento de esta guía
 
 Actualiza esta guía cuando cambien comandos, arquitectura, migraciones o contratos importantes. Los READMEs y planes pueden contener notas históricas: contrasta sus afirmaciones con la implementación y las pruebas. Evita registrar aquí cifras temporales de pruebas, vulnerabilidades o estados de despliegue.
+
+## Flujos institucionales y revisión con navegador
+
+- Market permanece como próxima etapa; no añadir compras, pagos ni inscripciones automáticas a este alcance.
+- `backend/src/attention/` guarda seguimiento de consultas y reclamaciones con estado, responsable, notas, respuesta, historial y `revision`. Un cambio obsoleto responde 409. Las reclamaciones y los mensajes con seguimiento/cotizaciones se conservan.
+- Catálogo admite `limpiar` para quitar campos opcionales conocidos sin aceptar null. No se puede asignar y limpiar el mismo campo. La agenda usa `periodo` y paginación.
+- Las cuotas públicas se comparten en MySQL mediante `rate_limit_buckets` y el guard global; conservar la IP validada por Express.
+- Las sesiones llevan `session_version`. Cambiar contraseña o desactivar una cuenta revoca sesiones. Mantener el registro abierto y los permisos de los administradores según la decisión existente.
+- `backend/src/uploads/` permite PNG/JPEG/WebP de hasta 5 MB con comprobación de firma. En producción, `UPLOAD_DIR` requiere almacenamiento persistente; no incluir archivos subidos en Git ni Docker.
+- Newsletter exige consentimiento explícito en HTTP y proporciona baja mediante token firmado. La baja desactiva y la reactivación conserva el interés omitido.
+- Las listas heredadas conservan su respuesta sin `page`; el frontend debe solicitar páginas. Solo una exportación explícita recorre todos los resultados.
+- El diseño original usa metadatos del catálogo y fotos activas; las lecturas nunca importan contenido. `backend/src/content-original/` ofrece recuperación explícita autenticada e idempotente que conserva ediciones y estados. `npm run content:restore` solo opera en MySQL local de desarrollo, tras build y migraciones. Los programas de capacitación pueden omitir modalidad/duración; los cursos las exigen.
+- Tras compilar backend y frontend, `node scripts/smoke-ui.cjs` revisa escritorio/móvil con Edge y fixtures aislados. `SMOKE_BROWSER` permite escoger otro ejecutable Chromium. No utiliza la base real ni correo SMTP.
+- La integración MySQL utiliza un servidor local; un destino remoto de pruebas autorizado exige `ALLOW_INTEGRATION_DB=true`. Nunca usarlo como autorización implícita para una base compartida.

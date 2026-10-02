@@ -13,6 +13,8 @@ model AdminUser {
   nombre String @db.VarChar(100)
   email String @unique(map: "email") @db.VarChar(254)
   password String @db.VarChar(255)
+  activo Boolean @default(true)
+  session_version Int @default(1)
   createdAt DateTime @default(now()) @db.DateTime(0)
   updatedAt DateTime @updatedAt @db.DateTime(0)
   @@map("admin_users")
@@ -30,13 +32,19 @@ model AdminItem {
 }
 
 model Curso {
+  origen_original String? @unique(map: "cursos_origen_original") @db.VarChar(150)
   id Int @id @default(autoincrement())
   titulo String @db.VarChar(160)
   slug String @unique(map: "slug") @db.VarChar(180)
   descripcion String @db.Text
   tipo CursoTipo
-  modalidad CursoModalidad
-  duracion String @db.VarChar(120)
+  modalidad CursoModalidad?
+  duracion String? @db.VarChar(120)
+  area String? @db.VarChar(80)
+  certificacion String? @db.VarChar(150)
+  icono String? @db.VarChar(30)
+  color String @default("indigo") @db.VarChar(20)
+  orden Int @default(0)
   temario String? @db.Text
   imagen_url String? @db.VarChar(2048)
   fecha_inicio DateTime? @db.DateTime(0)
@@ -47,11 +55,21 @@ model Curso {
 }
 
 model Servicio {
+  origen_original String? @unique(map: "servicios_origen_original") @db.VarChar(150)
   id Int @id @default(autoincrement())
   titulo String @db.VarChar(160)
   slug String @unique(map: "slug") @db.VarChar(180)
   descripcion String @db.Text
   categoria ServicioCategoria
+  presentacion String @default("normal") @db.VarChar(30)
+  nombre_corto String? @db.VarChar(80)
+  destacado String? @db.VarChar(100)
+  dato_principal String? @db.VarChar(40)
+  dato_secundario String? @db.VarChar(100)
+  etiquetas String? @db.Text
+  icono String? @db.VarChar(30)
+  color String @default("indigo") @db.VarChar(20)
+  orden Int @default(0)
   alcance String? @db.Text
   imagen_url String? @db.VarChar(2048)
   estado ServicioEstado @default(borrador)
@@ -82,6 +100,8 @@ model Contacto {
   estado String @default("nuevo") @db.VarChar(255)
   createdAt DateTime @default(now()) @db.DateTime(0)
   updatedAt DateTime @updatedAt @db.DateTime(0)
+  cotizaciones Cotizacion[]
+  seguimientos AttentionRecord[]
   @@map("contactos")
 }
 
@@ -106,6 +126,8 @@ model Cotizacion {
   total Decimal @db.Decimal(14,2)
   estado String @default("borrador") @db.VarChar(20)
   contacto_id Int?
+  contacto Contacto? @relation(fields: [contacto_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  @@index([contacto_id], map: "cotizaciones_contacto_id_idx")
   revision Int @default(1)
   historial Json
   createdAt DateTime @default(now()) @db.DateTime(0)
@@ -114,6 +136,7 @@ model Cotizacion {
 }
 
 model GaleriaItem {
+  origen_original String? @unique(map: "galeria_origen_original") @db.VarChar(150)
   id Int @id @default(autoincrement())
   titulo String @db.VarChar(150)
   descripcion String? @db.Text
@@ -127,6 +150,7 @@ model GaleriaItem {
 }
 
 model Newsletter {
+  consent_at DateTime? @db.DateTime(0)
   id Int @id @default(autoincrement())
   email String @unique(map: "email") @db.VarChar(254)
   interes String @default("market") @db.VarChar(100)
@@ -154,6 +178,7 @@ model Reclamacion {
   acepta_comunicaciones Boolean? @default(false)
   createdAt DateTime @default(now()) @db.DateTime(0)
   updatedAt DateTime @updatedAt @db.DateTime(0)
+  seguimientos AttentionRecord[]
   @@map("reclamaciones")
 }
 
@@ -210,3 +235,30 @@ enum ReclamacionTipo_registro {
   queja
 }
 
+
+
+model AttentionRecord {
+  contacto_id Int?
+  reclamacion_id Int?
+  contacto Contacto? @relation(fields: [contacto_id], references: [id], onDelete: Restrict)
+  reclamacion Reclamacion? @relation(fields: [reclamacion_id], references: [id], onDelete: Restrict)
+  id Int @id @default(autoincrement())
+  recurso String @db.VarChar(20)
+  registro_id Int
+  estado String @default("nuevo") @db.VarChar(20)
+  responsable String @default("") @db.VarChar(100)
+  notas String @db.Text
+  respuesta String @db.Text
+  revision Int @default(1)
+  historial Json
+  updatedAt DateTime @updatedAt @db.DateTime(0)
+  @@unique([recurso, registro_id], map: "attention_record_resource")
+  @@map("attention_records")
+}
+model RateLimitBucket {
+  id String @id @db.VarChar(64)
+  count Int
+  expiresAt DateTime @db.DateTime(0)
+  @@index([expiresAt], map: "rate_limit_expires_idx")
+  @@map("rate_limit_buckets")
+}

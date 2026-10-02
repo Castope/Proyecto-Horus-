@@ -48,11 +48,14 @@ DB_SYNC=false
 DB_SSL=false
 JWT_SECRET=REEMPLAZAR_POR_UN_SECRETO_ALEATORIO_DE_AL_MENOS_32_CARACTERES
 CORS_ORIGINS=https://TU-FRONTEND.up.railway.app
+UPLOAD_DIR=/data/uploads
 ```
 
 Sustituir los ejemplos de JWT y dominio antes de desplegar. `CORS_ORIGINS` debe contener el origen HTTPS real, sin ruta ni barra final. Si hay varios dominios, separarlos por comas. El nombre de servicio de las referencias distingue el servicio configurado: adaptarlo si no se llama `MySQL`.
 
 `DB_SSL=false` corresponde a una conexión privada a MySQL sin TLS configurado. Para un proveedor que exija TLS, usar `DB_SSL=true` y, si corresponde, `DB_SSL_CA`; se mantiene la verificación del certificado. La aplicación y los scripts usan `DB_*`, no `DATABASE_URL`.
+
+Montar un volumen persistente en `/data` del backend para las imágenes subidas; `UPLOAD_DIR=/data/uploads` mantiene los archivos entre despliegues. Sin esa variable, la API rechaza cargas en producción en vez de guardarlas en disco temporal.
 
 Para envío de correos, configurar `MAIL_USER` y `MAIL_PASS` según el transporte existente. No copiar credenciales al repositorio ni al frontend. Confirmar que el plan y la red elegidos permiten la conexión SMTP utilizada por la aplicación.
 
@@ -70,7 +73,7 @@ npm run db:check
 
 `db:init` rechaza bases con tablas. Las operaciones DDL de MySQL no son transaccionales: si falla parcialmente, revisar las tablas antes de reintentar. No borrar datos para forzar la inicialización.
 
-Para una base existente, omitir `db:init`: revisar primero `npm run db:check`, aplicar `npm run db:migrate` si corresponden las migraciones pendientes y volver a comprobar el esquema. Consultar `backend/PRISMA.md` para discrepancias adicionales. Una base nueva no importa automáticamente el contenido de la base local.
+Para una base existente, omitir `db:init`: revisar primero `npm run db:check`, aplicar `npm run db:migrate` si corresponden las migraciones pendientes, incluida `20261002-complete-institutional` y volver a comprobar el esquema. Consultar `backend/PRISMA.md` para discrepancias adicionales. Una base nueva no importa automáticamente el contenido de la base local.
 
 Tras preparar la base, se puede configurar `npm run db:migrate` como Pre-Deploy Command del backend para futuros despliegues, si se desea aplicar automáticamente las migraciones revisadas. No configurar `db:init` como paso recurrente. Los scripts están incluidos en la imagen de producción.
 
@@ -80,14 +83,14 @@ Para el primer administrador, configurar temporalmente `ADMIN_INITIAL_PASSWORD` 
 
 - Frontend: abrir el dominio HTTPS y recargar `/educacion/cursos` y `/admin/login`. El panel está en `/admin/dashboard`; `/panel` no es una ruta de la aplicación.
 - Proxy: abrir `/api/docs` desde el dominio del frontend. Si devuelve 502, revisar el dominio privado, el puerto y los logs del backend.
-- API: comprobar `/api/cursos` y `/api/servicios`; una base vacía debe devolver listas vacías reales. La página `/educacion/cursos` consulta `/api/cursos` y muestra cursos y capacitaciones publicados, con paginación, estados de carga/error/vacío y reintento. Comprobar que los borradores y archivados no aparezcan; tras publicar o editar, recargar la página o pulsar Actualizar catálogo. Esta integración no conecta automáticamente las demás páginas públicas.
+- API: comprobar `/api/cursos` y `/api/servicios`; una base vacía debe devolver listas vacías reales. La página `/educacion/cursos` consulta `/api/cursos` y muestra cursos publicados; `/educacion/capacitaciones` muestra capacitaciones, con paginación, estados de carga/error/vacío y reintento. Comprobar que los borradores y archivados no aparezcan; tras publicar o editar, recargar la página o pulsar Actualizar catálogo. Los servicios por categoría, sus detalles, la galería activa y las FAQ también consultan la API. Los ajustes de contacto y pie de página utilizan lo configurado en el panel, conservando el contenido actual cuando están vacíos.
 - Panel: comprobar login, expiración de sesión y las operaciones necesarias con una cuenta autorizada.
 - Formularios y chatbot: probar estados de éxito/error y el envío de correo con datos de prueba controlados.
 - MySQL: confirmar que `db:check` pasa y configurar respaldos del volumen antes de recibir datos reales.
 
 El registro administrativo está abierto en `/admin/register` y `POST /api/admin/register`, sin requerir una sesión previa. Tras registrarse, un visitante vuelve a `/admin/login`. `admin:create` sigue disponible como alternativa para crear una cuenta. El panel y las demás operaciones administrativas requieren una sesión válida.
 
-El chatbot usa la IP validada por Express. Configurar `TRUSTED_PROXY_CIDRS` en cada servicio como se indica abajo; no usar `*`, `true`, cantidades de saltos ni rangos /0. Los límites permanecen en memoria por instancia: para varias réplicas, usar un almacenamiento compartido antes de escalarlas.
+El chatbot usa la IP validada por Express. Configurar `TRUSTED_PROXY_CIDRS` en cada servicio como se indica abajo; no usar `*`, `true`, cantidades de saltos ni rangos /0. Las cuotas públicas se comparten en MySQL mediante `rate_limit_buckets`; aplicar la migración de esta versión antes de utilizar sus formularios.
 
 ## Comprobaciones locales
 
@@ -114,7 +117,7 @@ La API ejecuta una consulta de lectura al iniciar y no abre el puerto si no pued
 - Backend: `TRUSTED_PROXY_CIDRS` contiene únicamente las IPs o los CIDRs confiables por los que llega Caddy. Acepta comas o espacios. Mantener la API sin dominio público. En Docker de prueba puede usarse la IP exacta del contenedor frontend.
 - Frontend: `TRUSTED_PROXY_CIDRS` contiene únicamente los rangos de los proxies de entrada confirmados por el proveedor, separados por espacios. Caddy utiliza `X-Real-IP` y después `X-Forwarded-For` solo desde esos orígenes, y reemplaza la cabecera enviada al backend con una única IP validada. Para acceso local directo no se debe confiar en cabeceras del navegador; el valor predeterminado solo contempla loopback.
 - Railway documenta `X-Real-IP` en su entrada HTTP, pero no se debe adivinar un rango confiable ni confiar en todo Internet. Confirmar con el proveedor los orígenes de entrada aplicables al proyecto antes de fijar los CIDRs. Si no se configura la confianza, se conserva la cuota por dirección del proxy como comportamiento seguro, sin aceptar cabeceras arbitrarias.
-- Verificar con dos clientes distintos que sus cuotas sean independientes y que cambiar manualmente `X-Forwarded-For` no evite el límite. Mantener una réplica hasta incorporar contadores compartidos si se requiere escalado horizontal.
+- Verificar con dos clientes distintos que sus cuotas sean independientes y que cambiar manualmente `X-Forwarded-For` no evite el límite. Las réplicas usan contadores compartidos en MySQL. El chatbot conserva además un límite local de llamadas simultáneas a IA.
 
 ## Referencias
 

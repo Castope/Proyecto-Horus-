@@ -31,7 +31,7 @@ se guarda un contacto nuevo con prefijo [Chatbot], visible en Panel → Mensajes
 No confirma reservas ni inscripciones y no envía correos. Guarda la autorización en el texto
 de la solicitud; no agrega una tabla de consentimientos ni un historial de conversaciones.
 La conversación permanece en memoria del navegador hasta recargar o iniciar una nueva.
-No se consulta información de administradores, mensajes, reclamaciones ni ajustes internos.
+No se consulta información de administradores, mensajes ni reclamaciones. Solo se leen las claves institucionales públicas conocidas cuando la pregunta solicita contacto, dirección u horarios. Se ocultan patrones de correos, teléfonos y documentos antes de enviar pregunta/historial al proveedor; esto no garantiza anonimato.
 
 ## Endpoints
 
@@ -47,13 +47,11 @@ No se interpretan HTML o enlaces generados por el modelo.
 Pregunta: 1000 caracteres; contexto: seis turnos de hasta 4000 caracteres.
 Recuperación: hasta 18 candidatos por tabla, cuatro fuentes seleccionadas por coincidencia.
 La búsqueda por palabras no garantiza recuperar sinónimos ni todo un catálogo extenso.
-Los enlaces a detalles públicos no se generan porque esas páginas todavía son estáticas.
+El sitio dispone de detalles públicos de cursos y servicios. Las fuentes del chatbot se presentan como texto; el menú vuelve a comprobar cada detalle publicado.
 
-Hay límites en memoria por IP (20 consultas y cinco contactos por minuto), un límite global de
-200 peticiones por minuto por proceso y cuatro llamadas simultáneas al proveedor.
+Las cuotas públicas por IP (20 consultas y cinco contactos por minuto) y el límite global de 200 peticiones por minuto se comparten en MySQL. El guard del chatbot conserva además su protección local y un máximo de cuatro llamadas simultáneas al proveedor por instancia.
 Detrás de proxies se usa la IP que Express resuelve; no se confía directamente en X-Forwarded-For.
-En despliegues con varias instancias/serverless estos límites no son compartidos:
-usar un limitador persistente en el gateway y presupuesto del proveedor antes de exponer tráfico masivo.
+La migración de cuotas debe aplicarse antes del arranque de esta versión. Las réplicas comparten las cuotas mediante MySQL; mantener también un presupuesto del proveedor apropiado.
 
 La IA puede equivocarse. Evalúa preguntas reales y revisa los contenidos publicados antes del lanzamiento.
 Una fecha publicada no demuestra que la convocatoria siga abierta. Los mensajes originales del

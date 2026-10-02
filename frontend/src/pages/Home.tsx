@@ -40,9 +40,11 @@ const whyStyle = (color: string, background: string): CSSProperties => ({
 
 export default function Home() {
   useFadeUp()
+  useEffect(() => { document.title = 'Horus Group SRL — Tecnología y Educación en Cajamarca' }, [])
 
   const [current, setCurrent] = useState(0)
-  const [modal, setModal]     = useState(null)
+  const [modal, setModal] = useState<(typeof CONVENIOS)[number] | null>(null)
+  useEffect(() => { if (!modal) return; const previous = document.activeElement as HTMLElement; const dialog = document.querySelector<HTMLDialogElement>('#convModal'); const overflow = document.body.style.overflow; document.body.style.overflow = 'hidden'; dialog?.showModal(); return () => { dialog?.close(); document.body.style.overflow = overflow; previous?.focus(); } }, [modal])
 
   useEffect(() => {
     const id = setInterval(() => setCurrent(p => (p + 1) % SLIDES.length), 5000)
@@ -93,17 +95,18 @@ export default function Home() {
         </div>
 
         <div className="ix-controls">
-          <button className="ix-arrow" onClick={prev}><i className="fas fa-chevron-left" /></button>
+          <button aria-label="Imagen anterior" className="ix-arrow" onClick={prev}><i className="fas fa-chevron-left" /></button>
           <div className="ix-dots">
             {SLIDES.map((_, i) => (
               <button
                 key={i}
+                aria-label={"Ver imagen " + (i+1)} aria-pressed={i===current}
                 className={`ix-dot-btn${i === current ? ' active' : ''}`}
                 onClick={() => setCurrent(i)}
               />
             ))}
           </div>
-          <button className="ix-arrow" onClick={next}><i className="fas fa-chevron-right" /></button>
+          <button aria-label="Imagen siguiente" className="ix-arrow" onClick={next}><i className="fas fa-chevron-right" /></button>
         </div>
 
         <div className="ix-metrics">
@@ -182,7 +185,7 @@ export default function Home() {
           </div>
           <div className="ix-conv-grid">
             {CONVENIOS.map(c => (
-              <div
+              <button type="button"
                 key={c.sigla}
                 className="ix-conv-card fade-up"
                 onClick={() => setModal(c)}
@@ -191,18 +194,18 @@ export default function Home() {
                 <div className="ix-conv-logo"><img src={c.img} alt={c.sigla} /></div>
                 <div className="ix-conv-sigla">{c.sigla}</div>
                 <div className="ix-conv-name">{c.nombre}</div>
-              </div>
+              </button>
             ))}
           </div>
         </div>
       </section>
 
       {modal && (
-        <div id="convModal">
-          <div id="convOverlay" onClick={() => setModal(null)} />
+        <dialog id="convModal" aria-labelledby="convNombre" onCancel={e => { e.preventDefault(); setModal(null) }}>
+
           <div className="conv-modal-box">
             <div className="conv-modal-header">
-              <button id="convClose" onClick={() => setModal(null)}>
+              <button aria-label="Cerrar información del convenio" id="convClose" onClick={() => setModal(null)}>
                 <i className="fas fa-times" />
               </button>
               <div className="conv-modal-logo-wrap">
@@ -218,7 +221,7 @@ export default function Home() {
               <p id="convDesc">{modal.desc}</p>
             </div>
           </div>
-        </div>
+        </dialog>
       )}
 
       <section className="ix-why">

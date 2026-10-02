@@ -4,6 +4,8 @@
 **Fecha de referencia:** 10 de septiembre de 2026  
 **Propósito:** documentar el estado actual y los trabajos pendientes para completar la plataforma y preparar un chatbot relacionado con la empresa.
 
+> Inventario histórico de septiembre. El alcance actual es sitio institucional y panel; Market queda para otra etapa. Las conexiones públicas, cotizaciones, seguimiento, recuperación de cuentas, imágenes y suscripciones se describen en [README.md](README.md). Los datos institucionales esperan confirmación de la empresa.
+
 ## Diagnóstico general
 
 Lo principal que falta es cerrar el circuito entre panel, base de datos y página pública. Ya es posible administrar varios módulos, pero buena parte de la web todavía muestra información escrita directamente en sus componentes.

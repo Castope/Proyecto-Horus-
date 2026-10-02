@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useSyncExternalStore } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import logoHorus from '../assets/images/logo-horus.png'
 
@@ -25,15 +25,19 @@ const NAV_ITEMS = [
   { label: 'Market',   to: '/market' },
 ]
 
+const subscribeViewport = (callback: () => void) => { const media = window.matchMedia('(max-width: 1024px)'); media.addEventListener('change', callback); return () => media.removeEventListener('change', callback); }
 export default function Navbar() {
   const [scrolled,    setScrolled]    = useState(false)
-  const [menuOpen,    setMenuOpen]    = useState(false)
-  const [openDrop,    setOpenDrop]    = useState(null)
+  const [menuPath, setMenuPath] = useState<string | null>(null)
+  const [drop, setDrop] = useState<{ path: string; label: string } | null>(null)
   const { pathname } = useLocation()
-  const navRef = useRef(null)
+  const navRef = useRef<HTMLElement>(null)
+  const listRef = useRef<HTMLUListElement>(null)
+  const toggleRef = useRef<HTMLButtonElement>(null)
+  const menuOpen = menuPath === pathname
+  const openDrop = drop?.path === pathname ? drop.label : null
+  const mobile = useSyncExternalStore(subscribeViewport, () => window.matchMedia('(max-width: 1024px)').matches, () => false)
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { setMenuOpen(false); setOpenDrop(null) }, [pathname])
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10)
@@ -42,12 +46,25 @@ export default function Navbar() {
   }, [])
 
   useEffect(() => {
-    document.body.style.overflow = menuOpen ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
-  }, [menuOpen])
+    if (!menuOpen || !mobile) return
+    const trigger = toggleRef.current
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    listRef.current?.querySelector<HTMLElement>('a,button')?.focus()
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { setMenuPath(null); return }
+      if (event.key !== 'Tab') return
+      const links = Array.from(listRef.current?.querySelectorAll<HTMLElement>('a,button') || []).filter(el => el.getClientRects().length)
+      const first=links[0], last=links[links.length-1]
+      if (event.shiftKey && document.activeElement === first) {event.preventDefault(); toggleRef.current?.focus()}
+      else if (!event.shiftKey && document.activeElement === last) {event.preventDefault(); toggleRef.current?.focus()}
+      else if (document.activeElement === toggleRef.current) {event.preventDefault(); (event.shiftKey ? last : first)?.focus()}
+    }
+    document.addEventListener('keydown',keydown)
+    return () => {document.body.style.overflow=previous;document.removeEventListener('keydown',keydown);trigger?.focus()}
+  }, [menuOpen,mobile])
 
-  const toggleDrop = (label) =>
-    setOpenDrop(prev => (prev === label ? null : label))
+  const toggleDrop = (label: string) => setDrop(prev => prev?.path === pathname && prev.label === label ? null : {path:pathname,label})
 
   return (
     <header className={`nav${scrolled ? ' scrolled' : ''}`} ref={navRef}>
@@ -59,23 +76,20 @@ export default function Navbar() {
 
         <div
           className={`nav-overlay${menuOpen ? ' show' : ''}`}
-          onClick={() => setMenuOpen(false)}
+          onClick={() => setMenuPath(null)}
         />
 
-        <ul className={`nav-links${menuOpen ? ' open' : ''}`}>
+        <ul ref={listRef} id="public-navigation" inert={mobile && !menuOpen} className={`nav-links${menuOpen ? ' open' : ''}`}>
           {NAV_ITEMS.map(item =>
             item.children ? (
               <li
                 key={item.label}
                 className={`nav-drop${openDrop === item.label ? ' open' : ''}`}
               >
-                <a
-                  href="#"
-                  onClick={e => { e.preventDefault(); toggleDrop(item.label) }}
-                >
+                <button type="button" aria-expanded={openDrop === item.label} aria-controls={"drop-"+item.label} onClick={() => toggleDrop(item.label)} onKeyDown={e => { if(e.key==="Escape"){setDrop(null);e.currentTarget.focus()} }}>
                   {item.label}
-                </a>
-                <ul className="dropdown">
+                </button>
+                <ul id={"drop-"+item.label} className="dropdown">
                   {item.children.map(child => (
                     <li key={child.to}>
                       <NavLink to={child.to}>
@@ -99,8 +113,9 @@ export default function Navbar() {
 
         <button
           className={`nav-toggle${menuOpen ? ' open' : ''}`}
-          aria-label="Menú"
-          onClick={() => setMenuOpen(prev => !prev)}
+          ref={toggleRef}
+          aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"} aria-expanded={menuOpen} aria-controls="public-navigation"
+          onClick={() => setMenuPath(menuOpen ? null : pathname)}
         >
           <span /><span /><span />
         </button>

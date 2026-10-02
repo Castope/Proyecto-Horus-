@@ -25,6 +25,7 @@ export class CotizacionDto {
 export class EditCotizacionDto extends CotizacionDto {
   @IsInt() @Min(1) revision: number;
 }
+export class SendCotizacionDto { @IsInt() @Min(1) revision: number; }
 export class EstadoCotizacionDto {
   @IsIn(['enviada', 'aceptada', 'rechazada', 'anulada']) estado: string;
   @IsInt() @Min(1) revision: number;

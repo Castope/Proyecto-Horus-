@@ -1,3 +1,5 @@
+import NewsletterForm from '../components/NewsletterForm'
+import '../styles/catalogo-publico.css'
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import useFadeUp from '../hooks/useFadeUp'
@@ -32,9 +34,7 @@ export default function Market() {
         </div>
 
         <div className="mkt-actions">
-          <Link to="/contactos" className="btn-coral">
-            <i className="fas fa-bell" /> Notificarme cuando esté listo
-          </Link>
+          <NewsletterForm />
           <Link to="/" className="mkt-back">
             <i className="fas fa-arrow-left" /> Volver al inicio
           </Link>

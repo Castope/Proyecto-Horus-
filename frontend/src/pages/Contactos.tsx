@@ -1,5 +1,7 @@
+import { useCompanySetting } from '../context/companySettings'
 import { useState, useEffect } from 'react'
 import type { ChangeEvent, SubmitEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import useFadeUp from '../hooks/useFadeUp'
 import { enviarContacto } from '../api'
 
@@ -16,8 +18,10 @@ type ContactErrors = Partial<Record<keyof ContactForm, string>>
 const INITIAL: ContactForm = { nombre: '', email: '', telefono: '', asunto: '', mensaje: '' }
 
 export default function Contactos() {
+  const setting = useCompanySetting()
   useFadeUp()
-  const [form,    setForm]    = useState<ContactForm>(INITIAL)
+  const [params] = useSearchParams()
+  const [form,    setForm]    = useState<ContactForm>(() => ({ ...INITIAL, asunto: (params.get('asunto') || '').slice(0, 150) }))
   const [status,  setStatus]  = useState<'loading' | 'ok' | 'error' | null>(null)
   const [mensaje, setMensaje] = useState('')
   const [errores, setErrores] = useState<ContactErrors>({})
@@ -39,35 +43,40 @@ export default function Contactos() {
 
   const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
+    if (status === 'loading') return
     const e2: ContactErrors = {}
     if (!form.nombre.trim())   e2.nombre   = 'Ingresa tu nombre'
     if (!form.email.trim())    e2.email    = 'Ingresa tu correo'
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e2.email = 'Correo inválido'
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e2.email = 'Correo inválido'
     if (!form.telefono.trim()) e2.telefono = 'Ingresa tu teléfono'
     if (!form.asunto.trim())   e2.asunto   = 'Ingresa el asunto'
-    if (!form.mensaje.trim())  e2.mensaje  = 'Escribe tu mensaje'
-    if (Object.keys(e2).length) { setErrores(e2); return }
+    if (form.nombre.trim().length < 2) e2.nombre = 'Ingresa al menos 2 caracteres'
+    if (form.asunto.trim().length < 3) e2.asunto = 'Ingresa al menos 3 caracteres'
+    if (form.mensaje.trim().length < 3) e2.mensaje = 'Escribe al menos 3 caracteres'
+    if (!/^[+()\d\s-]{6,30}$/.test(form.telefono.trim())) e2.telefono = 'Ingresa un teléfono válido'
+    if (Object.keys(e2).length) { setErrores(e2); document.getElementById(Object.keys(e2)[0])?.focus(); return }
 
     setStatus('loading')
     try {
       const res = await enviarContacto(form)
       if (res.ok) {
         setStatus('ok')
+        setMensaje(res.correo_enviado ? 'Mensaje registrado y notificaciones enviadas.' : 'Mensaje registrado. La notificación por correo está pendiente; evita reenviarlo.')
         setForm(INITIAL)
         setErrores({})
-        setTimeout(() => setStatus(null), 6000)
+
       } else {
         setStatus('error')
         setMensaje(res.mensaje || 'Error al enviar el mensaje.')
       }
-    } catch {
+    } catch (error) {
       setStatus('error')
-      setMensaje('No se pudo conectar con el servidor.')
+      setMensaje(error instanceof Error ? error.message : 'No se pudo conectar con el servidor.')
     }
   }
 
   return (
-    <main>
+    <>
       <section className="ct-hero">
         <div className="container">
           <div className="ct-hero-inner">
@@ -78,19 +87,19 @@ export default function Contactos() {
               <p>Cuéntanos qué necesitas. Nuestro equipo responde en menos de 24 horas y estamos disponibles por WhatsApp para consultas rápidas.</p>
 
               <div className="ct-channels">
-                <a href="tel:+51927582305" className="ct-channel">
+                <a href={'tel:'+setting('telefono_principal','+51927582305').replace(/[^+0-9]/g,'')} className="ct-channel">
                   <div className="ct-channel-icon ct-icon-coral"><i className="fas fa-phone" /></div>
-                  <div className="ct-channel-info"><strong>+51 927 582 305</strong><span>Llamada directa</span></div>
+                  <div className="ct-channel-info"><strong>{setting('telefono_principal','+51 927 582 305')}</strong><span>Llamada directa</span></div>
                   <i className="fas fa-chevron-right ct-channel-arrow" />
                 </a>
-                <a href="https://wa.me/51927582305" target="_blank" rel="noreferrer" className="ct-channel">
+                <a href={'https://wa.me/'+setting('whatsapp','51927582305').replace(/[^0-9]/g,'')} target="_blank" rel="noreferrer" className="ct-channel">
                   <div className="ct-channel-icon ct-icon-green"><i className="fab fa-whatsapp" /></div>
                   <div className="ct-channel-info"><strong>WhatsApp</strong><span>Respuesta inmediata</span></div>
                   <i className="fas fa-chevron-right ct-channel-arrow" />
                 </a>
-                <a href="mailto:horusgroupcajamarca@gmail.com" className="ct-channel">
+                <a href={'mailto:'+setting('email_contacto','horusgroupcajamarca@gmail.com')} className="ct-channel">
                   <div className="ct-channel-icon ct-icon-indigo"><i className="fas fa-envelope" /></div>
-                  <div className="ct-channel-info"><strong>horusgroupcajamarca@gmail.com</strong><span>Correo electrónico</span></div>
+                  <div className="ct-channel-info"><strong>{setting('email_contacto','horusgroupcajamarca@gmail.com')}</strong><span>Correo electrónico</span></div>
                   <i className="fas fa-chevron-right ct-channel-arrow" />
                 </a>
               </div>
@@ -112,12 +121,12 @@ export default function Contactos() {
                 </div>
 
                 {status === 'ok' && (
-                  <div style={{ background: '#ECFDF5', border: '1px solid #a7f3d0', color: '#065f46', padding: '12px 16px', borderRadius: 10, marginBottom: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <i className="fas fa-check-circle" /> Mensaje enviado. Te contactaremos pronto.
+                  <div role="status" style={{ background: '#ECFDF5', border: '1px solid #a7f3d0', color: '#065f46', padding: '12px 16px', borderRadius: 10, marginBottom: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <i className="fas fa-check-circle" /> {mensaje}
                   </div>
                 )}
                 {status === 'error' && (
-                  <div style={{ background: '#FEF2F2', border: '1px solid #fca5a5', color: '#991b1b', padding: '12px 16px', borderRadius: 10, marginBottom: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div role="alert" style={{ background: '#FEF2F2', border: '1px solid #fca5a5', color: '#991b1b', padding: '12px 16px', borderRadius: 10, marginBottom: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <i className="fas fa-exclamation-circle" /> {mensaje}
                   </div>
                 )}
@@ -128,17 +137,17 @@ export default function Contactos() {
                       <label htmlFor="nombre">Nombre <span>*</span></label>
                       <div className={`ct-input-wrap${errores.nombre ? ' ct-input-err' : ''}`}>
                         <i className="fas fa-user" />
-                        <input type="text" id="nombre" name="nombre" value={form.nombre} onChange={handleChange} placeholder="Tu nombre completo" />
+                        <input type="text" id="nombre" name="nombre" required maxLength={100} aria-invalid={!!errores.nombre} aria-describedby={errores.nombre ? 'nombre-error' : undefined} value={form.nombre} onChange={handleChange} placeholder="Tu nombre completo" />
                       </div>
-                      {errores.nombre && <span className="ct-err-msg"><i className="fas fa-exclamation-circle" /> {errores.nombre}</span>}
+                      {errores.nombre && <span id="nombre-error" className="ct-err-msg"><i className="fas fa-exclamation-circle" /> {errores.nombre}</span>}
                     </div>
                     <div className="ct-form-group">
                       <label htmlFor="email">Correo <span>*</span></label>
                       <div className={`ct-input-wrap${errores.email ? ' ct-input-err' : ''}`}>
                         <i className="fas fa-envelope" />
-                        <input type="email" id="email" name="email" value={form.email} onChange={handleChange} placeholder="tu@email.com" />
+                        <input type="email" id="email" name="email" required maxLength={254} aria-invalid={!!errores.email} aria-describedby={errores.email ? 'email-error' : undefined} value={form.email} onChange={handleChange} placeholder="tu@email.com" />
                       </div>
-                      {errores.email && <span className="ct-err-msg"><i className="fas fa-exclamation-circle" /> {errores.email}</span>}
+                      {errores.email && <span id="email-error" className="ct-err-msg"><i className="fas fa-exclamation-circle" /> {errores.email}</span>}
                     </div>
                   </div>
                   <div className="ct-form-row">
@@ -146,23 +155,23 @@ export default function Contactos() {
                       <label htmlFor="telefono">Teléfono <span>*</span></label>
                       <div className={`ct-input-wrap${errores.telefono ? ' ct-input-err' : ''}`}>
                         <i className="fas fa-phone" />
-                        <input type="tel" id="telefono" name="telefono" value={form.telefono} onChange={handleChange} placeholder="+51 000 000 000" />
+                        <input type="tel" id="telefono" name="telefono" required maxLength={30} aria-invalid={!!errores.telefono} aria-describedby={errores.telefono ? 'telefono-error' : undefined} value={form.telefono} onChange={handleChange} placeholder="+51 000 000 000" />
                       </div>
-                      {errores.telefono && <span className="ct-err-msg"><i className="fas fa-exclamation-circle" /> {errores.telefono}</span>}
+                      {errores.telefono && <span id="telefono-error" className="ct-err-msg"><i className="fas fa-exclamation-circle" /> {errores.telefono}</span>}
                     </div>
                     <div className="ct-form-group">
                       <label htmlFor="asunto">Asunto <span>*</span></label>
                       <div className={`ct-input-wrap${errores.asunto ? ' ct-input-err' : ''}`}>
                         <i className="fas fa-tag" />
-                        <input type="text" id="asunto" name="asunto" value={form.asunto} onChange={handleChange} placeholder="¿En qué podemos ayudarte?" />
+                        <input type="text" id="asunto" name="asunto" required maxLength={150} aria-invalid={!!errores.asunto} aria-describedby={errores.asunto ? 'asunto-error' : undefined} value={form.asunto} onChange={handleChange} placeholder="¿En qué podemos ayudarte?" />
                       </div>
-                      {errores.asunto && <span className="ct-err-msg"><i className="fas fa-exclamation-circle" /> {errores.asunto}</span>}
+                      {errores.asunto && <span id="asunto-error" className="ct-err-msg"><i className="fas fa-exclamation-circle" /> {errores.asunto}</span>}
                     </div>
                   </div>
                   <div className="ct-form-group">
                     <label htmlFor="mensaje">Mensaje <span>*</span></label>
-                    <textarea id="mensaje" name="mensaje" value={form.mensaje} onChange={handleChange} placeholder="Cuéntanos más sobre tu consulta o proyecto..." className={errores.mensaje ? 'ct-input-err' : ''} />
-                    {errores.mensaje && <span className="ct-err-msg"><i className="fas fa-exclamation-circle" /> {errores.mensaje}</span>}
+                    <textarea id="mensaje" name="mensaje" required maxLength={5000} aria-invalid={!!errores.mensaje} aria-describedby={errores.mensaje ? 'mensaje-error' : undefined} value={form.mensaje} onChange={handleChange} placeholder="Cuéntanos más sobre tu consulta o proyecto..." className={errores.mensaje ? 'ct-input-err' : ''} />
+                    {errores.mensaje && <span id="mensaje-error" className="ct-err-msg"><i className="fas fa-exclamation-circle" /> {errores.mensaje}</span>}
                   </div>
                   <button type="submit" className="ct-submit" disabled={status === 'loading'}>
                     {status === 'loading'
@@ -198,7 +207,7 @@ export default function Contactos() {
               <div className="ct-info-card-icon ct-info-icon-green"><i className="fab fa-whatsapp" /></div>
               <h3>WhatsApp directo</h3>
               <p>Para consultas rápidas y cotizaciones. Respondemos en minutos.</p>
-              <a href="https://wa.me/51927582305" target="_blank" rel="noreferrer" className="ct-info-link ct-info-link-green">
+              <a href={'https://wa.me/'+setting('whatsapp','51927582305').replace(/[^0-9]/g,'')} target="_blank" rel="noreferrer" className="ct-info-link ct-info-link-green">
                 Abrir WhatsApp <i className="fas fa-external-link-alt" />
               </a>
             </div>
@@ -212,6 +221,6 @@ export default function Contactos() {
           </div>
         </div>
       </section>
-    </main>
+    </>
   )
 }

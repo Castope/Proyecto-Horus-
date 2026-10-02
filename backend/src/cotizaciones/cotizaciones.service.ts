@@ -1,4 +1,6 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, Optional, ServiceUnavailableException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../database/prisma.service';
 import { serializeQuote } from '../database/serialization';
 import { randomUUID } from 'node:crypto';
@@ -25,7 +27,7 @@ export function calculateQuote(dto: CotizacionDto) {
 }
 @Injectable()
 export class CotizacionesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, @Optional() private readonly mail?: MailService, @Optional() private readonly config?: ConfigService) {}
   async list(query: CotizacionQueryDto) {
     const where: Prisma.CotizacionWhereInput = { ...(query.estado ? { estado: query.estado } : {}), ...(query.search ? { OR: ['numero', 'cliente', 'email'].map(field => ({ [field]: { contains: query.search } })) } : {}) };
     const [rows, count] = await Promise.all([
@@ -39,6 +41,10 @@ export class CotizacionesService {
     if (!item) throw new NotFoundException('Cotización no encontrada.');
     return { ok: true, item: serializeQuote(item) };
   }
+  private referenceConflict(error: unknown): never {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') throw new ConflictException('La consulta de origen cambió. Recarga la cotización.');
+    throw error;
+  }
   private async payload(dto: CotizacionDto) {
     const date = new Date(dto.validez + 'T12:00:00Z');
     if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== dto.validez) throw new BadRequestException('La fecha de vigencia no es válida.');
@@ -51,7 +57,7 @@ export class CotizacionesService {
   async create(dto: CotizacionDto, user: number) {
     const data = await this.payload(dto);
     const item = await this.prisma.cotizacion.create({ data: { ...data, numero: 'COT-' + new Date().getUTCFullYear() + '-' + randomUUID(), estado: 'borrador', revision: 1,
-      historial: [{ accion: 'Creada como borrador', usuario: user, fecha: new Date().toISOString() }] } });
+      historial: [{ accion: 'Creada como borrador', usuario: user, fecha: new Date().toISOString() }] } }).catch(error => this.referenceConflict(error));
     return { ok: true, item: { ...serializeQuote(item), ...calculateQuote(dto) } };
   }
   async edit(id: number, dto: EditCotizacionDto, user: number) {
@@ -70,6 +76,17 @@ export class CotizacionesService {
       }
       return { estado: dto.estado };
     });
+  }
+  async email(id: number, revision: number) {
+    const { item } = await this.detail(id);
+    if (item.revision !== revision) throw new ConflictException('La cotización cambió. Recárgala antes de enviar.');
+    if (!item.email || !['borrador', 'enviada'].includes(item.estado)) throw new BadRequestException('Solo se envían propuestas vigentes con correo del cliente.');
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
+    if (item.validez < today) throw new ConflictException('La propuesta está vencida.');
+    const lines = Array.isArray(item.conceptos) ? item.conceptos.map(line => line && typeof line === 'object' && !Array.isArray(line) ? [line.descripcion, line.cantidad, line.precio, line.importe].join(' · ') : '').join('\n') : '';
+    const text = [item.emisor, item.datos_emisor, 'Cotización: '+item.numero+' · Revisión '+revision, 'Cliente: '+item.cliente, 'Válida hasta: '+item.validez, lines, 'Subtotal: '+item.subtotal, 'Descuento: '+item.descuento, 'Impuesto: '+item.impuesto, 'Total: '+item.total+' '+item.moneda, item.condiciones].join('\n\n');
+    if (!this.mail || !await this.mail.sendMail({ from: this.config?.get<string>('MAIL_USER'), to: item.email, subject: 'Cotización '+item.numero, text })) throw new ServiceUnavailableException('La cotización está guardada, pero el correo no pudo enviarse. Reintenta el envío.');
+    return { ok: true, mensaje: 'Cotización enviada por correo.', revision };
   }
   private async mutate(id: number, revision: number, user: number, action: string,
     changes: (item: ReturnType<typeof serializeQuote<import('@prisma/client').Cotizacion>>) => Prisma.CotizacionUpdateManyMutationInput) {
@@ -91,6 +108,6 @@ export class CotizacionesService {
         if (typeof updates[field] === 'number') updated[field] = updates[field];
       }
       return { ok: true, item: updated };
-    });
+    }).catch(error => this.referenceConflict(error));
   }
 }

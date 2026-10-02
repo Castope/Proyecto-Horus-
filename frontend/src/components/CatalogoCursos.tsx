@@ -35,17 +35,19 @@ function ImagenCurso({ url, titulo }: { url: string | null; titulo: string }) {
   )
 }
 
-export default function CatalogoCursos() {
+export default function CatalogoCursos({ tipo }: { tipo?: CursoPublico['tipo'] }) {
   const [page, setPage] = useState(1)
   const [revision, setRevision] = useState(0)
   const [data, setData] = useState<CatalogoResponse | null>(null)
-  const { loading, error, setLoading, setError } = useRequestStatus(`${page}:${revision}`)
+  const { loading, error, setLoading, setError } = useRequestStatus(`${tipo || 'todos'}:${page}:${revision}`)
 
   useEffect(() => {
     const controller = new AbortController()
     async function cargar() {
       try {
-        const response = await fetch(`/api/cursos?page=${page}&limit=12`, {
+        const params = new URLSearchParams({ page: String(page), limit: '12' })
+        if (tipo) params.set('tipo', tipo)
+        const response = await fetch('/api/cursos?' + params, {
           signal: controller.signal, cache: 'no-store',
         })
         if (!response.ok) throw new Error('No se pudo consultar el catálogo.')
@@ -64,7 +66,7 @@ export default function CatalogoCursos() {
     }
     void cargar()
     return () => controller.abort()
-  }, [page, revision, setError, setLoading])
+  }, [page, revision, tipo, setError, setLoading])
 
   function actualizar() {
     setPage(1)
@@ -120,3 +122,8 @@ export default function CatalogoCursos() {
     </section>
   )
 }
+
+
+
+
+

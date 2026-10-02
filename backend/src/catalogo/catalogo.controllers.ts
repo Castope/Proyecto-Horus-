@@ -16,7 +16,7 @@ export class CursoController {
 }
 
 @ApiTags('Admin - cursos')
-@ApiBearerAuth('JWT-auth')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('admin/cursos')
 export class AdminCursoController {
@@ -48,7 +48,7 @@ export class ServicioController {
 }
 
 @ApiTags('Admin - servicios')
-@ApiBearerAuth('JWT-auth')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('admin/servicios')
 export class AdminServicioController {
@@ -80,7 +80,7 @@ export class PreguntaFrecuenteController {
 }
 
 @ApiTags('Admin - preguntas-frecuentes')
-@ApiBearerAuth('JWT-auth')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('admin/preguntas-frecuentes')
 export class AdminPreguntaFrecuenteController {

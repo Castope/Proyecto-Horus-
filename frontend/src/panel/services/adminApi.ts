@@ -23,12 +23,8 @@ export async function registerAdmin(payload: { nombre: string; email: string; pa
   return panelRequest<{ ok: boolean; mensaje?: string }>('register', null, 'POST', payload);
 }
 
-export async function getCurrentAdmin(token: string) {
-  const response = await fetch(`${API_BASE}/me`, {
-    method: 'GET',
-    headers: getAuthHeaders(token),
-  });
-  return response.json() as Promise<{ ok: boolean; user?: AdminUser; mensaje?: string }>;
+export async function getCurrentAdmin(token: string, signal?: AbortSignal) {
+  return panelRequest<{ ok: boolean; user?: AdminUser; mensaje?: string }>('me', token, 'GET', undefined, signal);
 }
 
 export async function getAdminItems(token: string) {

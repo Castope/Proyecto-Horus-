@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';
 
 export interface JwtPayload {
+  version?: number;
   id: number;
   email: string;
 }
@@ -34,7 +35,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException({ ok: false, mensaje: 'Identidad no válida.' });
     }
     const user = await this.prisma.adminUser.findUnique({ where: { id: payload.id } });
-    if (!user) {
+    if (!user || user.activo === false || (payload.version ?? 1) !== (user.session_version ?? 1)) {
       throw new UnauthorizedException({ ok: false, mensaje: 'Usuario no encontrado o inactivo.' });
     }
     return { id: user.id, nombre: user.nombre, email: user.email };

@@ -3,6 +3,10 @@
 /dist-dev
 /node_modules
 
+# Uploaded media (use a persistent volume in production)
+/uploads
+/.backups
+
 # Logs
 logs
 *.log

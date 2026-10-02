@@ -1,3 +1,4 @@
+import { notifyContentChange } from '../../contentUpdates';
 import { API_BASE } from '../../apiBase';
 export class PanelApiError extends Error {
   constructor(message: string, public status: number) { super(message); }
@@ -16,6 +17,7 @@ export async function panelRequest<T>(path: string, token: string | null, method
     throw new PanelApiError(Array.isArray(detail) ? detail.join(' · ') : detail || 'No se pudo completar la operación (' + response.status + ').', response.status);
   }
   if (!data) throw new Error('El servidor devolvió una respuesta inválida.');
+  if(method!=='GET')notifyContentChange(path.split(/[/?]/)[0]);
   return data as T;
 }
 

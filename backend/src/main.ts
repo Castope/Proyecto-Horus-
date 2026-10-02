@@ -41,7 +41,7 @@ async function bootstrap() {
         description: 'Ingrese su token JWT (sin el prefijo Bearer)',
         in: 'header',
       },
-      'JWT-auth',
+      'bearer',
     )
     .build();
 

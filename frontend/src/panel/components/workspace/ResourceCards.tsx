@@ -41,7 +41,7 @@ export default function ResourceCards({ resource: r, rows, busy, onOpen, onDupli
         <small className="hw-eyebrow">{label(row.categoria || row.tipo || r.singular)}</small>
         <h3>{String(row[r.title])}</h3>
         <p className="hw-excerpt">{plainText(row.descripcion) || 'Añade una descripción para presentar este contenido.'}</p>
-        {r.endpoint === 'cursos' && <div className="hw-facts"><span>{label(row.modalidad)}</span><span>{String(row.duracion || 'Sin duración')}</span><span>Inicio: {dateLabel(row.fecha_inicio, true)}</span></div>}
+        {r.endpoint === 'cursos' && <div className="hw-facts"><span>{label(row.modalidad)||'Modalidad por confirmar'}</span><span>{String(row.duracion || 'Duración por confirmar')}</span><span>Inicio: {dateLabel(row.fecha_inicio, true)}</span></div>}
         {r.endpoint === 'servicios' && <p className="hw-completeness"><PanelIcon name={row.alcance ? 'check' : 'help'} size={14} />{row.alcance ? 'Alcance del servicio definido' : 'Falta detallar el alcance'}</p>}
         {r.endpoint === 'galeria' && <small>Orden de presentación: {String(row.orden ?? 0)}</small>}
         <footer><button className="hp-btn" disabled={busy} onClick={() => onOpen(row)}><PanelIcon name="edit" size={15} />Editar</button>

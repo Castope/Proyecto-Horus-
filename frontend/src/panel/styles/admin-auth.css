@@ -161,3 +161,5 @@
 @media (prefers-reduced-motion: reduce) {
   .admin-auth *, .admin-auth *::before, .admin-auth *::after { animation: none; transition: none; }
 }
+.admin-recovery-fields label { display:block; margin:1rem 0; font-size:14px; font-weight:600; }
+.admin-recovery-fields input { display:block; width:100%; min-height:48px; padding:12px; margin-top:8px; border:1px solid #dce3ee; border-radius:8px; background:white; font:inherit; }

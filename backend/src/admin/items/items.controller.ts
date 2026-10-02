@@ -17,6 +17,8 @@ import { CreateItemDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
+import { Query } from '@nestjs/common';
+import { ListQueryDto } from '../../common/list-query.dto';
 @ApiTags('Admin - Items')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -26,8 +28,8 @@ export class ItemsController {
 
   @Get()
   @ApiOperation({ summary: 'Listar todos los elementos' })
-  async findAll() {
-    return this.itemsService.findAll();
+  async findAll(@Query() query: ListQueryDto) {
+    return this.itemsService.findAll(query);
   }
 
   @Get(':id')

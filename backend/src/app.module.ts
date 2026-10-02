@@ -1,8 +1,14 @@
+import { ConveniosModule } from './convenios/convenios.module';
+import { OriginalContentModule } from './content-original/content-original.module';
+import { UploadsModule } from './uploads/uploads.module';
+import { AttentionModule } from './attention/attention.module';
 import { CotizacionesModule } from './cotizaciones/cotizaciones.module';
 import { ChatbotModule } from './chatbot/chatbot.module';
 import { validateDeployment } from './deployment.config';
 import { CatalogoModule } from './catalogo/catalogo.module';
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { PublicRateLimitGuard } from './common/public-rate-limit.guard';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './database/database.module';
 import { MailModule } from './mail/mail.module';
@@ -14,6 +20,7 @@ import { NewsletterModule } from './newsletter/newsletter.module';
 import { SettingsModule } from './settings/settings.module';
 
 @Module({
+  providers: [{ provide: APP_GUARD, useClass: PublicRateLimitGuard }],
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
@@ -22,6 +29,10 @@ import { SettingsModule } from './settings/settings.module';
     }),
     DatabaseModule,
     CotizacionesModule,
+    AttentionModule,
+    UploadsModule,
+    OriginalContentModule,
+    ConveniosModule,
     CatalogoModule,
     ChatbotModule,
     MailModule,

@@ -2,25 +2,24 @@
 
 ## Panel
 
-Desde la navegación del panel y los accesos del resumen:
+Las listas de consultas, reclamaciones, suscripciones, contenido y galería usan búsqueda y paginación en el servidor. La agenda filtra el periodo desde la API. Exportar resultados consulta todas las páginas que coinciden con los filtros; exportar página descarga solo lo visible. El CSV conserva UTF-8 y neutraliza fórmulas.
 
-- **Suscripciones**: consulta los correos registrados, filtra por interés y estado, busca por correo y abre el detalle.
-- **Reclamaciones**: consulta reclamos y quejas; busca por número, persona, documento, correo o área y revisa la información completa.
-- Ambas vistas muestran diez registros por página. **Exportar resultados** descarga todos los registros que coinciden con los filtros, no solo la página visible. El CSV conserva las tildes y neutraliza valores que podrían interpretarse como fórmulas.
-- Las secciones consultan las rutas administrativas existentes mediante la sesión del panel. No modifican los registros ni envían correos. Los datos se cargan completos desde la API actual y se filtran localmente.
+El seguimiento de consultas y reclamaciones guarda estado, responsable, notas internas, respuesta e historial. La revisión detecta cambios desde otra sesión y responde 409. Guardar no envía automáticamente correo; se envía la respuesta guardada con una acción explícita. Las constancias y notificaciones pueden reenviarse sin crear otro registro. Una reclamación se conserva y puede archivarse mediante el seguimiento.
+
+Las cotizaciones se preparan manualmente o desde una consulta. El backend calcula los importes y controla revisión y transiciones. Se puede editar un borrador, preparar una copia, imprimir/guardar PDF y enviar un correo de texto con la propuesta. Imprimir o enviar un correo no cambia automáticamente el estado comercial.
+
+Cuentas permite cambiar contraseña y activar/desactivar administradores. La desactivación y el cambio de contraseña revocan sesiones. Se conserva el registro abierto y los permisos actuales de todos los administradores. La biblioteca de contenido es interna.
 
 ## Chatbot
 
-- El menú permite buscar nombres sin distinguir tildes y filtrar cursos por modalidad. Las respuestas del menú vuelven a consultar el registro para comprobar que siga publicado.
-- Las respuestas sobre cursos o servicios ofrecen botones para continuar preguntando sobre el primer resultado consultado.
-- Las preguntas de seguimiento, incluso con signos de apertura y varias preguntas consecutivas, recuperan el tema desde los mensajes recientes del visitante. El historial del asistente no se utiliza como fuente de hechos.
-- En **Solicitar atención del equipo**, **Añadir mis últimas consultas** incorpora hasta cuatro preguntas al campo editable. El visitante revisa el texto y autoriza el contacto antes de enviarlo. La consulta llega a **Mensajes**, identificada como Chatbot.
-- Si el proveedor de IA falla, se muestra el aviso de respuesta directa desde el catálogo.
+El menú consulta páginas de veinte registros y permite buscar por nombre y modalidad. Cada respuesta vuelve a consultar el detalle para comprobar la publicación. El historial del asistente no se usa como fuente de hechos.
 
-## Comprobación manual
+Solicitar atención requiere consentimiento y registra una consulta con prefijo [Chatbot]. El chat no confirma reservas, pagos ni inscripciones. La IA es opcional; cuando falla, se muestran las fuentes del catálogo.
 
-1. Con una sesión administrativa, abrir ambas secciones; revisar carga, errores, vacío, filtros, paginación, exportación y detalle. Comprobar que Escape cierra el detalle y devuelve el foco al botón que lo abrió.
-2. En el chatbot, buscar un curso con y sin tildes, cambiar modalidad, consultar un resultado y usar una pregunta sugerida.
-3. Escribir un tema y después «¿Qué modalidad tiene?» y «¿Y cuándo empieza?». Comprobar las fuentes publicadas.
-4. Abrir el formulario de atención, añadir preguntas, editar el texto y verificar que requiere consentimiento. Probar un fallo de envío y comprobar que conserva los datos.
-5. Revisar escritorio y móvil, navegación por teclado y expiración de sesión.
+La API consulta únicamente contenido publicado y claves institucionales públicas conocidas. Antes de enviar la pregunta y el historial a la IA, oculta correos y secuencias que parecen teléfonos o documentos. Esto no garantiza anonimato: no debe escribirse información personal en el chat.
+
+Las cuotas públicas se comparten en MySQL. La IP procede de Express y sus proxies explícitamente confiables; una cabecera enviada por el visitante no permite escoger su identidad.
+
+## Comprobaciones
+
+Ejecutar los checks y build del frontend, `node scripts/smoke-ui.cjs` y los tests de backend. Antes de presentar, probar también SMTP real, imágenes con volumen persistente y el contenido aprobado por la empresa. Market sigue siendo una etapa futura.

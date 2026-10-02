@@ -22,13 +22,14 @@ export class MailService {
     });
   }
 
-  async sendMail(options: nodemailer.SendMailOptions): Promise<void> {
+  async sendMail(options: nodemailer.SendMailOptions): Promise<boolean> {
     try {
       await this.transporter.sendMail(options);
-      this.logger.log(`Correo enviado exitosamente a ${options.to}`);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Error desconocido';
-      this.logger.error(`Error al enviar correo a ${options.to}: ${message}`);
+      this.logger.log('Notificación enviada.');
+      return true;
+    } catch {
+      this.logger.error('No se pudo entregar la notificación. Revisa la configuración SMTP.');
+      return false;
     }
   }
 
@@ -40,7 +41,7 @@ export class MailService {
     numero_reclamo: string;
     area: string;
     detalle_reclamo: string;
-  }): Promise<void> {
+  }): Promise<boolean> {
     const sender = this.configService.get<string>('MAIL_USER');
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
@@ -64,7 +65,7 @@ export class MailService {
       </div>
     `;
 
-    await this.sendMail({
+    return this.sendMail({
       from: `"Horus Group - Reclamaciones" <${sender}>`,
       to: datos.email,
       bcc: sender,
@@ -79,11 +80,11 @@ export class MailService {
     telefono?: string;
     asunto: string;
     mensaje: string;
-  }): Promise<void> {
+  }): Promise<boolean> {
     const sender = this.configService.get<string>('MAIL_USER');
 
     // Correo para el administrador
-    await this.sendMail({
+    const adminSent = await this.sendMail({
       from: `"Web Horus Group" <${sender}>`,
       to: sender,
       subject: `Nuevo mensaje web: ${datos.asunto}`,
@@ -104,7 +105,7 @@ export class MailService {
     });
 
     // Correo de confirmación para el usuario remitente
-    await this.sendMail({
+    const userSent = await this.sendMail({
       from: `"Horus Group SRL" <${sender}>`,
       to: datos.email,
       subject: 'Recibimos tu mensaje - Horus Group SRL',
@@ -121,5 +122,6 @@ export class MailService {
         </div>
       `,
     });
+    return adminSent && userSent;
   }
 }

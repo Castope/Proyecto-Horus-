@@ -1,0 +1,11 @@
+import { useState, type SubmitEvent } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import AdminAuthLayout from '../components/AdminAuthLayout';
+import { panelRequest, errorMessage } from '../services/panelApi';
+export default function AdminRecovery({reset=false}:{reset?:boolean}){
+ const [params]=useSearchParams();const token=params.get('token')||'';
+ const [email,setEmail]=useState(''),[password,setPassword]=useState(''),[confirm,setConfirm]=useState('');
+ const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
+ const submit=async(e:SubmitEvent<HTMLFormElement>)=>{e.preventDefault();if(busy)return;setError('');if(reset&&password!==confirm){setError('Las contraseñas no coinciden.');return;}setBusy(true);try{const r=await panelRequest<{mensaje:string}>(reset?'reset-password':'forgot-password',null,'POST',reset?{token,password}:{email});setNotice(r.mensaje);setPassword('');setConfirm('');}catch(e){setError(errorMessage(e));}finally{setBusy(false)}};
+ return <AdminAuthLayout eyebrow="Acceso al panel" title={reset?'Nueva contraseña':'Recuperar contraseña'} description={reset?'El enlace vence en 30 minutos y solo puede utilizarse una vez.':'Enviaremos un enlace al correo de tu cuenta.'}><form className="admin-auth__form" onSubmit={submit}><fieldset disabled={busy||reset&&!token} className="admin-auth__fields admin-recovery-fields">{reset?<><label>Nueva contraseña<input type="password" autoComplete="new-password" value={password} minLength={8} maxLength={72} required onChange={e=>setPassword(e.target.value)}/></label><label>Repite la contraseña<input type="password" autoComplete="new-password" value={confirm} required onChange={e=>setConfirm(e.target.value)}/></label></>:<label>Correo electrónico<input type="email" autoComplete="email" value={email} maxLength={254} required onChange={e=>setEmail(e.target.value)}/></label>}</fieldset>{error&&<p role="alert" className="admin-auth__error">{error}</p>}{notice&&<p role="status">{notice}</p>}{reset&&!token&&<p role="alert">Falta el enlace de recuperación. Solicita uno nuevo.</p>}<button className="admin-auth__submit" disabled={busy||reset&&!token}>{busy?'Procesando…':reset?'Guardar contraseña':'Solicitar enlace'}</button></form><p><Link to="/admin/login">Volver al inicio de sesión</Link></p></AdminAuthLayout>;
+}

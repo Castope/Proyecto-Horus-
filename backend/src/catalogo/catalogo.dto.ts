@@ -1,10 +1,31 @@
 import { Transform, Type } from 'class-transformer';
-import { IsString, Length, IsIn, IsInt, Min, Max, IsUrl, IsISO8601, Matches, ValidateIf } from 'class-validator';
+import { IsArray, ArrayUnique, IsString, Length, IsIn, IsInt, Min, Max, IsISO8601, Matches, ValidateIf, ValidateBy, isURL } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 
 const trim = ({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value;
 
+const PublicImageUrl=()=>ValidateBy({
+  name:'publicImageUrl',
+  validator:{
+    validate:(value:unknown)=>typeof value==='string'&&(/^\/site-original\/[a-zA-Z0-9_-]+\.(?:jpg|jpeg|png|webp)$/.test(value)||isURL(value,{protocols:['https','http'],require_protocol:true})),
+    defaultMessage:()=> 'imagen_url debe ser una URL HTTP/HTTPS válida o una imagen de /site-original/.',
+  },
+});
+
 export class CatalogoQueryDto {
+  @ValidateIf((_object,value)=>value!==undefined) @IsIn(['upcoming','unscheduled','past']) periodo?:string;
+  @ApiPropertyOptional({ enum: ['curso', 'capacitacion'] })
+  @ValidateIf((_, value) => value !== undefined) @IsIn(['curso', 'capacitacion'])
+  tipo?: string;
+
+  @ApiPropertyOptional({ enum: ['presencial', 'virtual', 'hibrida'] })
+  @ValidateIf((_, value) => value !== undefined) @IsIn(['presencial', 'virtual', 'hibrida'])
+  modalidad?: string;
+
+  @ApiPropertyOptional()
+  @ValidateIf((_, value) => value !== undefined) @Transform(trim) @IsString() @Length(1, 100)
+  categoria?: string;
+
   @ApiPropertyOptional({ default: 1 })
   @ValidateIf((_, value) => value !== undefined)
   @Type(() => Number)
@@ -28,7 +49,18 @@ export class CatalogoQueryDto {
   estado?: string;
 }
 
-export class CreateCursoDto {
+export class VisualContentDto {
+  @ApiPropertyOptional({ enum: ['indigo','coral','verde','violeta','oscuro'] })
+  @ValidateIf((_,v)=>v!==undefined) @IsIn(['indigo','coral','verde','violeta','oscuro']) color?:string;
+  @ApiPropertyOptional({ minimum:0 })
+  @ValidateIf((_,v)=>v!==undefined) @IsInt() @Min(0) @Max(1000000) orden?:number;
+  @ApiPropertyOptional({ enum: ['heart','legal','finance','technology','education','business','network','camera','bell','cloud','mobile','tools','software','emergency','star','users','target','handshake'] })
+  @ValidateIf((_,v)=>v!==undefined) @IsIn(['heart','legal','finance','technology','education','business','network','camera','bell','cloud','mobile','tools','software','emergency','star','users','target','handshake']) icono?:string;
+}
+
+export class CreateCursoDto extends VisualContentDto {
+  @ApiPropertyOptional() @ValidateIf((_,v)=>v!==undefined) @Transform(trim) @IsString() @Length(1,80) area?:string;
+  @ApiPropertyOptional() @ValidateIf((_,v)=>v!==undefined) @Transform(trim) @IsString() @Length(1,150) certificacion?:string;
   @ApiProperty()
   @Transform(trim)
   @IsString() @Length(2, 160)
@@ -49,15 +81,17 @@ export class CreateCursoDto {
   @IsIn(["curso","capacitacion"])
   tipo: string;
 
-  @ApiProperty({ enum: ["presencial","virtual","hibrida"] })
+  @ApiPropertyOptional({ enum: ["presencial","virtual","hibrida"], description: "Obligatoria para cursos; puede quedar pendiente en programas de capacitación." })
+  @ValidateIf((o,v)=>o.tipo!=='capacitacion'||v!==undefined)
   @Transform(trim)
   @IsIn(["presencial","virtual","hibrida"])
-  modalidad: string;
+  modalidad?: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @ValidateIf((o,v)=>o.tipo!=='capacitacion'||v!==undefined)
   @Transform(trim)
   @IsString() @Length(2, 120)
-  duracion: string;
+  duracion?: string;
 
   @ApiPropertyOptional()
   @ValidateIf((_, value) => value !== undefined)
@@ -68,7 +102,7 @@ export class CreateCursoDto {
   @ApiPropertyOptional()
   @ValidateIf((_, value) => value !== undefined)
   @Transform(trim)
-  @IsUrl({ protocols: ['https', 'http'], require_protocol: true }) @Length(1, 2048)
+  @PublicImageUrl() @Length(1, 2048)
   imagen_url?: string;
 
   @ApiPropertyOptional()
@@ -83,9 +117,20 @@ export class CreateCursoDto {
   @IsIn(["borrador","publicado","archivado"])
   estado?: string;
 }
-export class UpdateCursoDto extends PartialType(CreateCursoDto, { skipNullProperties: false }) {}
+export class UpdateCursoDto extends PartialType(CreateCursoDto, { skipNullProperties: false }) {
+  @ApiPropertyOptional({ enum: ['imagen_url', 'fecha_inicio', 'temario', 'area', 'certificacion', 'icono', 'modalidad', 'duracion'], isArray: true })
+  @ValidateIf((_, value) => value !== undefined)
+  @IsArray() @ArrayUnique() @IsIn(['imagen_url', 'fecha_inicio', 'temario', 'area', 'certificacion', 'icono', 'modalidad', 'duracion'], { each: true })
+  limpiar?: string[];
+}
 
-export class CreateServicioDto {
+export class CreateServicioDto extends VisualContentDto {
+  @ApiPropertyOptional() @ValidateIf((_,v)=>v!==undefined) @IsIn(['normal','cableado','camara','alertas','nube','app','mantenimiento','software','redes','emergencia','asesoria','beneficio']) presentacion?:string;
+  @ApiPropertyOptional() @ValidateIf((_,v)=>v!==undefined) @Transform(trim) @IsString() @Length(1,80) nombre_corto?:string;
+  @ApiPropertyOptional() @ValidateIf((_,v)=>v!==undefined) @Transform(trim) @IsString() @Length(1,100) destacado?:string;
+  @ApiPropertyOptional() @ValidateIf((_,v)=>v!==undefined) @Transform(trim) @IsString() @Length(1,40) dato_principal?:string;
+  @ApiPropertyOptional() @ValidateIf((_,v)=>v!==undefined) @Transform(trim) @IsString() @Length(1,100) dato_secundario?:string;
+  @ApiPropertyOptional() @ValidateIf((_,v)=>v!==undefined) @Transform(trim) @IsString() @Length(1,2000) etiquetas?:string;
   @ApiProperty()
   @Transform(trim)
   @IsString() @Length(2, 160)
@@ -115,7 +160,7 @@ export class CreateServicioDto {
   @ApiPropertyOptional()
   @ValidateIf((_, value) => value !== undefined)
   @Transform(trim)
-  @IsUrl({ protocols: ['https', 'http'], require_protocol: true }) @Length(1, 2048)
+  @PublicImageUrl() @Length(1, 2048)
   imagen_url?: string;
 
   @ApiPropertyOptional({ enum: ["borrador","publicado","archivado"] })
@@ -124,7 +169,12 @@ export class CreateServicioDto {
   @IsIn(["borrador","publicado","archivado"])
   estado?: string;
 }
-export class UpdateServicioDto extends PartialType(CreateServicioDto, { skipNullProperties: false }) {}
+export class UpdateServicioDto extends PartialType(CreateServicioDto, { skipNullProperties: false }) {
+  @ApiPropertyOptional({ enum: ['imagen_url', 'alcance', 'nombre_corto', 'destacado', 'dato_principal', 'dato_secundario', 'etiquetas', 'icono'], isArray: true })
+  @ValidateIf((_, value) => value !== undefined)
+  @IsArray() @ArrayUnique() @IsIn(['imagen_url', 'alcance', 'nombre_corto', 'destacado', 'dato_principal', 'dato_secundario', 'etiquetas', 'icono'], { each: true })
+  limpiar?: string[];
+}
 
 export class CreatePreguntaFrecuenteDto {
   @ApiProperty()

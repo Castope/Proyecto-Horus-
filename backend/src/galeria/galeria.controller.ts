@@ -1,5 +1,6 @@
 import { Controller, Get, Param, Query, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { GaleriaQueryDto } from './dto/query-galeria.dto';
 import { GaleriaService } from './galeria.service';
 
 @ApiTags('Galería')
@@ -11,8 +12,8 @@ export class GaleriaController {
   @ApiOperation({ summary: 'Obtener imágenes y proyectos públicos de la galería' })
   @ApiQuery({ name: 'categoria', required: false, description: 'Filtrar por categoría (ej. capacitaciones, servicio-tecnico)' })
   @ApiResponse({ status: 200, description: 'Listado de imágenes obtenido exitosamente' })
-  async findPublic(@Query('categoria') categoria?: string) {
-    return this.galeriaService.findPublic(categoria);
+  async findPublic(@Query() query: GaleriaQueryDto) {
+    return this.galeriaService.findPublic(query.categoria, query.page, query.limit);
   }
 
   @Get(':id')

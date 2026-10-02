@@ -1,7 +1,7 @@
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 const { connect } = require('./database.cjs');
-const versions = ['20260909-create-catalogo', '20260921-create-cotizaciones'];
+const versions = ['20260909-create-catalogo', '20260921-create-cotizaciones', '20261002-complete-institutional', '20261002-original-design', '20261002-create-convenios'];
 async function applySql(db, name) {
   const sql = readFileSync(join(__dirname, '../migrations', name + '.sql'), 'utf8');
   for (const statement of sql.split(';').map(s => s.trim()).filter(Boolean)) await db.query(statement);
@@ -31,4 +31,4 @@ if (require.main === module) migrate().catch(() => {
   console.error('No se pudo aplicar la migración. Revisa conexión, permisos y esquema de MySQL.');
   process.exitCode = 1;
 });
-module.exports = { applySql, migrate };
+module.exports = { applySql, migrate, versions };

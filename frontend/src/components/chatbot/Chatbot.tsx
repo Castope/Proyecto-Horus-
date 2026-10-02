@@ -4,6 +4,8 @@ import { chatRequest, type ChatReply, type ChatTurn } from './chatApi';
 import './chatbot.css';
 import GuidedMenu from './GuidedMenu';
 import ChatIcon from './ChatIcon';
+import RobotMascot from './RobotMascot';
+import { contactSummary, followUpQuestions } from './chatContext';
 
 const greeting: ChatTurn = {
   role: 'assistant',
@@ -63,9 +65,10 @@ export default function Chatbot() {
     try {
       const response = await chatRequest<ChatReply>('message', {
         message: question,
-        history: before.slice(1).slice(-6).map(({ role, content }) => ({ role, content })),
+        history: before.filter(turn => turn !== greeting).slice(-6).map(({ role, content }) => ({ role, content })),
       }, abort.signal);
       setTurns(previous => [...previous, { role: 'assistant' as const, content: response.answer, sources: response.sources }].slice(-30));
+      setSuccess(response.notice || '');
       setMode(response.mode === 'ia' ? 'Respuesta asistida por IA' : 'Información del catálogo');
     } catch (err) {
       setTurns(before); setMessage(question);
@@ -97,9 +100,20 @@ export default function Chatbot() {
     } finally { window.clearTimeout(timeout); locked.current = false; setBusy(false); }
   };
 
+  const summary = contactSummary(turns);
+  const suggestions = followUpQuestions(turns[turns.length - 1]);
+  const includeSummary = () => {
+    const combined = [contact.mensaje.trim(), summary].filter(Boolean).join('\n\n');
+    if (combined.length > 5000) { setError('El resumen supera el límite. Reduce tu consulta antes de añadirlo.'); return; }
+    setContact(previous => ({ ...previous, mensaje: combined })); setError('');
+  };
+
   return <>
-    <button ref={launcher} className="hc-launcher" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open} aria-controls="horus-chat">
-      <span className="hc-launcher-icon"><ChatIcon name="chat" size={23} /></span><span className="hc-launcher-copy"><strong>Pregúntale a Horus</strong><small>Tu próximo paso empieza aquí</small></span>
+    <button ref={launcher} type="button" className="hc-launcher" onClick={() => setOpen(true)} aria-label="Abrir chat con el asistente Horus" aria-haspopup="dialog" aria-expanded={open} aria-controls="horus-chat">
+      <span className="hc-launcher-hint" aria-hidden="true">¿En qué te ayudo?</span>
+      <span className="hc-launcher-orbit" aria-hidden="true" />
+      <RobotMascot />
+      <span className="hc-launcher-badge" aria-hidden="true"><ChatIcon name="chat" size={16} /></span>
     </button>
     <dialog ref={dialog} id="horus-chat" className="hc-dialog" aria-labelledby="hc-title"
       onCancel={event => { event.preventDefault(); close(); }} onClick={event => { if (event.target === dialog.current) {
@@ -108,8 +122,8 @@ export default function Chatbot() {
       } }}>
       <div className="hc-shell">
         <header className="hc-header">
-          <span className="hc-mark"><ChatIcon name="spark" size={25} /></span>
-          <div><h2 id="hc-title">Asistente Horus</h2><p>Tecnología y formación, más cerca</p></div>
+          <span className="hc-mark"><RobotMascot portrait /></span>
+          <div className="hc-header-copy"><span className="hc-header-brand">HORUS GROUP</span><h2 id="hc-title">Asistente Horus</h2><p>Un poco de ayuda. Muchas posibilidades.</p></div>
           <button type="button" className="hc-close" aria-label="Cerrar chat" onClick={close}><ChatIcon name="close" size={18} /></button>
         </header>
         <div className="hc-toolbar"><span><i aria-hidden="true" />{mode}</span><button onClick={reset} disabled={busy}><ChatIcon name="reset" size={12} />Nueva conversación</button></div>
@@ -123,6 +137,7 @@ export default function Chatbot() {
               <label>Teléfono<input required type="tel" minLength={6} maxLength={30} autoComplete="tel" value={contact.telefono} onChange={e => setContact({ ...contact, telefono: e.target.value })} /></label>
               <label>Asunto<input required minLength={3} maxLength={140} value={contact.asunto} onChange={e => setContact({ ...contact, asunto: e.target.value })} /></label>
               <label>Tu consulta<textarea required minLength={3} maxLength={5000} rows={3} value={contact.mensaje} onChange={e => setContact({ ...contact, mensaje: e.target.value })} /></label>
+              {summary && <div className="hc-summary"><button className="hc-back" type="button" disabled={contact.mensaje.includes(summary)} onClick={includeSummary}>{contact.mensaje.includes(summary) ? 'Resumen añadido' : 'Añadir mis últimas consultas'}</button><p>Se añadirán hasta cuatro preguntas al texto de arriba. Puedes revisarlas y editarlas antes de enviar.</p></div>}
               <label className="hc-consent"><input type="checkbox" required checked={contact.consentimiento} onChange={e => setContact({ ...contact, consentimiento: e.target.checked })} /><span>Autorizo a Horus a usar estos datos para atender mi consulta. <Link to="/politicas/privacidad" onClick={close}>Ver privacidad</Link>.</span></label>
               <button className="hc-submit" type="submit">{busy ? 'Registrando…' : 'Enviar solicitud'}</button>
             </fieldset>
@@ -130,12 +145,13 @@ export default function Chatbot() {
         </div> : <>
           <div ref={log} className="hc-log" role="log" aria-label="Conversación con Horus" aria-live="polite" aria-relevant="additions">
             {turns.length === 1 && <div className="hc-welcome">
-              <span className="hc-eyebrow"><ChatIcon name="spark" size={12} />BIENVENIDO A HORUS</span>
-              <h3>Una idea, un proyecto.<br /><span>Empecemos por aquí.</span></h3>
-              <p>Explora nuestros cursos y soluciones, o cuéntanos qué tienes en mente.</p>
+              <div className="hc-welcome-art" aria-hidden="true"><span className="hc-welcome-halo" /><RobotMascot /><span className="hc-welcome-spark hc-welcome-spark-one">✦</span><span className="hc-welcome-spark hc-welcome-spark-two">✦</span><span className="hc-welcome-hello">¡Hola!</span></div>
+              <span className="hc-eyebrow">TU ASISTENTE VIRTUAL</span>
+              <h3>¿Qué hacemos <span>hoy?</span></h3>
+              <p>Encuentra tu próximo curso o la solución que tu proyecto necesita.</p>
             </div>}
             {(turns.length === 1 ? [] : turns).map((turn, index) => <article key={index} className={'hc-message hc-' + turn.role}>
-              <strong>{turn.role === 'assistant' && <ChatIcon name="spark" size={12} />}{turn.role === 'user' ? 'Tú' : 'Horus'}</strong><p>{turn.content}</p>
+              <strong>{turn.role === 'assistant' && <span className="hc-message-avatar"><RobotMascot portrait /></span>}{turn.role === 'user' ? 'Tú' : 'Horus'}</strong><p>{turn.content}</p>
               {!!turn.sources?.length && <details className="hc-sources"><summary>Información consultada ({turn.sources.length})</summary>
                 {turn.sources.map(source => <div key={source.id}><strong>{source.title}</strong><p>{source.text}</p></div>)}
               </details>}
@@ -151,6 +167,7 @@ export default function Chatbot() {
             />}
           </div>
           <div className="hc-compose">
+            {!menuOpen && !busy && !!suggestions.length && <div className="hc-followups" aria-label="Continuar la consulta">{suggestions.map(question => <button key={question} type="button" onClick={() => void send(question)}>{question}</button>)}</div>}
             {!menuOpen && <button type="button" className="hc-menu-return" disabled={busy} onClick={() => setMenuOpen(true)}><ChatIcon name="menu" size={13} />Volver al menú</button>}
             <form onSubmit={event => { event.preventDefault(); void send(); }}>
               <label className="hc-sr" htmlFor="hc-question">Escribe tu consulta</label>

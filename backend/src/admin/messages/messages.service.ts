@@ -1,19 +1,22 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateAdminMessageDto } from './dto/create-message.dto';
 import { UpdateMessageStatusDto } from './dto/update-message-status.dto';
 
+import { ListQueryDto, pageArgs, pageResult } from '../../common/list-query.dto';
 @Injectable()
 export class MessagesService {
   constructor(
     private readonly prisma: PrismaService,
   ) {}
 
-  async findAll() {
-    const messages = await this.prisma.contacto.findMany({
-      orderBy: [{ createdAt: 'desc' }],
-    });
-    return { ok: true, messages };
+  async findAll(q: ListQueryDto = {}) {
+    const where = { ...(q.estado ? {estado:q.estado} : {}), ...(q.search ? {OR:['nombre','email','asunto','mensaje'].map(field=>({[field]:{contains:q.search}}))} : {}), ...(q.channel==='chatbot'?{asunto:{startsWith:'[Chatbot]'}}:q.channel==='other'?{NOT:{asunto:{startsWith:'[Chatbot]'}}}:{}) };
+    const messages = await this.prisma.contacto.findMany({where,...pageArgs(q),orderBy:[{createdAt:'desc'},{id:'desc'}]});
+    if(q.page===undefined)return{ok:true,messages};
+    const [total,nuevo,en_proceso,atendido]=await Promise.all([this.prisma.contacto.count({where}),...['nuevo','en_proceso','atendido'].map(estado=>this.prisma.contacto.count({where:{estado}}))]);
+    return{ok:true,messages,...pageResult(q,total),metrics:{nuevo,en_proceso,atendido}};
   }
 
   async findOne(id: number) {
@@ -38,6 +41,7 @@ export class MessagesService {
     if (!message) {
       throw new NotFoundException({ ok: false, mensaje: 'Mensaje no encontrado.' });
     }
+    if (await this.prisma.attentionRecord.findUnique({where:{recurso_registro_id:{recurso:'messages',registro_id:id}}})) throw new ConflictException('Actualiza este caso desde Seguimiento para conservar su historial.');
     message = await this.prisma.contacto.update({ where: { id }, data: { estado: dto.estado } });
     return { ok: true, mensaje: 'Estado del mensaje actualizado.', message };
   }
@@ -47,7 +51,11 @@ export class MessagesService {
     if (!message) {
       throw new NotFoundException({ ok: false, mensaje: 'Mensaje no encontrado.' });
     }
-    await this.prisma.contacto.delete({ where: { id } });
+    if (await this.prisma.cotizacion.count({ where: { contacto_id: id } }) || await this.prisma.attentionRecord.count({ where: { recurso: 'messages', registro_id: id } })) {
+      throw new ConflictException('El mensaje tiene cotizaciones vinculadas. Conserva su registro.');
+    }
+    try { await this.prisma.contacto.delete({ where: { id } }); }
+    catch (error) { if (error instanceof PrismaClientKnownRequestError && error.code === 'P2003') throw new ConflictException('El mensaje tiene cotizaciones vinculadas. Conserva su registro.'); throw error; }
     return { ok: true, mensaje: 'Mensaje eliminado correctamente.' };
   }
 }

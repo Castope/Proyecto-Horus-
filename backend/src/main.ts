@@ -1,13 +1,17 @@
 import { createValidationPipe } from './common/validation';
 import { corsOrigins } from './deployment.config';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
+import { trustedProxies } from './common/trusted-proxies';
 import { Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.set('trust proxy', trustedProxies(process.env.TRUSTED_PROXY_CIDRS));
+  app.enableShutdownHooks();
 
   // Prefijo global /api para mantener compatibilidad total con el frontend
   app.setGlobalPrefix('api');
@@ -37,7 +41,7 @@ async function bootstrap() {
         description: 'Ingrese su token JWT (sin el prefijo Bearer)',
         in: 'header',
       },
-      'JWT-auth',
+      'bearer',
     )
     .build();
 

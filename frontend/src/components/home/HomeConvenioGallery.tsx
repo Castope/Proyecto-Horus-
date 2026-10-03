@@ -23,6 +23,8 @@ export default function HomeConvenioGallery({ fotos, nombre }: { fotos: Convenio
     return () => window.clearTimeout(timer)
   }, [frame.ready, frame.next, reducedMotion])
   if (!fotos.length) return null
+  const choose = (index: number) => setFrame(value => value.next !== null || index === value.current ? value :
+    { ...value, next: index, ready: false })
   const move = (step: number) => setFrame(value => value.next !== null || fotos.length < 2 ? value :
     { ...value, next: (value.current + step + fotos.length) % fotos.length, ready: false })
   const loaded = (index: number) => {
@@ -49,7 +51,7 @@ export default function HomeConvenioGallery({ fotos, nombre }: { fotos: Convenio
       const dx = t.clientX - start.x, dy = t.clientY - start.y
       if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) move(dx < 0 ? 1 : -1)
     }}>
-    <h4>Fotografías del convenio</h4>
+    <span className="home-conv-gallery-title" aria-hidden="true">Fotografías del convenio</span>
     <figure className="home-conv-photo">
       <div className={'home-conv-photo-stage' + (frame.ready ? ' is-crossfading' : '')} aria-busy={frame.next !== null}>
         {[frame.current, ...(frame.next === null ? [] : [frame.next])].map(index =>
@@ -60,10 +62,15 @@ export default function HomeConvenioGallery({ fotos, nombre }: { fotos: Convenio
       </div>
       <figcaption aria-live="polite">Fotografía {frame.current + 1} de {fotos.length}</figcaption>
     </figure>
+    {fotos.length > 1 && <div className="home-conv-gallery-dots" role="group" aria-label="Elegir fotografía">
+      {fotos.map((foto, index) => <button key={foto.id} type="button"
+        aria-label={'Ver fotografía ' + (index + 1) + ' de ' + fotos.length}
+        aria-pressed={frame.current === index} aria-disabled={frame.next !== null} onClick={() => choose(index)} />)}
+    </div>}
     {fotos.length > 1 && <div className="home-conv-gallery-controls">
-      <button type="button" className="home-button home-button-outline" aria-label="Fotografía anterior" disabled={frame.next !== null} onClick={() => move(-1)}>
+      <button type="button" className="home-button home-button-outline" aria-label="Fotografía anterior" aria-disabled={frame.next !== null} onClick={() => move(-1)}>
         <i className="fas fa-chevron-left" aria-hidden="true" /> Anterior</button>
-      <button type="button" className="home-button home-button-outline" aria-label="Fotografía siguiente" disabled={frame.next !== null} onClick={() => move(1)}>
+      <button type="button" className="home-button home-button-outline" aria-label="Fotografía siguiente" aria-disabled={frame.next !== null} onClick={() => move(1)}>
         Siguiente <i className="fas fa-chevron-right" aria-hidden="true" /></button>
     </div>}
   </section>

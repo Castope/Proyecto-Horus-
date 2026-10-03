@@ -89,7 +89,6 @@ img, video, iframe { max-width: 100%; }
   .ns-left, .ns-right { width: 100% !important; }
   .ns-photo-stack { height: 300px; }
   .ns-founder { flex-direction: column !important; gap: 32px; }
-  .ns-purpose-grid { grid-template-columns: 1fr !important; }
   .ns-closing-inner { flex-direction: column !important; text-align: center; }
   .ns-closing-actions { justify-content: center; }
 }
@@ -253,10 +252,6 @@ img, video, iframe { max-width: 100%; }
   .section-title h2, .ix-section-head h2 { font-size: 1.6rem; }
   .page-hero h1 { font-size: 1.9rem; }
   .page-hero p { font-size: .9rem; }
-}
-
-@media (max-width: 768px) {
-  .ns-intro { padding-top: calc(var(--nav-h, 70px) + 48px) !important; }
 }
 
 @media (max-width: 600px) {

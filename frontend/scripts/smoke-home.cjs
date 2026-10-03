@@ -28,6 +28,7 @@ const convenioFixtures = Array.from({ length: 5 }, (_, i) => ({
   })) : [],
 }))
 let convenioSequence = 100, photoSequence = 1000, uploadCount = 0, convenioSaveFailure = false, convenioSaveCount = 0, conveniosFailure = false, convenioDetailFailure = false
+let convenioDetailDelay = 0
 const convenioRequests = []
 
 const courseRequests = []
@@ -42,6 +43,11 @@ const server = http.createServer(async (req, res) => {
 
     if (route === '/fixture-photo.png' || route.startsWith('/api/uploads/')) {
       res.writeHead(200, { 'Content-Type': 'image/png' }); return res.end(fixturePng)
+    }
+    if (route === '/fixture-portrait.svg' || route === '/fixture-landscape.svg') {
+      const portrait = route.includes('portrait')
+      res.writeHead(200, { 'Content-Type': 'image/svg+xml' })
+      return res.end('<svg xmlns="http://www.w3.org/2000/svg" width="' + (portrait ? 240 : 640) + '" height="' + (portrait ? 480 : 360) + '"><rect width="100%" height="100%" fill="#1e4976"/><circle cx="120" cy="160" r="80" fill="#c9a961"/></svg>')
     }
     if (route === '/fixture-broken.png') { res.writeHead(404); return res.end() }
     if (route === '/api/admin/uploads') {
@@ -61,6 +67,7 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'GET') {
         convenioRequests.push(route + url.search)
         if (!adminRoute && ((id === null && conveniosFailure) || (id !== null && convenioDetailFailure))) return json({ message: 'Fallo aislado de convenios' }, 503)
+        if (id !== null && !adminRoute && convenioDetailDelay) await new Promise(resolve => setTimeout(resolve, convenioDetailDelay))
         if (id !== null) return item ? json({ ok: true, item: { ...item, fotos: [...item.fotos].sort((a, b) => a.orden - b.orden || a.id - b.id) } }) : json({ message: 'Convenio no encontrado.' }, 404)
         const search = (url.searchParams.get('search') || '').toLowerCase(), estado = url.searchParams.get('estado')
         const all = convenioFixtures.filter(row => (adminRoute || row.visible) && (!adminRoute || !estado || row.visible === (estado === 'visible')) && row.nombre.toLowerCase().includes(search))
@@ -198,6 +205,12 @@ async function main() {
     }
     const viewport = (width, height = 1000) => send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 768 })
     const key = key => send('Input.dispatchKeyEvent', { type: 'keyDown', key, code: key, windowsVirtualKeyCode: key === 'Escape' ? 27 : 9, nativeVirtualKeyCode: key === 'Escape' ? 27 : 9 })
+    const press = async (value, shift = false) => {
+      const codes = { Enter: 13, Space: 32, Tab: 9, ArrowLeft: 37, ArrowRight: 39 }
+      const params = { key: value === 'Space' ? ' ' : value, code: value, windowsVirtualKeyCode: codes[value], nativeVirtualKeyCode: codes[value], modifiers: shift ? 8 : 0 }
+      await send('Input.dispatchKeyEvent', { type: 'keyDown', ...params, ...(value === 'Enter' ? { text: '\r', unmodifiedText: '\r' } : value === 'Space' ? { text: ' ', unmodifiedText: ' ' } : {}) })
+      await send('Input.dispatchKeyEvent', { type: 'keyUp', ...params })
+    }
     const capture = async (name, selector) => {
       if (!screenshots) return
       await evaluate('document.querySelector(' + JSON.stringify(selector) + ').scrollIntoView({block:"start",behavior:"instant"})')
@@ -282,11 +295,13 @@ async function main() {
     await wait('!!document.querySelector("#home-conv-center #convDesc")')
     assert.equal(await evaluate('!!document.querySelector("#convModal")'), false, 'Escritorio utiliza el centro, no un modal.')
     await capture('home-desktop-detalle-central', '#home-conv-center')
-    await evaluate('document.querySelectorAll(".home-conv-card")[1].click()')
-    assert.equal(await evaluate('document.querySelectorAll(".home-conv-card")[1].getAttribute("aria-expanded")'), 'true')
-    assert.equal(await evaluate('document.querySelector(".home-conv-content").classList.contains("is-leaving")'), true)
-    assert.equal(await evaluate('document.querySelector("#convNombre").textContent'), 'Entidad de prueba 1', 'El detalle anterior sale antes de reemplazarse.')
+    // Sample right after the click, inside the 350ms leaving window, so a slow browser cannot outlast it between round trips.
+    const leaving = await evaluate('(async()=>{document.querySelectorAll(".home-conv-card")[1].click();await new Promise(r=>setTimeout(r,0));return {expanded:document.querySelectorAll(".home-conv-card")[1].getAttribute("aria-expanded"),leaving:document.querySelector(".home-conv-content").classList.contains("is-leaving"),name:document.querySelector("#convNombre").textContent}})()')
+    assert.equal(leaving.expanded, 'true')
+    assert.equal(leaving.leaving, true)
+    assert.equal(leaving.name, 'Entidad de prueba 1', 'El detalle anterior sale antes de reemplazarse.')
     await wait('document.querySelector("#convNombre")?.textContent === "Entidad de prueba 2" && !!document.querySelector("#convDesc")')
+    await sleep(650) // Measure the final layout after the existing staggered entrance.
     assert.equal(await evaluate('(()=>{const c=document.querySelector("#home-conv-center");return c.scrollWidth<=c.clientWidth&&c.scrollHeight<=c.clientHeight+1})()'), true, 'Texto largo en el flujo natural, sin scroll adicional.')
     await capture('home-desktop-texto-largo', '#home-conv-center')
     await evaluate('document.querySelectorAll(".home-conv-card")[2].click();document.querySelectorAll(".home-conv-card")[0].click()')
@@ -320,7 +335,8 @@ async function main() {
     assert.equal(await evaluate('Array.from(document.querySelectorAll(".home-highlight")).every(e=>e.classList.contains("visible")&&getComputedStyle(e).opacity==="1")'), true, 'Reveal una sola vez.')
     await evaluate('document.querySelector(".home-services").scrollIntoView({block:"center",behavior:"instant"})')
     await wait('document.querySelector(".nav").classList.contains("scrolled")')
-    await sleep(300)
+    // Wait for the 250ms transition to finish instead of a fixed delay, which raced under CPU load.
+    await wait('getComputedStyle(document.querySelector(".nav")).transform === "matrix(1, 0, 0, 1, 0, -6)"')
     assert.equal(await evaluate('getComputedStyle(document.querySelector(".nav")).transform'), 'matrix(1, 0, 0, 1, 0, -6)')
     await evaluate('document.querySelector(".home-location").scrollIntoView({block:"center",behavior:"instant"})')
     await wait('Array.from(document.querySelectorAll(".home-loc-item")).every(e=>e.classList.contains("visible"))')
@@ -341,6 +357,8 @@ async function main() {
     assert.equal(await evaluate('getComputedStyle(document.querySelector(".home-highlights .fade-up")).opacity'), '0')
     await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] })
     await wait('getComputedStyle(document.querySelector(".home-highlights .fade-up")).opacity === "1"')
+    // The media query applies immediately, but React removes the pause button and finalizes counters/animations on its own render.
+    await wait('!document.querySelector(".home-carousel-pause") && Array.from(document.querySelectorAll(".home-metric strong"),e=>e.textContent).join()==="5+,400+,5,98%" && document.querySelector(".home-slide.is-active img").getAnimations().length===0')
     const reduced = await evaluate('({animations:[".home-slide img","#home-title",".home-slides",".hc-launcher",".hc-launcher-orbit"].map(s=>getComputedStyle(document.querySelector(s)).animationName),transforms:[".home-slide.is-active img",".home-highlight",".home-location-map"].map(s=>getComputedStyle(document.querySelector(s)).transform),counts:Array.from(document.querySelectorAll(".home-metric strong"),e=>e.textContent),pause:!!document.querySelector(".home-carousel-pause")})')
     assert.ok(reduced.animations.every(name=>name==="none"))
     assert.ok(reduced.transforms.every(transform=>transform==="none"))
@@ -354,9 +372,11 @@ async function main() {
     await wait('!!document.querySelector("#horus-chat[open]")')
     assert.equal(await evaluate('getComputedStyle(document.querySelector("#horus-chat")).animationName'),'none')
     await key('Escape'); await wait('!document.querySelector("#horus-chat[open]")')
+    await wait('document.activeElement===document.querySelector(".hc-launcher")') // let the chatbot finish returning focus before the next interaction
     await evaluate('document.querySelector(".home-conv-card").focus();document.querySelector(".home-conv-card").click()')
     await wait('!!document.querySelector("#convDesc")')
     assert.equal(await evaluate('getComputedStyle(document.querySelector("#home-conv-center")).animationName'),'none')
+    await wait('document.activeElement===document.querySelector("#convClose")')
     await key('Escape'); await wait('!document.querySelector("#convDesc")')
     await send('Emulation.setEmulatedMedia', { features: [] })
     await navigate('/')
@@ -403,9 +423,46 @@ async function main() {
 
 
     // Convenios: información completa, fotos, teclado y estados de API.
+
+    const ax = await send('Accessibility.getFullAXTree')
+    const cardNames = ax.nodes.filter(node => node.role?.value === 'button' && node.name?.value.includes('Entidad de prueba')).map(node => node.name.value)
+    assert.equal(cardNames.length, 5)
+    assert.ok(cardNames.every(name => !name.includes('Logo de') && !name.includes('Sin imagen disponible')), 'Logos y fallback no contaminan el nombre accesible de las tarjetas.')
+    assert.equal(await evaluate('Array.from(document.querySelectorAll(".home-conv-logo img")).every(img=>img.getAttribute("alt")==="")'), true)
+    assert.equal(await evaluate('document.querySelector(".home-conv-card .home-conv-logo").textContent.includes("Sin imagen disponible")'), true, 'Fallback visual conservado.')
+    convenioDetailDelay = 1800
+    await evaluate('document.querySelectorAll(".home-conv-card")[2].focus();document.querySelectorAll(".home-conv-card")[2].click()')
+    await wait('!!document.querySelector(".home-conv-loading-media")')
+    const loadingHeight = await evaluate('document.querySelector("#home-conv-center").getBoundingClientRect().height')
+    assert.ok(loadingHeight >= 350, 'La carga reserva espacio de medios y texto.')
+    assert.equal(await evaluate('document.querySelector("#home-conv-center [role=status]").textContent.includes("Cargando")'), true)
+    await capture('convenios-carga-reservada', '#home-conv-center')
+    await wait('!!document.querySelector("#convDesc")')
+    convenioDetailDelay = 0
+    await sleep(650)
+    const detailHeight = await evaluate('document.querySelector("#home-conv-center").getBoundingClientRect().height')
+    assert.ok(Math.abs(detailHeight-loadingHeight)<130, 'Carga y detalle de una foto mantienen tamaños próximos.')
+    assert.equal(await evaluate('!!document.querySelector(".home-conv-loading-media,.home-conv-loading-lines")'), false)
+    await evaluate('document.querySelector(".home-conv-card.is-selected").scrollIntoView({block:"center",behavior:"instant"})')
+    await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 0, y: 0 })
+    await sleep(650)
+    const rest = await evaluate('new DOMMatrix(getComputedStyle(document.querySelector(".home-conv-card.is-selected")).transform).m42')
+    const selectedRect = await evaluate('(()=>{const r=document.querySelector(".home-conv-card.is-selected").getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()')
+    await send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...selectedRect })
+    await sleep(300)
+    const hovered = await evaluate('new DOMMatrix(getComputedStyle(document.querySelector(".home-conv-card.is-selected")).transform).m42')
+    const hoverState = await evaluate('(()=>{const b=document.querySelector(".home-conv-card.is-selected");return {className:b.className,hover:b.matches(":hover"),fine:matchMedia("(hover: hover) and (pointer: fine)").matches,reduced:matchMedia("(prefers-reduced-motion: reduce)").matches,hit:document.elementFromPoint('+selectedRect.x+','+selectedRect.y+')?.outerHTML.slice(0,250)}})()')
+    assert.ok(hovered < rest, 'La tarjeta seleccionada se eleva al entrar en hover: '+JSON.stringify({rest,hovered,rect:selectedRect,state:hoverState}))
+    assert.equal(await evaluate('getComputedStyle(document.querySelector(".home-conv-card.is-selected")).borderTopColor'), 'rgb(201, 169, 97)')
+    await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 0, y: 0 })
+    await key('Escape'); await wait('!!document.querySelector(".home-conv-identity")')
+
     const openConvenio = async index => {
       await evaluate('(()=>{const b=document.querySelectorAll(".home-conv-card")[' + index + '];b.focus();b.click()})()')
       await wait('!!document.querySelector("#convDesc")')
+      assert.equal(await evaluate('Array.from((document.querySelector("#convModal")||document.querySelector("#home-conv-center")).querySelectorAll("h1,h2,h3,h4,h5,h6"))[0].id'), 'convNombre', 'El nombre precede a todo encabezado secundario.')
+      const contrast = await evaluate('(()=>{const p=document.querySelector("#convDesc"),bg=document.querySelector("#convModal")||document.querySelector(".home-convenios");const luminance=color=>{const values=color.match(/\\d+/g).slice(0,3).map(Number).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4});return values[0]*.2126+values[1]*.7152+values[2]*.0722};const a=luminance(getComputedStyle(p).color),b=luminance(getComputedStyle(bg).backgroundColor);return (Math.max(a,b)+.05)/(Math.min(a,b)+.05)})()')
+      assert.ok(contrast >= 4.5, 'Descripción legible sobre el fondo del detalle, también en móvil.')
     }
     await openConvenio(0)
     assert.equal(await evaluate('document.querySelector("#convDesc").textContent.includes("Descripción corta")'), true)
@@ -414,18 +471,23 @@ async function main() {
     await key('Escape'); await wait('!document.querySelector("#convDesc")')
     await openConvenio(1)
     assert.equal(await evaluate('document.querySelector("#convDesc").textContent.includes("Descripción completa")'), true)
+    assert.equal(await evaluate('document.querySelector("#home-conv-center").textContent.includes("Descripción corta")'), false, 'El resumen no se repite al mostrar el texto completo.')
+    assert.equal(await evaluate('document.querySelector("#convDesc").textContent'), convenioFixtures[1].descripcion_completa.trim(), 'Descripción completa sin truncar.')
     assert.equal(await evaluate('document.querySelector(".home-conv-additional").textContent.includes("Información adicional de prueba")'), true)
     await wait('document.querySelector("#home-conv-center .home-conv-feature").textContent.includes("Sin imagen")')
     await evaluate('document.querySelector("#convClose").click()'); await wait('!document.querySelector("#convDesc")')
     await openConvenio(2)
-    assert.equal(await evaluate('document.querySelector(".home-conv-photo figcaption").textContent'), 'Fotografía 1 de 1')
-    assert.equal(await evaluate('!!document.querySelector(".home-conv-gallery-controls")'), false)
+    assert.equal(await evaluate('!!document.querySelector(".home-conv-gallery")'), false, 'Una sola foto no muestra galería ni título de fotografías.')
+    assert.equal(await evaluate('document.querySelectorAll("#home-conv-center .home-conv-feature img").length'), 1, 'Una única fotografía protagonista.')
     await key('Escape'); await wait('!document.querySelector("#convDesc")')
     await openConvenio(3)
     await evaluate('document.querySelector(".home-conv-gallery").scrollIntoView({block:"center"});document.querySelector(".home-conv-gallery").focus()')
     await wait('document.querySelector(".home-conv-photo img")?.naturalWidth > 0')
     assert.equal(await evaluate('getComputedStyle(document.querySelector(".home-conv-photo img")).objectFit'), 'contain')
 
+    assert.equal(await evaluate('!!document.querySelector("#home-conv-center .home-conv-feature")'), false, 'El visor sustituye la protagonista, sin repetir la primera fotografía.')
+    assert.equal(await evaluate('document.querySelectorAll(".home-conv-gallery-dots button").length'), 2)
+    assert.equal(await evaluate('getComputedStyle(document.querySelector(".home-conv-photo")).backgroundColor'), 'rgb(7, 27, 46)', 'Visor integrado al fondo oscuro.')
     await sleep(750) // Finish the panel entrance before measuring the photo crossfade.
     const stageHeight = await evaluate('document.querySelector(".home-conv-photo-stage").getBoundingClientRect().height')
     await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowRight', code: 'ArrowRight', windowsVirtualKeyCode: 39 })
@@ -441,6 +503,44 @@ async function main() {
     await evaluate('Array.from(document.querySelectorAll("button")).find(b=>b.getAttribute("aria-label")==="Fotografía anterior").click()')
     await wait('document.querySelector(".home-conv-photo figcaption").textContent === "Fotografía 1 de 2"')
     assert.equal(await evaluate('document.querySelector(".home-conv-photo figcaption").textContent'), 'Fotografía 1 de 2')
+    await evaluate('document.querySelectorAll(".home-conv-gallery-dots button")[1].click()')
+    await wait('document.querySelector(".home-conv-photo figcaption").textContent === "Fotografía 2 de 2"')
+    assert.equal(await evaluate('document.querySelectorAll(".home-conv-gallery-dots button")[1].getAttribute("aria-pressed")'), 'true')
+
+    // Native keyboard activation must preserve focused controls throughout blending.
+    const caption = index => wait('document.querySelector(".home-conv-photo figcaption").textContent === "Fotografía ' + index + ' de 2"')
+    const focusControl = selector => evaluate('window.__focusedConvenioControl=document.querySelector(' + JSON.stringify(selector) + ');window.__focusedConvenioControl.focus()')
+    const assertFocusWhileBusy = async () => {
+      await wait('document.querySelector(".home-conv-photo-stage").getAttribute("aria-busy")==="true"')
+      assert.equal(await evaluate('document.activeElement===window.__focusedConvenioControl && !document.activeElement.disabled && document.activeElement.getAttribute("aria-disabled")==="true"'), true, 'Foco conservado durante el crossfade.')
+    }
+    await evaluate('document.querySelector(".home-conv-gallery").focus()')
+    await press('Tab')
+    assert.equal(await evaluate('document.activeElement===document.querySelector(".home-conv-gallery-dots button")'), true)
+    await focusControl('.home-conv-gallery-dots button')
+    await press('Enter'); await assertFocusWhileBusy()
+    await press('Space')
+    await evaluate('document.querySelectorAll(".home-conv-gallery-dots button")[1].click()')
+    await press('Tab')
+    assert.equal(await evaluate('document.activeElement===document.querySelectorAll(".home-conv-gallery-dots button")[1]'), true, 'Tab funciona incluso mientras los indicadores están ocupados.')
+    await press('Tab', true)
+    assert.equal(await evaluate('document.activeElement===window.__focusedConvenioControl'), true, 'Shift+Tab vuelve al indicador.')
+    await caption(1)
+    await focusControl('[aria-label="Fotografía siguiente"]')
+    await press('Space'); await assertFocusWhileBusy()
+    await press('ArrowLeft') // Ignored while blending; the pending next photo must win.
+    await caption(2)
+    assert.equal(await evaluate('document.activeElement===window.__focusedConvenioControl'), true)
+    await press('ArrowLeft'); await caption(1)
+    await press('ArrowRight'); await caption(2)
+    await focusControl('[aria-label="Fotografía anterior"]')
+    await press('Enter'); await assertFocusWhileBusy()
+    await press('Tab')
+    assert.equal(await evaluate('document.activeElement.getAttribute("aria-label")'), 'Fotografía siguiente')
+    await press('Tab', true)
+    assert.equal(await evaluate('document.activeElement===window.__focusedConvenioControl'), true)
+    await caption(1)
+
     await key('Tab')
     assert.equal(await evaluate('document.querySelector("#home-conv-center").contains(document.activeElement)'), true)
     await key('Escape'); await wait('!document.querySelector("#convDesc")')
@@ -470,6 +570,96 @@ async function main() {
     assert.equal(await evaluate('Array.from(document.querySelectorAll(".home-metric")).find(e=>e.textContent.includes("Convenios activos")).querySelector("strong").textContent'), '5')
     assert.equal(convenioRequests.some(route => /convenios\/\d+\/fotos/.test(route)), false, 'Detalle y fotos en una petición')
     console.log('Convenios: descripción corta/completa, información adicional, 0/1/varias fotos, imagen fallida, teclado, error/reintento, vacío y contador: OK.')
+
+    // Public layout with six institutions and additional pages, never real data.
+    const longName = 'Colegio Regional de Licenciados en Administración y Desarrollo Institucional de Cajamarca'
+    const extra = { ...structuredClone(convenioFixtures[0]), id: 90, orden: 90,
+      nombre: longName, sigla: 'TEST LARGO', descripcion_corta: longName.toLowerCase() + '.', logo_url: '/fixture-photo.png' }
+    convenioFixtures.push(extra)
+    const refreshConvenios = () => evaluate('window.dispatchEvent(new CustomEvent("horus:content-updated",{detail:"convenios"}))')
+    await refreshConvenios()
+    await wait('document.querySelectorAll(".home-conv-card").length === 6')
+    assert.deepEqual(await evaluate('Array.from(document.querySelectorAll(".home-conv-side"),e=>e.children.length)'), [3,3], 'Seis convenios: tres por cada lado.')
+    assert.equal(await evaluate('Array.from(document.querySelectorAll(".home-conv-side")).every(side=>Array.from(side.children).every((card,i,cards)=>{const r=card.getBoundingClientRect(),s=side.getBoundingClientRect();return Math.abs(r.left-s.left)<1&&Math.abs(r.width-s.width)<1&&(!i||r.top>=cards[i-1].getBoundingClientRect().bottom)}))'), true, 'Tres tarjetas verticales dentro de cada columna lateral.')
+    assert.equal(await evaluate('!!document.querySelector(".home-conv-description")'), false, 'Las tarjetas no presentan descripciones.')
+    assert.equal(await evaluate('document.querySelectorAll(".home-conv-card")[5].querySelector(".home-conv-name").textContent'), longName)
+    assert.equal(await evaluate('!!document.querySelector("#home-conv-center .home-conv-identity")'), true)
+    assert.equal(await evaluate('getComputedStyle(document.querySelector(".home-conv-identity img")).opacity'), '0.08')
+    await evaluate('document.querySelector(".home-convenios").scrollIntoView({block:"start"})')
+    await sleep(700)
+    const layout = await evaluate('(()=>{const sides=Array.from(document.querySelectorAll(".home-conv-side"),e=>e.getBoundingClientRect().width),c=document.querySelector("#home-conv-center").getBoundingClientRect();return {ratio:c.width/(c.width+sides[0]+sides[1]),heights:Array.from(document.querySelectorAll(".home-conv-side"),side=>Array.from(side.children,e=>e.getBoundingClientRect().height))}})()')
+    assert.ok(layout.ratio > .50 && layout.ratio < .54, 'Centro con 50–54% del ancho útil.')
+    assert.ok(layout.heights.every(side=>Math.max(...side)-Math.min(...side)<2), 'Altura equilibrada en ambas columnas.')
+    await capture('convenios-seis-inicial', '.home-convenios')
+    await evaluate('document.querySelectorAll(".home-conv-card")[5].focus();document.querySelectorAll(".home-conv-card")[5].click()')
+    await wait('document.querySelector("#convNombre")?.textContent.includes("Desarrollo Institucional")')
+    assert.equal(await evaluate('!!document.querySelector("#convDesc,.home-conv-additional,.home-conv-gallery")'), false, 'Resumen que repite nombre oculto, sin contenido inventado.')
+    await key('Escape')
+    await wait('!!document.querySelector(".home-conv-identity")')
+    convenioFixtures.push({ ...structuredClone(extra), id: 91, orden: 91, nombre: 'Séptima institución dinámica', sigla: 'TEST 7', descripcion_corta: 'Resumen del convenio de la segunda página.' })
+    await refreshConvenios()
+    await wait('document.querySelector(".home-conv-pagination")?.textContent.includes("Página 1 de 2")')
+    await evaluate('Array.from(document.querySelectorAll(".home-conv-pagination button")).find(b=>b.textContent==="Siguiente").click()')
+    await wait('document.querySelector(".home-conv-card")?.textContent.includes("Séptima institución dinámica")')
+    assert.equal(await evaluate('document.querySelectorAll(".home-conv-card").length'), 1)
+    await evaluate('Array.from(document.querySelectorAll(".home-conv-pagination button")).find(b=>b.textContent==="Anterior").click()')
+    await wait('document.querySelectorAll(".home-conv-card").length === 6')
+    await viewport(1366)
+    await openConvenio(3)
+    await capture('convenios-dos-fotos-desktop', '.home-convenios')
+    await key('Escape'); await wait('!!document.querySelector(".home-conv-identity")')
+    await viewport(1920)
+    await capture('convenios-seis-1920', '.home-convenios')
+    // Validate photo proportions with isolated tall and wide image fixtures.
+    const originalFotos = structuredClone(convenioFixtures[3].fotos)
+    convenioFixtures[3].fotos[0].imagen_url = '/fixture-portrait.svg'
+    convenioFixtures[3].fotos[1].imagen_url = '/fixture-landscape.svg'
+    convenioFixtures[3].fotos.push({ ...originalFotos[0], id: 999, orden: 2 })
+    await openConvenio(3)
+    await wait('document.querySelector(".home-conv-photo img")?.naturalHeight === 480')
+    assert.equal(await evaluate('getComputedStyle(document.querySelector(".home-conv-photo img")).objectFit'), 'contain')
+    await evaluate('document.querySelectorAll(".home-conv-gallery-dots button")[1].click()')
+    await wait('document.querySelector(".home-conv-photo figcaption").textContent === "Fotografía 2 de 3"')
+    await wait('document.querySelector(".home-conv-photo img")?.naturalWidth === 640')
+    assert.equal(await evaluate('getComputedStyle(document.querySelector(".home-conv-photo img")).objectFit'), 'contain')
+    assert.equal(await evaluate('document.querySelectorAll(".home-conv-gallery-dots button").length'), 3)
+    await evaluate('document.querySelectorAll(".home-conv-gallery-dots button")[2].click()')
+    await wait('document.querySelector(".home-conv-photo figcaption").textContent === "Fotografía 3 de 3"')
+    await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] })
+    await evaluate('document.querySelectorAll(".home-conv-gallery-dots button")[0].click()')
+    await wait('document.querySelector(".home-conv-photo figcaption").textContent === "Fotografía 1 de 3"')
+    assert.equal(await evaluate('getComputedStyle(document.querySelector(".home-conv-photo-layer")).transitionDuration'), '0s')
+    await focusControl('.home-conv-gallery-dots button:nth-child(2)')
+    await press('Space')
+    await wait('document.querySelector(".home-conv-photo figcaption").textContent === "Fotografía 2 de 3"')
+    assert.equal(await evaluate('document.activeElement===window.__focusedConvenioControl'), true, 'Indicador con foco conservado también con movimiento reducido.')
+    await key('Escape'); await wait('!!document.querySelector(".home-conv-identity")')
+    await send('Emulation.setEmulatedMedia', { features: [] })
+    convenioFixtures[3].fotos = originalFotos
+    for (const width of [320,375,768,1024,1366,1920]) {
+      await viewport(width, width < 768 ? 844 : 1000)
+      if (width <= 540) assert.equal(await evaluate('(()=>{const grid=document.querySelector(".home-conv-grid"),card=document.querySelector(".home-conv-card");return Math.abs(grid.getBoundingClientRect().width-card.getBoundingClientRect().width)<2})()'), true, 'Tarjetas móviles legibles a una columna: '+width)
+      assert.equal(await evaluate('Array.from(document.querySelectorAll(".home-conv-more")).every(hint=>{hint.scrollIntoView({block:"center",behavior:"instant"});let r=hint.getBoundingClientRect();window.scrollBy({top:r.top+r.height/2-(innerHeight-90),behavior:"instant"});r=hint.getBoundingClientRect();return [r.left+2,r.left+r.width/2,r.right-2].every(x=>hint.closest("button").contains(document.elementFromPoint(x,r.top+r.height/2)))} )'), true, 'El chatbot no tapa texto ni flecha de Convenios: '+width)
+      await evaluate('document.querySelectorAll(".home-conv-card")[5].scrollIntoView({block:"center",behavior:"instant"});document.querySelectorAll(".home-conv-card")[5].focus();document.querySelectorAll(".home-conv-card")[5].click()')
+      await wait('document.querySelector("#convNombre")?.textContent.includes("Desarrollo Institucional")')
+      await sleep(650)
+      assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth + 1'), true, 'Convenios sin overflow a '+width)
+      const bounds = await evaluate('(()=>{const e=document.querySelector("#convModal")||document.querySelector("#home-conv-center"),r=e.getBoundingClientRect();return {left:r.left,right:r.right,height:r.height,client:e.clientWidth,scroll:e.scrollWidth}})()')
+      assert.ok(bounds.left >= 0 && bounds.right <= width && bounds.scroll <= bounds.client, 'Nombre largo dentro del detalle: '+width)
+      assert.equal(await evaluate('!!document.querySelector("#convModal[open]")'), width <= 1024, 'Diálogo únicamente en tablet/móvil: '+width)
+      await evaluate('document.querySelector("#convClose").scrollIntoView({block:"center",behavior:"instant"})')
+      await sleep(50)
+      assert.equal(await evaluate('(()=>{const b=document.querySelector("#convClose"),r=b.getBoundingClientRect();return b.contains(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2))})()'), true, 'El chatbot no tapa el control de cierre: '+width)
+      await capture('convenios-detalle-'+width, width <= 1024 ? '#convModal' : '#home-conv-center')
+      await key('Escape')
+      await wait('!document.querySelector("#convModal") && !!document.querySelector(".home-conv-identity")')
+      assert.equal(await evaluate('document.body.style.overflow'), '', 'Cierre restaura scroll: '+width)
+    }
+    convenioFixtures.splice(-2)
+    await refreshConvenios()
+    await wait('document.querySelectorAll(".home-conv-card").length === 5')
+    await viewport(1440)
+    console.log('Convenios: tarjetas simples, marca de agua, nombres largos, 3+centro+3, paginación, visor único, indicadores y movimiento reducido: OK.')
 
     // CRUD mediante el panel real; los endpoints usan únicamente fixtures en memoria.
     const convenioAdminTarget = await fetch('http://127.0.0.1:' + port + '/json/new?' + encodeURIComponent(origin + '/admin/dashboard?section=convenios'), { method: 'PUT' }).then(response => response.json())
@@ -702,6 +892,14 @@ async function main() {
     await evaluate('(()=>{const target=document.querySelector(".home-conv-gallery");target.scrollIntoView({block:"center"});const a=new Touch({identifier:1,target,clientX:240,clientY:200}),b=new Touch({identifier:1,target,clientX:100,clientY:205});target.dispatchEvent(new TouchEvent("touchstart",{touches:[a],changedTouches:[a],bubbles:true}));target.dispatchEvent(new TouchEvent("touchend",{touches:[],changedTouches:[b],bubbles:true}));})()')
     await wait('document.querySelector(".home-conv-photo figcaption").textContent === "Fotografía 2 de 2"')
     assert.equal(await evaluate('document.querySelector(".home-conv-photo figcaption").textContent'), 'Fotografía 2 de 2', 'Swipe móvil')
+    await focusControl('[aria-label="Fotografía anterior"]')
+    await press('Enter'); await assertFocusWhileBusy(); await caption(1)
+    await press('Tab')
+    assert.equal(await evaluate('document.activeElement.getAttribute("aria-label")'), 'Fotografía siguiente')
+    await evaluate('(()=>{window.__focusedConvenioControl=document.activeElement})()')
+    await press('Space'); await assertFocusWhileBusy(); await caption(2)
+    await press('Tab', true)
+    assert.equal(await evaluate('document.activeElement.getAttribute("aria-label")'), 'Fotografía anterior', 'Navegación entre flechas dentro del diálogo móvil.')
     await capture('home-mobile-galeria', '#convModal')
     await key('Escape'); await wait('!document.querySelector("#convModal")')
     await evaluate('document.querySelector(".home-conv-card").focus()')
@@ -732,10 +930,10 @@ async function main() {
     await evaluate('document.querySelector(".nav-logo").click()')
     await wait('location.pathname === "/"')
     await evaluate('document.querySelector(".nav-links a[href=\\"/quienes-somos\\"]").click()')
-    await wait('location.pathname === "/quienes-somos" && !document.querySelector(".home-layout")')
-    assert.equal(await evaluate('getComputedStyle(document.querySelector(".nav")).height'), '68px')
-    await wait('getComputedStyle(document.querySelector(".nav")).backgroundColor === "rgb(13, 20, 40)"')
-    assert.equal(await evaluate('getComputedStyle(document.querySelector(".nav")).backgroundColor'), 'rgb(13, 20, 40)')
+    await wait('location.pathname === "/quienes-somos" && !document.querySelector(".home-layout") && !!document.querySelector(".site-layout")')
+    assert.equal(await evaluate('getComputedStyle(document.querySelector(".nav")).height'), '78px', 'La navbar interior comparte la altura de Home.')
+    await wait('getComputedStyle(document.querySelector(".nav")).backgroundColor === "rgb(10, 37, 64)"')
+    assert.equal(await evaluate('getComputedStyle(document.querySelector(".nav")).backgroundColor'), 'rgb(10, 37, 64)')
     await evaluate('document.querySelector(".nav-logo").click()')
     await wait('!!document.querySelector(".home-layout")')
     assert.equal(await evaluate('getComputedStyle(document.querySelector(".nav")).height'), '78px')

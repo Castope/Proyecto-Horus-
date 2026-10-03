@@ -3,6 +3,7 @@ const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),
 const root=path.resolve(__dirname,'../dist'),browser=process.env.SMOKE_BROWSER||'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const fixtureCourse={id:1,titulo:'Curso de prueba',tipo:'curso',modalidad:'virtual',duracion:'20 horas',descripcion:'Descripción de prueba',temario:'Temario de prueba',fecha_inicio:'2099-01-01',estado:'publicado'};
 const fixtureCap={...fixtureCourse,id:2,titulo:'Capacitación de prueba',tipo:'capacitacion'};
+const fixtureConvenio={id:1,nombre:'Convenio de prueba',sigla:'CDP',logo_url:null,descripcion_corta:'Resumen del convenio de prueba',descripcion_completa:'Descripción completa del convenio de prueba',informacion_adicional:null,orden:1,visible:true,fotos:[]};
 const {originalServices,originalCourses,originalGallery}=require('../../backend/dist/content-original/data');
 const serviceEntries=originalServices.map((x,i)=>({...x,id:i+1}));
 const programEntries=originalCourses.map((x,i)=>({...x,id:i+10}));
@@ -28,6 +29,8 @@ const server=http.createServer(async(req,res)=>{
  if(p==='/api/admin/servicios/1'){if(req.method==='PUT'){let body='';for await(const chunk of req)body+=chunk;Object.assign(serviceEntries[0],JSON.parse(body));}return json({ok:true,item:serviceEntries[0]})}
  if(p==='/api/cursos/1')return json({ok:true,item:fixtureCourse});
  if(p==='/api/servicios/1')return json({ok:true,item:service});
+ if(p==='/api/convenios/1')return json({ok:true,item:fixtureConvenio});
+ if(p==='/api/convenios')return json({ok:true,items:[fixtureConvenio],pagination:{page:1,limit:6,total:1,pages:1}});
  if(p==='/api/preguntas-frecuentes'&&faqError)return json({message:'Fallo de prueba'},503);
  let items=p==='/api/cursos'?[fixtureCourse,fixtureCap,...programEntries].filter(x=>(!u.searchParams.get('tipo')||x.tipo===u.searchParams.get('tipo'))&&(!u.searchParams.get('modalidad')||x.modalidad===u.searchParams.get('modalidad'))):['/api/servicios','/api/admin/servicios'].includes(p)?serviceEntries.filter(x=>!u.searchParams.get('categoria')||x.categoria===u.searchParams.get('categoria')):p==='/api/preguntas-frecuentes'?[{id:1,pregunta:'Pregunta de prueba',respuesta:'Respuesta de prueba',categoria:'General'}]:p==='/api/galeria'?galleryEntries.filter(x=>!u.searchParams.get('categoria')||x.categoria===u.searchParams.get('categoria')):[];
  const total=items.length,page=Number(u.searchParams.get('page')||1),limit=Number(u.searchParams.get('limit')||24);items=items.slice((page-1)*limit,page*limit);
@@ -54,20 +57,26 @@ async function main(){
  socket.onmessage=event=>{const msg=JSON.parse(event.data);if(msg.id){const p=pending.get(msg.id);pending.delete(msg.id);if(msg.error)p?.reject(new Error(msg.error.message));else p?.resolve(msg.result)}};
  const send=(method,params={})=>new Promise((resolve,reject)=>{const id=++seq;pending.set(id,{resolve,reject});socket.send(JSON.stringify({id,method,params}))});
  closeBrowser=()=>send('Browser.close');
- const evaluate=async expression=>{const r=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw new Error(r.exceptionDetails.text);return r.result.value};
+ const evaluate=async expression=>{const r=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw new Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result.value};
  const wait=async expression=>{for(let i=0;i<100;i++){if(await evaluate(expression))return;await sleep(100)}throw new Error('No se cumplió: '+expression)};
  const navigate=async route=>{await send('Page.navigate',{url:origin+route});await wait('document.readyState==="complete"');await sleep(300)};
  const click=label=>evaluate('Array.from(document.querySelectorAll("button,a")).find(x=>x.textContent.trim()==='+JSON.stringify(label)+')?.click()');
  await send('Page.enable');await send('Runtime.enable');
  await send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
  await navigate('/educacion/cursos');await wait('document.body.innerText.includes("Curso de prueba")');assert.equal(await evaluate('document.body.innerText.includes("Capacitación de prueba")'),false);
- await click('Ver información y temario');await wait('document.body.innerText.includes("Temario de prueba")');await click('Solicitar información');await wait('document.getElementById("asunto")?.value==="Consulta sobre Curso de prueba"');
+ const courseCard='[...document.querySelectorAll("article")].find(a=>a.textContent.includes("Curso de prueba"))';
+ assert.equal(await evaluate(courseCard+'.querySelector("summary").textContent.trim()'),'Ver temario');
+ assert.equal(await evaluate(courseCard+'.querySelector("details").open'),false);
+ await evaluate(courseCard+'.querySelector("summary").click()');await wait(courseCard+'.querySelector("details").open===true');assert.equal(await evaluate(courseCard+'.querySelector("details p").textContent'),'Temario de prueba');
+ assert.equal(await evaluate(courseCard+'.querySelector("a").getAttribute("aria-label")'),'Consultar sobre Curso de prueba');
+ await click('Consultar información');await wait('location.pathname==="/contactos"');assert.equal(await evaluate('document.getElementById("asunto").value'),'','La tarjeta del catálogo abre Contacto sin asunto prefijado.');
+ await navigate('/educacion/cursos/1');await wait('document.body.innerText.includes("Temario de prueba")');await click('Solicitar información');await wait('document.getElementById("asunto")?.value==="Consulta sobre Curso de prueba"');
  await evaluate(`(()=>{const values={nombre:'Ana de prueba',email:'test@example.com',telefono:'+51 999 888 777',mensaje:'Consulta de prueba'};for(const [name,value] of Object.entries(values)){const el=document.getElementById(name);Object.getOwnPropertyDescriptor(el.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(el,value);el.dispatchEvent(new Event('input',{bubbles:true}));}})()`);await sleep(100);await evaluate('document.getElementById("nombre").form.requestSubmit()');await wait('document.body.innerText.includes("Mensaje registrado. La notificación por correo está pendiente")');assert.equal(contactBodies.length,1);assert.equal(contactBodies[0].telefono,'+51 999 888 777');assert.equal(contactBodies[0].asunto,'Consulta sobre Curso de prueba');
  await navigate('/preguntas-frecuentes');await wait('!!document.querySelector("details")');await evaluate('document.querySelector("summary").click()');assert.equal(await evaluate('document.querySelector("details").open'),true);
  faqError=true;await click('Actualizar');await wait('!!document.querySelector("[role=alert]")');faqError=false;await click('Reintentar');await wait('!!document.querySelector("details")');
  console.log('UI: catálogo, consultas y FAQ comprobados.');
  await navigate('/galeria');await wait('!!document.querySelector(".gl-item")');await evaluate('document.querySelector(".gl-item").focus();document.querySelector(".gl-item").click()');await wait('!!document.querySelector("dialog[open]")');await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27,nativeVirtualKeyCode:27});await wait('!document.querySelector("dialog[open]")');assert.equal(await evaluate('document.activeElement.classList.contains("gl-item")'),true);
- await navigate('/');await wait('!!document.querySelector(".ix-conv-card")');await evaluate('document.querySelector(".ix-conv-card").click()');await wait('!!document.querySelector("#convModal[open]")');await evaluate('document.querySelector("#convClose").click()');await wait('!document.querySelector("dialog[open]")');
+ await navigate('/');await wait('!!document.querySelector(".home-conv-card")');await evaluate('document.querySelector(".home-conv-card").click()');await wait('!!document.querySelector("#home-conv-center #convDesc")');assert.equal(await evaluate('document.querySelector("#convNombre").textContent'),'Convenio de prueba');await evaluate('document.querySelector("#convClose").click()');await wait('!document.querySelector("#home-conv-center #convDesc")');
  await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});await navigate('/educacion/cursos');await wait('!!document.querySelector(".nav-toggle")');await evaluate('document.querySelector(".nav-toggle").click()');await wait('document.querySelector(".nav-toggle").getAttribute("aria-expanded")==="true"');await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27,nativeVirtualKeyCode:27});await wait('document.querySelector(".nav-toggle").getAttribute("aria-expanded")==="false"');
  assert.equal(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),true);
  console.log('UI: diálogos, foco y menú móvil comprobados.');
@@ -83,11 +92,11 @@ async function main(){
  await navigate('/tecnologias/camaras-seguridad');await wait('document.querySelectorAll(".cam-service").length===4');assert.equal(await evaluate('document.querySelectorAll(".cam-service-visual").length'),4);await capture('camaras-desktop','#soluciones');
  await navigate('/tecnologias/soporte-mantenimiento');await wait('document.querySelectorAll(".sop-card").length===4');await capture('soporte-desktop','#servicios');
  await navigate('/educacion/asesoramiento');await wait('document.querySelectorAll(".ed-type-card").length===3');assert.equal(await evaluate('document.querySelectorAll(".ed-benefit").length'),4);await capture('asesoramiento-desktop','#ed-detail');
- await navigate('/educacion/capacitaciones');await wait('document.querySelectorAll(".ed-prog-card").length===5');await capture('capacitaciones-desktop','#ed-detail');
+ await navigate('/educacion/capacitaciones');await wait('document.querySelectorAll(".public-course-card").length===5');assert.equal(await evaluate('Array.from(document.querySelectorAll(".public-course-card h3")).some(h=>h.textContent.includes("Capacitación de prueba"))'),true);await capture('capacitaciones-desktop','#catalogo-cursos');
  await navigate('/galeria');await wait('document.querySelectorAll(".gl-strip").length===2');await wait('document.querySelector(".gl-strip-img img")?.naturalWidth>0');await capture('galeria-carrusel','.gl-hero');
  await evaluate('Array.from(document.querySelectorAll(".gf-btn")).find(x=>x.textContent.trim()==="Capacitaciones").click()');await wait('document.querySelector(".gf-btn.active")?.textContent==="Capacitaciones"');assert.equal(await evaluate('Array.from(document.querySelectorAll(".gl-item-cat")).every(x=>x.textContent==="Capacitaciones")'),true);await capture('galeria-desktop','#galeria');
  await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
- for(const [route,selector] of [['/tecnologias/cableado-estructurado','#categorias'],['/tecnologias/camaras-seguridad','#soluciones'],['/tecnologias/soporte-mantenimiento','#servicios'],['/educacion/asesoramiento','#ed-detail'],['/educacion/capacitaciones','#ed-detail'],['/galeria','#galeria']]){
+ for(const [route,selector] of [['/tecnologias/cableado-estructurado','#categorias'],['/tecnologias/camaras-seguridad','#soluciones'],['/tecnologias/soporte-mantenimiento','#servicios'],['/educacion/asesoramiento','#ed-detail'],['/educacion/capacitaciones','#catalogo-cursos'],['/galeria','#galeria']]){
   await navigate(route);await wait('!document.querySelector("[role=status]")?.textContent.includes("Cargando")');await sleep(200);assert.equal(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),true,'Desbordamiento móvil: '+route);await capture(route.split('/').at(-1)+'-mobile',selector);
  }
  await send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});

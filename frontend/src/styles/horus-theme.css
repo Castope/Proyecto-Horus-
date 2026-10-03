@@ -1,0 +1,182 @@
+/*
+ * Horus public theme: the identity shared by every route rendered in MainLayout
+ * (.site-layout). Home-only composition stays in home-redesign.css / home-motion.css.
+ * Load order: after the legacy sheets (global, responsive-fixes, visual-upgrades) and
+ * before the Home sheets, which are imported with the Home page.
+ */
+
+/* ---------- Tokens ---------- */
+.site-layout {
+  --horus-navy: #0a2540;
+  --horus-navy-deep: #071b2e;
+  --horus-blue: #1e4976;
+  --horus-gold: #c9a961;
+  --horus-gold-light: #e8dcc4;
+  --horus-ink: #18324b;
+  --horus-muted: #526479;
+  --horus-line: #dfe6ee;
+  --horus-soft: #f6f8fb;
+
+  --horus-font-display: 'Manrope', 'Inter', sans-serif;
+  --horus-container: 1248px;
+  --horus-gutter: clamp(1rem, 3vw, 2rem);
+  --horus-radius-sm: .55rem;
+  --horus-radius-md: .85rem;
+  --horus-radius-lg: 1rem;
+  --horus-shadow-button: 0 6px 18px #071b2e20;
+  --horus-shadow-card: 0 12px 28px #071b2e18;
+  --horus-ease: cubic-bezier(.22, 1, .36, 1);
+  /* Corner kept free for the fixed chatbot launcher: its width + right offset + a small gap. */
+  --horus-launcher-reserve: 9rem;
+
+  /* Reveal infrastructure (useFadeUp). */
+  --motion-ease: var(--horus-ease);
+  --reveal-distance: 24px;
+
+  /* Names already consumed by the Home sheets. */
+  --home-navy: var(--horus-navy);
+  --home-navy-deep: var(--horus-navy-deep);
+  --home-blue: var(--horus-blue);
+  --home-gold: var(--horus-gold);
+  --home-gold-light: var(--horus-gold-light);
+  --home-ink: var(--horus-ink);
+  --home-muted: var(--horus-muted);
+  --home-line: var(--horus-line);
+  --home-soft: var(--horus-soft);
+}
+
+/* ---------- Base buttons ---------- */
+.home-button {
+  display: inline-flex; justify-content: center; align-items: center; gap: .65rem;
+  min-height: 46px; padding: .8rem 1.2rem; border: 1px solid var(--horus-gold);
+  border-radius: var(--horus-radius-sm); background: var(--horus-gold); color: var(--horus-navy-deep);
+  font-size: .95rem; font-weight: 700; line-height: 1.4;
+  transition: background .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+.home-button:hover { background: var(--horus-gold-light); transform: translateY(-2px); box-shadow: var(--horus-shadow-button); }
+.home-button-outline { color: var(--horus-gold-light); background: transparent; border-color: #c9a96175; }
+.home-button-outline:hover { background: #c9a96112; }
+
+/* ---------- Navbar (Navbar.tsx keeps its router, mobile menu and focus management) ---------- */
+.site-layout .nav { height: var(--nav-h); background: var(--horus-navy); border-bottom: 2px solid var(--horus-gold); box-shadow: 0 4px 20px #071b2e1a; }
+.site-layout .nav.scrolled { background: var(--horus-navy-deep); }
+.site-layout .nav-inner { max-width: 1280px; gap: 1rem; padding-inline: var(--horus-gutter); }
+.site-layout .nav-logo { gap: .8rem; }
+.site-layout .nav-logo img { height: 48px; filter: none; }
+.site-layout .nav-logo span { color: #fff; font-size: 1rem; letter-spacing: .025em; font-family: var(--horus-font-display); }
+.site-layout .nav-links > li > :is(a, button) { color: #eef2f6; font-size: .92rem; padding-inline: .7rem; }
+.site-layout .nav-links > li > :is(a, button):hover,
+.site-layout .nav-links > li > a.active { color: var(--horus-gold-light); background: #c9a96112; }
+.site-layout .nav-links > li > a.nav-cta { background: var(--horus-gold); color: var(--horus-navy-deep); padding-inline: 1rem; }
+.site-layout .dropdown { background: var(--horus-navy-deep); border-color: #c9a96150; }
+.site-layout .dropdown a { font-size: .95rem; color: #eef2f6; }
+.site-layout .dropdown a:hover { color: var(--horus-gold-light); background: #c9a96112; }
+
+/* Navbar visually retracts 6px; fixed layout space and dropdown anchors remain stable. */
+.site-layout > .nav { transition: transform 250ms ease, background 250ms ease, box-shadow 250ms ease; }
+.site-layout > .nav.scrolled { transform: translateY(-6px); box-shadow: 0 5px 18px #071b2e20; }
+.site-layout .nav-logo { transition: transform 250ms ease; }
+.site-layout .nav.scrolled .nav-logo { transform: scale(.96); transform-origin: left center; }
+.site-layout .nav-links > li > :is(a, button) { position: relative; transition: color 200ms ease, background 200ms ease; }
+.site-layout .nav-links > li > :is(a, button):not(.nav-cta)::before {
+  content: ''; position: absolute; left: .7rem; right: .7rem; bottom: 3px;
+  height: 2px; border-radius: 2px; background: var(--horus-gold);
+  transform: scaleX(0); transform-origin: center; transition: transform 200ms ease;
+}
+.site-layout .nav-links > li > :is(a, button):is(:hover, :focus-visible, .active)::before,
+.site-layout .nav-drop.open > button::before { transform: scaleX(1); }
+.site-layout .nav-drop > .dropdown { transform: translateY(-6px); transition: opacity 200ms ease, transform 200ms ease, visibility 0ms 200ms; }
+.site-layout .nav-drop:is(:hover, .open) > .dropdown { transform: none; transition-delay: 0ms; }
+
+@media (max-width: 1024px) {
+  .site-layout .nav-links { background: var(--horus-navy-deep); }
+  .site-layout .nav-toggle span { background: var(--horus-gold); }
+  .site-layout .nav-links > li > :is(a, button) { padding: .8rem 1rem; font-size: .95rem; }
+  .site-layout .nav-drop > .dropdown { display: block; position: absolute; visibility: hidden; opacity: 0; pointer-events: none; }
+  .site-layout .nav-drop.open > .dropdown { position: static; visibility: visible; opacity: 1; pointer-events: auto; }
+  .site-layout .nav-drop:not(.open):not(.is-closing) > .dropdown { transition-delay: 0ms; }
+  .site-layout .nav-drop:not(.open):hover > .dropdown { visibility: hidden; opacity: 0; pointer-events: none; }
+  .site-layout .nav-drop.is-closing > .dropdown,
+  .site-layout .nav-drop.is-closing:not(.open):hover > .dropdown {
+    position: static; visibility: visible; opacity: 0; transform: translateY(-6px); pointer-events: none;
+  }
+}
+@media (max-width: 768px) {
+  .site-layout > .nav.scrolled { transform: none; }
+  .site-layout .nav.scrolled .nav-logo { transform: none; }
+}
+@media (max-width: 540px) {
+  .site-layout .nav-logo img { height: 42px; }
+  .site-layout .nav-logo span { font-size: .95rem; }
+}
+
+/* ---------- Footer (Footer.tsx still consumes CompanySettingsProvider) ---------- */
+.site-layout .footer { background: var(--horus-navy-deep); border-top: 3px solid var(--horus-gold); padding-top: 3rem; }
+.site-layout .footer::before { display: none; }
+.site-layout .ix-footer-top { gap: 2rem; padding-bottom: 2rem; }
+.site-layout .ix-footer-brand img { height: 56px; }
+.site-layout .ix-footer-name { font-size: 1.05rem; font-family: var(--horus-font-display); }
+.site-layout .ix-footer-ruc { color: #cad5e0; font-size: .95rem; }
+.site-layout .ix-footer-brand p, .site-layout .footer-contact li { color: #d5e0eb; font-size: .95rem; overflow-wrap: anywhere; }
+.site-layout .ix-footer-heading { color: var(--horus-gold-light); font-size: .95rem; letter-spacing: .04em; }
+.site-layout .ix-footer-list li a, .site-layout .ix-social-item { color: #d5e0eb; font-size: .95rem; }
+.site-layout .footer-contact i { color: var(--horus-gold); }
+.site-layout .footer-bottom { border-top-color: #c9a96135; }
+.site-layout .footer-bottom p, .site-layout .footer-libro-link { font-size: .9rem; color: #d5e0eb; }
+
+.site-layout .ix-footer-brand img { transition: opacity 500ms ease 100ms; }
+.site-layout .ix-footer-brand.reveal-ready:not(.visible) img { opacity: 0; }
+.site-layout .ix-footer-list a { display: inline-block; transition: color 180ms ease, transform 180ms ease; }
+.site-layout a.ix-social-item .ix-social-icon { transition: transform 180ms ease, background 180ms ease; }
+@media (hover: hover) and (pointer: fine) {
+  .site-layout .ix-footer-list a:hover { transform: translateX(3px); color: var(--horus-gold-light); }
+  .site-layout a.ix-social-item:hover .ix-social-icon { transform: translateY(-2px) scale(1.04); }
+}
+
+/* ---------- Chatbot launcher safe-zone ----------
+ * The launcher is fixed to the bottom-right corner (chatbot.css). At the end of the page it would cover the
+ * legal row, so only that row reserves the corner on its right. The reserve is the launcher space minus the
+ * room the centered container already leaves, so it vanishes on wide screens and adds no vertical space.
+ * Social links are clickable only over their own content, never across the whole column. */
+.site-layout .footer-bottom { padding-right: max(0px, calc(var(--horus-launcher-reserve) - (100vw - 100%) / 2)); }
+.site-layout .ix-social-item { width: fit-content; max-width: 100%; }
+@media (max-width: 768px) {
+  .site-layout .footer-bottom { padding-right: max(20px, calc(var(--horus-launcher-reserve) - (100vw - 100%) / 2)); }
+}
+@media (max-width: 480px) {
+  .site-layout { --horus-launcher-reserve: 6.75rem; }
+}
+
+/* ---------- Reveal base (useFadeUp adds .reveal-ready / .visible) ---------- */
+.site-layout .fade-up { opacity: 1; transform: none; }
+.site-layout .fade-up.reveal-ready {
+  transition: opacity 560ms var(--motion-ease), transform 560ms var(--motion-ease),
+    border-color 220ms ease, background 220ms ease, box-shadow 220ms ease;
+  transition-delay: var(--reveal-delay, 0ms), var(--reveal-delay, 0ms), 0ms, 0ms, 0ms;
+}
+.site-layout .fade-up.reveal-ready:not(.visible) { opacity: 0; transform: translateY(var(--reveal-distance)); }
+.site-layout .fade-up.visible { opacity: 1; transform: none; }
+/* Once revealed, hover responds immediately instead of inheriting the stagger. */
+.site-layout .fade-up.reveal-complete { transition-delay: 0ms; }
+.site-layout .ix-footer-top > :nth-child(2) { --reveal-delay: 80ms; }
+.site-layout .ix-footer-top > :nth-child(3) { --reveal-delay: 160ms; }
+.site-layout .ix-footer-top > :nth-child(4) { --reveal-delay: 240ms; }
+@media (max-width: 768px) {
+  .site-layout { --reveal-distance: 10px; }
+  .site-layout .fade-up.reveal-ready { transition-duration: 450ms; }
+  .site-layout .fade-up { --reveal-delay: 0ms; }
+  .site-layout .ix-footer-top > :nth-child(even) { --reveal-delay: 60ms; }
+}
+
+/* ---------- Reduced motion for the shared shell ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .site-layout .fade-up { opacity: 1; transform: none; transition: none; }
+  .site-layout .fade-up.reveal-ready:not(.visible) { opacity: 1; transform: none; }
+  .site-layout > :is(.nav, .footer), .site-layout > :is(.nav, .footer) *,
+  .site-layout > :is(.nav, .footer) *::before, .site-layout > :is(.nav, .footer) *::after {
+    animation: none !important; transition: none !important; scroll-behavior: auto;
+  }
+  .site-layout > .nav.scrolled, .site-layout .nav.scrolled .nav-logo,
+  .site-layout :is(.ix-footer-list a, .ix-social-icon) { transform: none !important; }
+  .site-layout .ix-footer-brand.reveal-ready:not(.visible) img { opacity: 1; }
+}

@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
-import useFadeUp from '../../hooks/useFadeUp'
 
 export default function PolicyLayout({ icon, title, subtitle, sections }) {
-  useFadeUp()
   const [active, setActive] = useState(0)
 
   useEffect(() => {

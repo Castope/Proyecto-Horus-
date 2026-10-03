@@ -62,8 +62,9 @@ export default function HomeConvenios({ resource, page, onPage }: {
               inert={!compact && changing}>
               {!compact && displayed !== null ? <HomeConvenioDetail inline id={displayed} onClose={() => select(null)} /> :
                 <div className="home-conv-identity">
-                  <img src={logoHorus} alt="Horus Group" width="588" height="425" loading="lazy" />
-                  <span>Horus Group SRL</span><span className="home-conv-brand-caption">Tecnología y Educación</span>
+                  <img src={logoHorus} alt="" aria-hidden="true" width="588" height="425" loading="lazy" />
+                  <h3>Selecciona un convenio</h3>
+                  <p>Conoce nuestras alianzas institucionales y sus beneficios.</p>
                 </div>}
             </div>
           </div>
@@ -74,10 +75,9 @@ export default function HomeConvenios({ resource, page, onPage }: {
             className={'home-conv-card fade-up' + (selected === convenio.id ? ' is-selected' : '')} onClick={event => { trigger.current = event.currentTarget; select(convenio.id) }}
             aria-haspopup={compact ? 'dialog' : undefined} aria-controls={compact ? undefined : 'home-conv-center'}
             aria-expanded={selected === convenio.id}>
-            <span className="home-conv-logo"><PublicImage src={convenio.logo_url} title={'Logo de ' + convenio.nombre} /></span>
-            {convenio.sigla && <span className="home-conv-sigla">{convenio.sigla}</span>}
+            <span className="home-conv-logo" aria-hidden="true"><PublicImage src={convenio.logo_url} title="" /></span>
             <span className="home-conv-name">{convenio.nombre}</span>
-            <span className="home-conv-description">{convenio.descripcion_corta}</span>
+            {convenio.sigla && <span className="home-conv-sigla">{convenio.sigla}</span>}
             <span className="home-conv-more">Conocer convenio <i className="fas fa-arrow-right" aria-hidden="true" /></span>
           </button>)}</div>)}
         </div>}

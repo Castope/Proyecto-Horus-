@@ -1,11 +1,10 @@
 import { useCompanySetting } from '../context/companySettings'
-import { Link, useLocation } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import logoHorus from '../assets/images/logo-horus.png'
 
 export default function Footer() {
   const setting = useCompanySetting()
-  const { pathname } = useLocation()
-  const reveal = pathname === '/' ? ' fade-up' : ''
+  const reveal = ' fade-up'
   return (
     <footer className="footer">
       <div className="container">

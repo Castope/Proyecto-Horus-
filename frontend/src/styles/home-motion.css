@@ -1,22 +1,9 @@
 /* Motion for the existing public layout; no changes to its geometry or data. */
-.home-layout { --motion-ease: cubic-bezier(.22, 1, .36, 1); --reveal-distance: 24px; }
-.home-layout .fade-up { opacity: 1; transform: none; }
-.home-layout .fade-up.reveal-ready {
-  transition: opacity 560ms var(--motion-ease), transform 560ms var(--motion-ease),
-    border-color 220ms ease, background 220ms ease, box-shadow 220ms ease;
-  transition-delay: var(--reveal-delay, 0ms), var(--reveal-delay, 0ms), 0ms, 0ms, 0ms;
-}
-.home-layout .fade-up.reveal-ready:not(.visible) { opacity: 0; transform: translateY(var(--reveal-distance)); }
-.home-layout .fade-up.visible { opacity: 1; transform: none; }
-/* Once revealed, hover responds immediately instead of inheriting the stagger. */
-.home-layout .fade-up.reveal-complete { transition-delay: 0ms; }
 .home-metrics-grid > :nth-child(2), .home-services-grid > :nth-child(2),
-.home-highlights-grid > :nth-child(2), .home-loc-items > :nth-child(2),
-.home-layout .ix-footer-top > :nth-child(2) { --reveal-delay: 80ms; }
+.home-highlights-grid > :nth-child(2), .home-loc-items > :nth-child(2) { --reveal-delay: 80ms; }
 .home-metrics-grid > :nth-child(3), .home-highlights-grid > :nth-child(3),
-.home-loc-items > :nth-child(3), .home-layout .ix-footer-top > :nth-child(3) { --reveal-delay: 160ms; }
-.home-metrics-grid > :nth-child(4), .home-highlights-grid > :nth-child(4),
-.home-layout .ix-footer-top > :nth-child(4) { --reveal-delay: 240ms; }
+.home-loc-items > :nth-child(3) { --reveal-delay: 160ms; }
+.home-metrics-grid > :nth-child(4), .home-highlights-grid > :nth-child(4) { --reveal-delay: 240ms; }
 .home-conv-grid > :nth-child(3) { --reveal-delay: 80ms; }
 .home-conv-grid > :nth-child(4) { --reveal-delay: 160ms; }
 .home-conv-grid > :nth-child(5) { --reveal-delay: 240ms; }
@@ -55,24 +42,11 @@
 .home-button i, .home-svc-links i, .home-conv-more i { transition: transform 180ms ease; }
 .home-layout .home-button:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
 .home-layout .home-button:disabled { transform: none; box-shadow: none; }
-.home-layout .home-conv-card.is-selected { border-color: var(--home-gold); background: #c9a96116; }
-.home-layout .home-location-map.reveal-ready:not(.visible) { transform: scale(.985); }
-
-/* Navbar visually retracts 6px; fixed layout space and dropdown anchors remain stable. */
-.home-layout > .nav { transition: transform 250ms ease, background 250ms ease, box-shadow 250ms ease; }
-.home-layout > .nav.scrolled { transform: translateY(-6px); box-shadow: 0 5px 18px #071b2e20; }
-.home-layout .nav-logo { transition: transform 250ms ease; }
-.home-layout .nav.scrolled .nav-logo { transform: scale(.96); transform-origin: left center; }
-.home-layout .nav-links > li > :is(a, button) { position: relative; transition: color 200ms ease, background 200ms ease; }
-.home-layout .nav-links > li > :is(a, button):not(.nav-cta)::before {
-  content: ''; position: absolute; left: .7rem; right: .7rem; bottom: 3px;
-  height: 2px; border-radius: 2px; background: var(--home-gold);
-  transform: scaleX(0); transform-origin: center; transition: transform 200ms ease;
+.home-layout .home-conv-card.is-selected { border-color: var(--home-gold); background: #c9a96116; box-shadow: 0 4px 16px #0003; }
+@media (prefers-reduced-motion: no-preference) {
+  .home-layout .home-conv-card.is-selected { transform: translateY(-1px); }
 }
-.home-layout .nav-links > li > :is(a, button):is(:hover, :focus-visible, .active)::before,
-.home-layout .nav-drop.open > button::before { transform: scaleX(1); }
-.home-layout .nav-drop > .dropdown { transform: translateY(-6px); transition: opacity 200ms ease, transform 200ms ease, visibility 0ms 200ms; }
-.home-layout .nav-drop:is(:hover, .open) > .dropdown { transform: none; transition-delay: 0ms; }
+.home-layout .home-location-map.reveal-ready:not(.visible) { transform: scale(.985); }
 
 /* Keep the current native dialog and its keyboard/focus behavior. */
 .home-layout dialog#convModal.home-convenio-dialog[open] { animation: home-panel-in 450ms var(--motion-ease); }
@@ -80,23 +54,20 @@
 .home-layout dialog#convModal::backdrop { animation: home-fade-in 350ms ease; }
 .home-layout dialog#convModal.is-closing::backdrop { animation: home-fade-out 350ms ease forwards; }
 .home-dialog-header > :not(button), .home-dialog-body > :not([role]) { animation: home-layer-in 450ms var(--motion-ease) both; }
-.home-dialog-header > .home-conv-feature { animation-name: home-panel-in; }
+.home-dialog-header > :is(.home-conv-feature, .home-conv-gallery) { animation-name: home-panel-in; }
 .home-dialog-header > .home-eyebrow { animation-delay: 50ms; }
 .home-dialog-header > h3 { animation-delay: 100ms; }
 .home-dialog-body > #convDesc { animation-delay: 130ms; }
 .home-dialog-body > .home-conv-additional { animation-delay: 180ms; }
 .home-dialog-body > .home-conv-gallery { animation-delay: 220ms; }
 .home-layout .home-conv-photo > :is(img, span) { animation: home-photo-in 450ms var(--motion-ease); }
-.home-layout .ix-footer-brand img { transition: opacity 500ms ease 100ms; }
-.home-layout .ix-footer-brand.reveal-ready:not(.visible) img { opacity: 0; }
-.home-layout .ix-footer-list a { display: inline-block; transition: color 180ms ease, transform 180ms ease; }
-.home-layout a.ix-social-item .ix-social-icon { transition: transform 180ms ease, background 180ms ease; }
 
 @media (hover: hover) and (pointer: fine) {
   .home-layout :is(.home-metric, .home-svc-card, .home-highlight, .home-conv-card).visible:hover {
     transform: translateY(-4px); border-color: var(--home-gold);
     box-shadow: 0 12px 28px #071b2e18; transition-duration: 220ms;
   }
+  .home-layout .home-conv-card.is-selected:hover { transform: translateY(-4px); }
   .home-svc-card:hover .home-svc-img img { transform: scale(1.03); }
   .home-svc-card:hover .home-svc-img::after { opacity: .08; }
   .home-svc-card:hover .home-svc-badge { transform: translateY(-3px); }
@@ -107,8 +78,6 @@
   .home-button:hover i, .home-svc-links a:is(:hover, :focus-visible) i, .home-conv-card:hover .home-conv-more i { transform: translateX(4px); }
   .home-hero-actions a[href^="#"]:hover i { transform: translateY(3px); }
   .home-carousel-controls button:hover { transform: translateY(-1px); border-color: var(--home-gold); }
-  .home-layout .ix-footer-list a:hover { transform: translateX(3px); color: var(--home-gold-light); }
-  .home-layout a.ix-social-item:hover .ix-social-icon { transform: translateY(-2px) scale(1.04); }
 }
 @keyframes home-layer-in { from { opacity: 0; transform: translateY(var(--layer-distance, 12px)); } to { opacity: 1; transform: none; } }
 @keyframes home-image-in { from { opacity: 0; transform: scale(1.04); } to { opacity: 1; transform: scale(1); } }
@@ -119,25 +88,10 @@
 @keyframes home-fade-out { to { opacity: 0; } }
 
 @media (max-width: 768px) {
-  .home-layout { --reveal-distance: 10px; }
-  .home-layout .fade-up.reveal-ready { transition-duration: 450ms; }
-  .home-layout .fade-up { --reveal-delay: 0ms; }
-  .home-layout :is(.home-metrics-grid, .home-loc-items, .ix-footer-top) > :nth-child(even) { --reveal-delay: 60ms; }
+  .home-layout :is(.home-metrics-grid, .home-loc-items) > :nth-child(even) { --reveal-delay: 60ms; }
   .home-hero-copy h1, .home-hero-copy > p, .home-hero-actions { --layer-distance: 10px; }
   .home-slide-image { animation: none; }
   .home-svc-card.reveal-ready:not(.visible) .home-svc-img { clip-path: none; }
-  .home-layout > .nav.scrolled { transform: none; }
-  .home-layout .nav.scrolled .nav-logo { transform: none; }
-}
-@media (max-width: 1024px) {
-  .home-layout .nav-drop > .dropdown { display: block; position: absolute; visibility: hidden; opacity: 0; pointer-events: none; }
-  .home-layout .nav-drop.open > .dropdown { position: static; visibility: visible; opacity: 1; pointer-events: auto; }
-  .home-layout .nav-drop:not(.open):not(.is-closing) > .dropdown { transition-delay: 0ms; }
-  .home-layout .nav-drop:not(.open):hover > .dropdown { visibility: hidden; opacity: 0; pointer-events: none; }
-  .home-layout .nav-drop.is-closing > .dropdown,
-  .home-layout .nav-drop.is-closing:not(.open):hover > .dropdown {
-    position: static; visibility: visible; opacity: 0; transform: translateY(-6px); pointer-events: none;
-  }
 }
 @media (hover: none) {
   .home-layout :is(.home-svc-card, .home-highlight, .home-conv-card, .home-button):hover { transform: none; }
@@ -148,21 +102,17 @@
   .home-layout dialog#convModal.home-convenio-dialog.is-closing {
     animation: none !important; transition: none !important; scroll-behavior: auto;
   }
-  .home-layout .fade-up.reveal-ready:not(.visible) { opacity: 1; transform: none; }
   .home-layout .home-svc-card.reveal-ready:not(.visible) .home-svc-img { clip-path: none; }
-  .home-layout :is(.home-slides, .home-slide img, .home-location-map, .nav, .nav-logo),
+  .home-layout :is(.home-slides, .home-slide img, .home-location-map),
   .home-layout :is(.home-metric, .home-svc-card, .home-highlight, .home-conv-card, .home-button).visible:hover,
   .home-layout :is(.home-svc-card, .home-highlight, .home-conv-card, .home-button):hover,
   .home-layout :is(.home-svc-img img, .home-svc-badge, .home-svc-icon, .home-highlight-icon,
-    .home-highlight-num, .home-metric-icon, .home-button i, .home-svc-links i, .home-conv-more i,
-    .ix-footer-list a, .ix-social-icon) { transform: none !important; }
-  .home-layout .ix-footer-brand.reveal-ready:not(.visible) img { opacity: 1; }
+    .home-highlight-num, .home-metric-icon, .home-button i, .home-svc-links i, .home-conv-more i) { transform: none !important; }
 }
 
 /* Only convenio contents transition; the grid keeps its existing reveal. */
 .home-conv-content { width: 100%; min-width: 0; animation: home-panel-in 450ms var(--motion-ease); }
 .home-conv-content.is-leaving { animation: home-panel-out 350ms ease forwards; pointer-events: none; }
-.home-conv-identity img { animation: home-image-in 450ms var(--motion-ease); }
 .home-conv-photo-layer { transition: opacity 450ms ease; }
 .home-conv-photo-layer.is-next { opacity: 0; }
 .home-conv-photo-stage.is-crossfading .home-conv-photo-layer { opacity: 0; }

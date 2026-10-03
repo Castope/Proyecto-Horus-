@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import type { ChangeEvent, SubmitEvent } from 'react'
 import { Link } from 'react-router-dom'
-import useFadeUp from '../../hooks/useFadeUp'
 import { registrarReclamo } from '../../api'
 
 type FormData = {
@@ -71,7 +70,6 @@ function Campo({ id, label, required = false, children, full = false, error }: C
 }
 
 export default function LibroReclamaciones() {
-  useFadeUp()
   const [paso,    setPaso]    = useState(1)
   const [form,    setForm]    = useState<FormData>(INITIAL)
   const [errores, setErrores] = useState<FormErrors>({})

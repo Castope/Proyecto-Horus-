@@ -1,14 +1,12 @@
 import CatalogoCursos from '../../components/CatalogoCursos'
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import useFadeUp from '../../hooks/useFadeUp'
 
 import imgCap from '../../assets/images/capacitaciones/capacitaciones.jpg'
 
 
 
 export default function Capacitaciones() {
-  useFadeUp()
   useEffect(() => { document.title = 'Capacitaciones — Horus Group SRL' }, [])
 
   return (

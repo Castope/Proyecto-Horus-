@@ -2,7 +2,6 @@ import { useCompanySetting } from '../context/companySettings'
 import { useState, useEffect } from 'react'
 import type { ChangeEvent, SubmitEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import useFadeUp from '../hooks/useFadeUp'
 import { enviarContacto } from '../api'
 
 type ContactForm = {
@@ -19,7 +18,6 @@ const INITIAL: ContactForm = { nombre: '', email: '', telefono: '', asunto: '', 
 
 export default function Contactos() {
   const setting = useCompanySetting()
-  useFadeUp()
   const [params] = useSearchParams()
   const [form,    setForm]    = useState<ContactForm>(() => ({ ...INITIAL, asunto: (params.get('asunto') || '').slice(0, 150) }))
   const [status,  setStatus]  = useState<'loading' | 'ok' | 'error' | null>(null)

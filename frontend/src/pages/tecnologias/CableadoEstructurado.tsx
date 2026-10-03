@@ -1,10 +1,8 @@
 import ServiceSections from '../../components/ServiceSections'
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import useFadeUp from '../../hooks/useFadeUp'
 
 export default function CableadoEstructurado() {
-  useFadeUp()
   useEffect(() => { document.title = 'Cableado Estructurado — Horus Group SRL' }, [])
 
 

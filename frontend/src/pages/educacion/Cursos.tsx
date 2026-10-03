@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import useFadeUp from '../../hooks/useFadeUp'
 import CatalogoCursos from '../../components/CatalogoCursos'
 
 import imgCursos from '../../assets/images/galeria/capacitaciones/imagen 1.jpg'
@@ -12,7 +11,6 @@ const MODALIDADES = [
 ]
 
 export default function Cursos() {
-  useFadeUp()
   useEffect(() => { document.title = 'Cursos — Horus Group SRL' }, [])
 
   return (

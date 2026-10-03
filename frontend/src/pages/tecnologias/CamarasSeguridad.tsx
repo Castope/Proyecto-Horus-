@@ -1,12 +1,10 @@
 import ServiceSections from '../../components/ServiceSections'
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import useFadeUp from '../../hooks/useFadeUp'
 
 
 
 export default function CamarasSeguridad() {
-  useFadeUp()
   useEffect(() => { document.title = 'Cámaras de Seguridad — Horus Group SRL' }, [])
 
   return (

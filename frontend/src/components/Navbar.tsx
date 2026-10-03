@@ -5,7 +5,7 @@ import useReducedMotion from '../hooks/useReducedMotion'
 
 const NAV_ITEMS = [
   { label: 'Inicio',    to: '/' },
-  { label: 'Nosotros',  to: '/quienes-somos' },
+  { label: 'Quiénes somos', to: '/quienes-somos' },
   {
     label: 'Tecnologías',
     children: [
@@ -75,7 +75,7 @@ export default function Navbar() {
   }, [closingDrop, reducedMotion])
 
   const toggleDrop = (label: string) => {
-    if (mobile && pathname === '/' && !reducedMotion && openDrop) setClosingDrop({ path: pathname, label: openDrop })
+    if (mobile && !reducedMotion && openDrop) setClosingDrop({ path: pathname, label: openDrop })
     else setClosingDrop(null)
     setDrop(openDrop === label ? null : { path: pathname, label })
   }

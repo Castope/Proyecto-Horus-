@@ -1,13 +1,11 @@
 import ServiceSections from '../../components/ServiceSections'
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import useFadeUp from '../../hooks/useFadeUp'
 
 import imgAsesoria from '../../assets/images/asesoramiento/asesoramiento2.jpg'
 
 
 export default function Asesoramiento() {
-  useFadeUp()
   useEffect(() => { document.title = 'Asesoramiento Profesional — Horus Group SRL' }, [])
 
   return (

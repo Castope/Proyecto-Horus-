@@ -2,11 +2,9 @@ import NewsletterForm from '../components/NewsletterForm'
 import '../styles/catalogo-publico.css'
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import useFadeUp from '../hooks/useFadeUp'
 import logoHorus from '../assets/images/logo-horus.png'
 
 export default function Market() {
-  useFadeUp()
   useEffect(() => { document.title = 'Horus Market — Próximamente' }, [])
 
   return (

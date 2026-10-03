@@ -1,10 +1,8 @@
 import ServiceSections from '../../components/ServiceSections'
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import useFadeUp from '../../hooks/useFadeUp'
 
 export default function SoporteMantenimiento() {
-  useFadeUp()
   useEffect(() => { document.title = 'Soporte y Mantenimiento — Horus Group SRL' }, [])
 
   return (

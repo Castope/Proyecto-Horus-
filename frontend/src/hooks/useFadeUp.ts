@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 
 export default function useFadeUp() {
   useEffect(() => {
-    const root = document.querySelector('.home-layout') ?? document
+    const root = document.querySelector('.site-layout') ?? document
     const media = window.matchMedia('(prefers-reduced-motion: reduce)')
     const pending = new Set<Element>()
     const reveal = (element: Element) => {

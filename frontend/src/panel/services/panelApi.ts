@@ -1,12 +1,13 @@
 import { notifyContentChange } from '../../contentUpdates';
 import { API_BASE } from '../../apiBase';
+import { resolveContentImages } from '../../contentImages';
 export class PanelApiError extends Error {
   constructor(message: string, public status: number) { super(message); }
 }
 
 export async function panelRequest<T>(path: string, token: string | null, method = 'GET', body?: unknown, signal?: AbortSignal): Promise<T> {
   const response = await fetch(API_BASE + '/admin/' + path, {
-    method, signal,
+    method, signal, cache: 'no-store',
     headers: { ...(token ? { Authorization: 'Bearer ' + token } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
@@ -18,7 +19,7 @@ export async function panelRequest<T>(path: string, token: string | null, method
   }
   if (!data) throw new Error('El servidor devolvió una respuesta inválida.');
   if(method!=='GET')notifyContentChange(path.split(/[/?]/)[0]);
-  return data as T;
+  return resolveContentImages(data) as T;
 }
 
 export const errorMessage = (error: unknown) => error instanceof Error ? error.message : 'No se pudo conectar con el servidor.';

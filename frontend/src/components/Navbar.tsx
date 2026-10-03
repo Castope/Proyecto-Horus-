@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useSyncExternalStore } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import logoHorus from '../assets/images/logo-horus.png'
+import useReducedMotion from '../hooks/useReducedMotion'
 
 const NAV_ITEMS = [
   { label: 'Inicio',    to: '/' },
@@ -30,6 +31,8 @@ export default function Navbar() {
   const [scrolled,    setScrolled]    = useState(false)
   const [menuPath, setMenuPath] = useState<string | null>(null)
   const [drop, setDrop] = useState<{ path: string; label: string } | null>(null)
+  const [closingDrop, setClosingDrop] = useState<{ path: string; label: string } | null>(null)
+  const reducedMotion = useReducedMotion()
   const { pathname } = useLocation()
   const navRef = useRef<HTMLElement>(null)
   const listRef = useRef<HTMLUListElement>(null)
@@ -41,8 +44,9 @@ export default function Navbar() {
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10)
+    const initial = window.requestAnimationFrame(onScroll)
     window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    return () => { window.cancelAnimationFrame(initial); window.removeEventListener('scroll', onScroll) }
   }, [])
 
   useEffect(() => {
@@ -52,9 +56,9 @@ export default function Navbar() {
     document.body.style.overflow = 'hidden'
     listRef.current?.querySelector<HTMLElement>('a,button')?.focus()
     const keydown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') { setMenuPath(null); return }
+      if (event.key === 'Escape' && !event.defaultPrevented) { setMenuPath(null); return }
       if (event.key !== 'Tab') return
-      const links = Array.from(listRef.current?.querySelectorAll<HTMLElement>('a,button') || []).filter(el => el.getClientRects().length)
+      const links = Array.from(listRef.current?.querySelectorAll<HTMLElement>('a,button') || []).filter(el => el.getClientRects().length && !el.closest('[inert]'))
       const first=links[0], last=links[links.length-1]
       if (event.shiftKey && document.activeElement === first) {event.preventDefault(); toggleRef.current?.focus()}
       else if (!event.shiftKey && document.activeElement === last) {event.preventDefault(); toggleRef.current?.focus()}
@@ -64,7 +68,17 @@ export default function Navbar() {
     return () => {document.body.style.overflow=previous;document.removeEventListener('keydown',keydown);trigger?.focus()}
   }, [menuOpen,mobile])
 
-  const toggleDrop = (label: string) => setDrop(prev => prev?.path === pathname && prev.label === label ? null : {path:pathname,label})
+  useEffect(() => {
+    if (!closingDrop) return
+    const timer = window.setTimeout(() => setClosingDrop(null), reducedMotion ? 0 : 200)
+    return () => window.clearTimeout(timer)
+  }, [closingDrop, reducedMotion])
+
+  const toggleDrop = (label: string) => {
+    if (mobile && pathname === '/' && !reducedMotion && openDrop) setClosingDrop({ path: pathname, label: openDrop })
+    else setClosingDrop(null)
+    setDrop(openDrop === label ? null : { path: pathname, label })
+  }
 
   return (
     <header className={`nav${scrolled ? ' scrolled' : ''}`} ref={navRef}>
@@ -84,12 +98,18 @@ export default function Navbar() {
             item.children ? (
               <li
                 key={item.label}
-                className={`nav-drop${openDrop === item.label ? ' open' : ''}`}
+                className={`nav-drop${openDrop === item.label ? ' open' : ''}${closingDrop?.path === pathname && closingDrop.label === item.label && openDrop !== item.label ? ' is-closing' : ''}`}
+                onKeyDown={event => {
+                  if (event.key !== 'Escape' || openDrop !== item.label) return
+                  event.preventDefault(); event.stopPropagation()
+                  toggleDrop(item.label)
+                  event.currentTarget.querySelector('button')?.focus()
+                }}
               >
-                <button type="button" aria-expanded={openDrop === item.label} aria-controls={"drop-"+item.label} onClick={() => toggleDrop(item.label)} onKeyDown={e => { if(e.key==="Escape"){setDrop(null);e.currentTarget.focus()} }}>
+                <button type="button" aria-expanded={openDrop === item.label} aria-controls={"drop-"+item.label} onClick={() => toggleDrop(item.label)}>
                   {item.label}
                 </button>
-                <ul id={"drop-"+item.label} className="dropdown">
+                <ul id={"drop-"+item.label} className="dropdown" inert={mobile && openDrop !== item.label}>
                   {item.children.map(child => (
                     <li key={child.to}>
                       <NavLink to={child.to}>

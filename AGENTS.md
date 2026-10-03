@@ -80,6 +80,7 @@ La API usa el prefijo `/api` y el puerto 3000 por defecto. Swagger se publica en
 - El catálogo público solo devuelve registros publicados. Los parámetros del cliente no pueden habilitar borradores ni archivados.
 - El borrado de catálogo archiva el registro. No lo reemplaces por eliminación física.
 - La galería pública excluye elementos inactivos.
+- El contenido administrable es compartido en MySQL; las cuentas nuevas no crean inventarios propios. El token de sesión y el marcador local de refresco no son fuentes de contenido. Las rutas de uploads del proxy se conservan como `/api/uploads/<archivo>`; el frontend resuelve los uploads contra la API configurada y los enlaces antiguos de loopback sin escribir en MySQL. La página pública debe funcionar aunque el navegador bloquee storage.
 - Una base sin contenido devuelve listas vacías y contadores en cero. No insertes datos de ejemplo ni inventes resultados para completar pantallas.
 - Los ajustes públicos exponen únicamente claves conocidas. Leer ajustes no debe escribir valores de muestra; los cambios relacionados se guardan en una transacción.
 - Las suscripciones conservan su unicidad por correo y el interés existente al reactivarse si no se proporciona otro.
@@ -160,4 +161,5 @@ Actualiza esta guía cuando cambien comandos, arquitectura, migraciones o contra
 - Las listas heredadas conservan su respuesta sin `page`; el frontend debe solicitar páginas. Solo una exportación explícita recorre todos los resultados.
 - El diseño original usa metadatos del catálogo y fotos activas; las lecturas nunca importan contenido. `backend/src/content-original/` ofrece recuperación explícita autenticada e idempotente que conserva ediciones y estados. `npm run content:restore` solo opera en MySQL local de desarrollo, tras build y migraciones. Los programas de capacitación pueden omitir modalidad/duración; los cursos las exigen.
 - Tras compilar backend y frontend, `node scripts/smoke-ui.cjs` revisa escritorio/móvil con Edge y fixtures aislados. `SMOKE_BROWSER` permite escoger otro ejecutable Chromium. No utiliza la base real ni correo SMTP.
+- `node scripts/smoke-global-content.cjs`, desde `frontend/` tras build, revisa contenido en dos contextos de navegador aislados y una visita sin storage con fixtures HTTP. La integración MySQL verifica los mismos registros para dos administradores y su persistencia tras reiniciar la API en una base temporal.
 - La integración MySQL utiliza un servidor local; un destino remoto de pruebas autorizado exige `ALLOW_INTEGRATION_DB=true`. Nunca usarlo como autorización implícita para una base compartida.

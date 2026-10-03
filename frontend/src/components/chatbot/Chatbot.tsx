@@ -15,6 +15,7 @@ const initialContact = { nombre: '', email: '', telefono: '', asunto: '', mensaj
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(true);
   const [menuVersion, setMenuVersion] = useState(0);
   const [turns, setTurns] = useState<ChatTurn[]>([greeting]);
@@ -31,11 +32,22 @@ export default function Chatbot() {
   const log = useRef<HTMLDivElement>(null);
   const controller = useRef<AbortController | null>(null);
   const locked = useRef(false);
+  const hasOpened = useRef(false);
 
   useEffect(() => {
-    if (open) dialog.current?.showModal();
-    else { dialog.current?.close(); }
+    if (open) { dialog.current?.showModal(); hasOpened.current = true; }
+    else { dialog.current?.close(); if (hasOpened.current) launcher.current?.focus(); }
   }, [open]);
+  useEffect(() => {
+    if (!closing) return;
+    const finish = () => {
+      setOpen(false); setClosing(false);
+    };
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const timer = window.setTimeout(finish, media.matches ? 0 : 240);
+    media.addEventListener('change', finish, { once: true });
+    return () => { window.clearTimeout(timer); media.removeEventListener('change', finish); };
+  }, [closing]);
   useEffect(() => {
     if (log.current) log.current.scrollTop = turns.length === 1 ? 0 : log.current.scrollHeight;
   }, [turns, busy, open, menuOpen]);
@@ -44,7 +56,7 @@ export default function Chatbot() {
     if (open && !busy && !contactOpen && !menuOpen) input.current?.focus();
   }, [open, busy, contactOpen, menuOpen]);
 
-  const close = () => { setOpen(false); launcher.current?.focus(); };
+  const close = () => { if (!closing) setClosing(true); };
   const reset = () => {
     if (locked.current) return;
     setTurns([greeting]); setMessage(''); setError(''); setSuccess('');
@@ -115,7 +127,7 @@ export default function Chatbot() {
       <RobotMascot />
       <span className="hc-launcher-badge" aria-hidden="true"><ChatIcon name="chat" size={16} /></span>
     </button>
-    <dialog ref={dialog} id="horus-chat" className="hc-dialog" aria-labelledby="hc-title"
+    <dialog ref={dialog} id="horus-chat" className={'hc-dialog' + (closing ? ' is-closing' : '')} aria-labelledby="hc-title"
       onCancel={event => { event.preventDefault(); close(); }} onClick={event => { if (event.target === dialog.current) {
         const bounds = dialog.current.getBoundingClientRect();
         if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) close();

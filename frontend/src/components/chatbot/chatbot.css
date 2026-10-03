@@ -122,3 +122,38 @@
 .hc-followups{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 10px;scrollbar-width:thin}
 .hc-followups button{flex:0 0 auto;max-width:240px;white-space:normal;text-align:left;border:1px solid #cbded7;background:#f0f6f3;color:#28594c;border-radius:10px;padding:7px 10px;font-size:11px;line-height:1.4}
 .hc-summary{border:1px solid var(--hc-line);border-radius:10px;padding:10px}.hc-summary p{margin:0}
+
+
+/* Brief motion only; conversation, consent and requests keep their behavior. */
+.hc-launcher { animation: hc-launcher-in 500ms cubic-bezier(.22,1,.36,1) 850ms backwards; }
+.hc-launcher-orbit { animation: hc-orbit-once 900ms ease-out 1400ms 1; }
+.hc-launcher .hc-robot-wave, .hc-launcher:hover .hc-robot-wave { animation: hc-robot-wave 3.6s ease-in-out infinite; }
+.hc-launcher .hc-robot-eyes { animation: none; }
+.hc-dialog[open] { transform-origin: bottom right; animation: hc-panel-in 240ms cubic-bezier(.22,1,.36,1); }
+.hc-dialog[open].is-closing { animation: hc-panel-out 240ms ease forwards; }
+.hc-dialog::backdrop { animation: hc-backdrop-in 240ms ease; }
+.hc-dialog.is-closing::backdrop { animation: hc-backdrop-out 240ms ease forwards; }
+.hc-thinking-dots i { animation-iteration-count: 3; }
+.hc-option-arrow, .hc-handoff > svg:last-child { transition: transform 180ms ease; }
+.hc-dialog button:active:not(:disabled), .hc-launcher:active { transform: translateY(1px); }
+@media (hover:hover) and (pointer:fine) {
+  .hc-guide-options > button:hover .hc-option-arrow, .hc-handoff:hover > svg:last-child { transform: translateX(3px); }
+}
+@keyframes hc-launcher-in { from { opacity:0; transform:scale(.95); } to { opacity:1; transform:scale(1); } }
+@keyframes hc-orbit-once { 50% { transform:scale(1.035); } }
+@keyframes hc-panel-in { from { opacity:0; transform:scale(.97); } to { opacity:1; transform:scale(1); } }
+@keyframes hc-panel-out { to { opacity:0; transform:scale(.97); } }
+@keyframes hc-backdrop-in { from { opacity:0; } to { opacity:1; } }
+@keyframes hc-backdrop-out { to { opacity:0; } }
+@media(max-width:768px) {
+  .hc-launcher:hover { transform:none; }
+  .hc-launcher-orbit { animation:none; }
+  .hc-dialog[open] { animation-name:hc-backdrop-in; }
+  .hc-dialog[open].is-closing { animation-name:hc-backdrop-out; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .hc-launcher, .hc-launcher *, .hc-dialog[open], .hc-dialog[open].is-closing,
+  .hc-dialog *, .hc-dialog::backdrop { animation:none !important; transition:none !important; }
+  .hc-launcher:hover, .hc-launcher:active, .hc-launcher-hint,
+  .hc-dialog button:active:not(:disabled), .hc-option-arrow, .hc-handoff > svg:last-child { transform:none !important; }
+}

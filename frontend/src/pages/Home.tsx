@@ -9,6 +9,7 @@ import HomeConvenios from '../components/home/HomeConvenios'
 import HomeHighlights from '../components/home/HomeHighlights'
 import HomeLocation from '../components/home/HomeLocation'
 import '../styles/home-redesign.css'
+import '../styles/home-motion.css'
 
 export default function Home() {
   const [page, setPage] = useState(1)
@@ -17,10 +18,9 @@ export default function Home() {
   useEffect(() => { document.title = 'Horus Group SRL — Tecnología y Educación en Cajamarca' }, [])
 
   return <div className="home-page">
-    <HomeWelcome />
-    <HomeHero conveniosTotal={!convenios.loading && !convenios.error ? convenios.data?.pagination.total ?? null : null} />
+    <HomeWelcome>{ready => <HomeHero ready={ready} conveniosTotal={!convenios.loading && !convenios.error ? convenios.data?.pagination.total ?? null : null} />}</HomeWelcome>
     <HomeServices />
-    <HomeConvenios resource={convenios} page={page} onPage={setPage} />
+    <HomeConvenios key={page} resource={convenios} page={page} onPage={setPage} />
     <HomeHighlights />
     <HomeLocation />
   </div>

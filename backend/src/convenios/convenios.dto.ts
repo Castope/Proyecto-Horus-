@@ -2,12 +2,13 @@ import { Transform, Type } from 'class-transformer';
 import { ArrayMinSize, ArrayUnique, IsArray, IsBoolean, IsIn, IsInt, IsString, Length, Max, Min, ValidateIf, ValidateNested, ValidateBy, isURL } from 'class-validator';
 import { PartialType } from '@nestjs/swagger';
 import { trimValue } from '../common/validation';
+import { isManagedUploadPath } from '../common/image-path';
 
 const ImageUrl = (allowEmpty = false) => ValidateBy({
   name: 'convenioImageUrl',
-  validator: { validate: (value: unknown) => typeof value === 'string' && ((allowEmpty && value === '') ||
+  validator: { validate: (value: unknown) => typeof value === 'string' && ((allowEmpty && value === '') || isManagedUploadPath(value) ||
     isURL(value, { protocols: ['http', 'https'], require_protocol: true, require_tld: false })),
-    defaultMessage: () => 'La imagen debe tener una URL HTTP/HTTPS válida.' },
+    defaultMessage: () => 'La imagen debe tener una URL HTTP/HTTPS válida o una ruta de imagen subida.' },
 });
 
 export class ConveniosQueryDto {

@@ -1,22 +1,24 @@
 import { useCompanySetting } from '../context/companySettings'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import logoHorus from '../assets/images/logo-horus.png'
 
 export default function Footer() {
   const setting = useCompanySetting()
+  const { pathname } = useLocation()
+  const reveal = pathname === '/' ? ' fade-up' : ''
   return (
     <footer className="footer">
       <div className="container">
         <div className="ix-footer-top">
 
-          <div className="ix-footer-brand">
+          <div className={'ix-footer-brand' + reveal}>
             <img src={logoHorus} alt="Horus Group" />
             <div className="ix-footer-name">{setting('empresa_nombre', 'Horus Group SRL')}</div>
             <div className="ix-footer-ruc">RUC: {setting('ruc', '20611010977')}</div>
             <p>Tecnología y formación profesional de calidad en Cajamarca, Perú.</p>
           </div>
 
-          <div className="ix-footer-col">
+          <div className={'ix-footer-col' + reveal}>
             <h5 className="ix-footer-heading">Políticas</h5>
             <ul className="ix-footer-list">
               <li><Link to="/politicas/cookies">Políticas de Cookies</Link></li>
@@ -26,7 +28,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          <div className="ix-footer-col">
+          <div className={'ix-footer-col' + reveal}>
             <h5 className="ix-footer-heading">Contacto</h5>
             <ul className="footer-contact">
               <li><i className="fas fa-phone" />{setting('telefono_principal', '+51 927 582 305')}</li>
@@ -35,7 +37,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          <div className="ix-footer-col">
+          <div className={'ix-footer-col' + reveal}>
             <h5 className="ix-footer-heading">Síguenos</h5>
             <div className="ix-footer-social">
               <a href={setting('facebook_url','https://www.facebook.com/share/174BEdCReB/')} target="_blank" rel="noreferrer" className="ix-social-item">
@@ -55,7 +57,7 @@ export default function Footer() {
 
         </div>
 
-        <div className="footer-bottom">
+        <div className={'footer-bottom' + reveal}>
           <p>&copy; {new Date().getFullYear()} Horus Group SRL. Todos los derechos reservados.</p>
           <Link to="/libro-reclamaciones" className="footer-libro-link">
             <i className="fas fa-book-open" /> Libro de Reclamaciones

@@ -1,7 +1,8 @@
 ﻿
 
 *, *::before, *::after { box-sizing: border-box; }
-html, body { overflow-x: hidden; max-width: 100vw; }
+/* Clip horizontal overflow without creating an inner vertical scroll container. */
+html, body { overflow-x: clip; max-width: 100vw; }
 img, video, iframe { max-width: 100%; }
 
 @media (max-width: 900px) {

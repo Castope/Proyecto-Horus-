@@ -2,13 +2,15 @@ import { Transform, Type } from 'class-transformer';
 import { IsArray, ArrayUnique, IsString, Length, IsIn, IsInt, Min, Max, IsISO8601, Matches, ValidateIf, ValidateBy, isURL } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 
+import { isManagedUploadPath } from '../common/image-path';
+
 const trim = ({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value;
 
 const PublicImageUrl=()=>ValidateBy({
   name:'publicImageUrl',
   validator:{
-    validate:(value:unknown)=>typeof value==='string'&&(/^\/site-original\/[a-zA-Z0-9_-]+\.(?:jpg|jpeg|png|webp)$/.test(value)||isURL(value,{protocols:['https','http'],require_protocol:true})),
-    defaultMessage:()=> 'imagen_url debe ser una URL HTTP/HTTPS válida o una imagen de /site-original/.',
+    validate:(value:unknown)=>typeof value==='string'&&(isManagedUploadPath(value)||/^\/site-original\/[a-zA-Z0-9_-]+\.(?:jpg|jpeg|png|webp)$/.test(value)||isURL(value,{protocols:['https','http'],require_protocol:true})),
+    defaultMessage:()=> 'imagen_url debe ser una URL HTTP/HTTPS válida o una imagen de /api/uploads/ o /site-original/.',
   },
 });
 

@@ -58,3 +58,15 @@ Antes de presentar: confirmar los datos institucionales con la empresa, revisar/
 ## Equipo
 
 Proyecto académico de Ingeniería de Software: Anderson Vásquez, Cristopher Pulache y Carlos Castope.
+
+### Contenido compartido entre administradores y visitantes
+
+Todos los administradores consultan el mismo backend y las mismas tablas MySQL. Crear una cuenta no crea un catálogo ni una base independientes. Para compartir contenido entre equipos, accede a la URL pública del mismo frontend; todas las instancias del backend deben usar el mismo destino `DB_*`. El proxy `/api` y la alternativa `VITE_API_BASE_URL` se describen en [Railway](RAILWAY.md).
+
+Guarda el contenido y marca cursos, servicios y preguntas como **publicado**, galerías como **activo** y convenios como **visible**. Los borradores son compartidos entre administradores, pero no se muestran a visitantes. Consultas, reclamaciones, suscripciones y cotizaciones permanecen protegidas.
+
+`localStorage` conserva únicamente el token de sesión y un marcador de cambios para refrescar otras pestañas. No almacena el contenido del panel. Cada carga consulta la API; los cambios desde otro equipo se ven al entrar o actualizar la sección. Si el navegador bloquea el almacenamiento, la página pública funciona y la sesión iniciada se mantiene solo durante la navegación actual.
+
+Los uploads del proxy se guardan como `/api/uploads/<archivo>`, evitando enlaces dependientes de `localhost`. Las respuestas de contenido resuelven las rutas de uploads contra la API configurada y los antiguos enlaces de uploads de loopback, sin modificar MySQL ni los enlaces externos. El backend necesita un `UPLOAD_DIR` persistente, compartido si tiene varias instancias.
+
+Verificación adicional: desde `frontend/`, después de compilar, ejecuta `node scripts/smoke-global-content.cjs`. Revisa dos sesiones de navegador aisladas y un visitante con storage bloqueado mediante fixtures HTTP. La prueba de persistencia real entre administradores y tras reiniciar la API forma parte de `backend/test/prisma.integration.cjs` y utiliza una base temporal local.

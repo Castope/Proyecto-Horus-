@@ -109,6 +109,97 @@ test('Prisma works against MySQL and legacy-compatible SQL in an isolated databa
         assert.equal((await request('admin/convenios', 'GET', undefined, true)).status, 401);
       } finally { await app.close(); await client.adminUser.delete({ where: { id: auth.user.id } }); }
     });
+
+    await t.test('contenido global persiste tras reiniciar la API y lo ven un administrador nuevo y visitantes sin sesión', async () => {
+      const { AppModule } = require('../dist/app.module');
+      const { createValidationPipe } = require('../dist/common/validation');
+      const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
+      const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'horus-global-uploads-'));
+      const previousUploadDir = process.env.UPLOAD_DIR;
+      process.env.UPLOAD_DIR = directory;
+      const savedSettings = await client.setting.findMany();
+      const adminIds = [], records = [];
+      let app;
+      const start = async () => {
+        app = await NestFactory.create(AppModule, { logger: false, abortOnError: false });
+        app.setGlobalPrefix('api'); app.useGlobalPipes(createValidationPipe());
+        await app.listen(0, '127.0.0.1');
+        return app.getUrl();
+      };
+      let origin;
+      const request = async (route, token, method = 'GET', body) => {
+        const response = await fetch(origin + '/api/' + route, { method, headers: {
+          ...(token ? { Authorization: 'Bearer ' + token } : {}),
+          ...(body ? { 'Content-Type': 'application/json' } : {}),
+        }, ...(body ? { body: JSON.stringify(body) } : {}) });
+        const data = await response.json();
+        assert.ok(response.ok, 'Solicitud aislada: ' + route + ' (' + response.status + ')');
+        return data;
+      };
+      const password = 'Global-content-test-123!';
+      try {
+        origin = await start();
+        const first = await request('admin/register', null, 'POST', { nombre: 'Admin global A', email: 'global-a@example.com', password });
+        adminIds.push(first.user.id);
+        const form = new FormData();
+        const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jQxQAAAAASUVORK5CYII=', 'base64');
+        form.append('file', new Blob([png], { type: 'image/png' }), 'global.png');
+        const upload = await fetch(origin + '/api/admin/uploads', { method: 'POST', headers: { Authorization: 'Bearer ' + first.token }, body: form });
+        assert.equal(upload.status, 201);
+        const image = '/api' + (await upload.json()).path;
+        const entries = [
+          ['cursos', { titulo: 'Curso global', slug: 'curso-global', descripcion: 'Contenido global de prueba', tipo: 'curso', modalidad: 'virtual', duracion: '20 horas', estado: 'publicado', imagen_url: image }, 'curso'],
+          ['servicios', { titulo: 'Servicio global', slug: 'servicio-global', descripcion: 'Contenido global de prueba', categoria: 'cableado', estado: 'publicado', imagen_url: image }, 'servicio'],
+          ['preguntas-frecuentes', { pregunta: 'Pregunta global', respuesta: 'Respuesta global', categoria: 'general', estado: 'publicado' }, 'preguntaFrecuente'],
+          ['galeria', { titulo: 'Foto global', categoria: 'global', imagen_url: image, activo: true }, 'galeriaItem'],
+          ['convenios', { nombre: 'Convenio global', descripcion_corta: 'Contenido global de prueba', logo_url: image, visible: true }, 'convenio'],
+          ['convenios', { nombre: 'Convenio oculto', descripcion_corta: 'Borrador compartido de prueba', visible: false }, 'convenio'],
+        ];
+        for (const [route, body, model] of entries) {
+          const created = (await request('admin/' + route, first.token, 'POST', body)).item;
+          records.push([model, created.id]);
+        }
+        await request('admin/convenios/' + records[4][1] + '/fotos', first.token, 'POST', { imagen_url: image, orden: 0 });
+        await request('admin/settings', first.token, 'PUT', { ajustes: { empresa_nombre: 'Empresa global de prueba' } });
+        // El segundo administrador se registra después de crear el contenido.
+        const second = await request('admin/register', null, 'POST', { nombre: 'Admin global B', email: 'global-b@example.com', password });
+        adminIds.push(second.user.id);
+        assert.notEqual(first.user.id, second.user.id);
+        const lists = ['cursos', 'servicios', 'preguntas-frecuentes', 'galeria', 'convenios', 'settings'];
+        const snapshots = {};
+        for (const route of lists) {
+          snapshots[route] = await request('admin/' + route, first.token);
+          assert.deepEqual(await request('admin/' + route, second.token), snapshots[route], 'Ambos administradores ven ' + route);
+        }
+        assert.equal(snapshots.convenios.pagination.total, 2);
+        await app.close(); app = null;
+        origin = await start();
+        const loggedIn = await request('admin/login', null, 'POST', { email: 'global-b@example.com', password });
+        for (const route of lists) assert.deepEqual(await request('admin/' + route, loggedIn.token), snapshots[route], 'Persistencia de ' + route + ' tras reiniciar');
+        for (const route of ['cursos', 'servicios', 'preguntas-frecuentes', 'galeria', 'convenios']) {
+          const data = await request(route, null);
+          assert.equal(data.items.length, 1, 'Visitante ve contenido publicado de ' + route);
+        }
+        assert.equal((await request('settings', null)).settings.empresa_nombre, 'Empresa global de prueba');
+        const detail = await request('convenios/' + records[4][1], null);
+        assert.equal(detail.item.fotos[0].imagen_url, image);
+        const picture = await fetch(origin + image);
+        assert.equal(picture.status, 200);
+        assert.deepEqual(Buffer.from(await picture.arrayBuffer()), png);
+        const protectedResponse = await fetch(origin + '/api/admin/convenios');
+        assert.equal(protectedResponse.status, 401, 'Los visitantes no obtienen permisos administrativos');
+      } finally {
+        if (app) await app.close();
+        for (const [model, id] of records.reverse()) await client[model].delete({ where: { id } });
+        await client.setting.deleteMany();
+        for (const row of savedSettings) await client.setting.create({ data: row });
+        await client.adminUser.deleteMany({ where: { id: { in: adminIds } } });
+        if (previousUploadDir === undefined) delete process.env.UPLOAD_DIR; else process.env.UPLOAD_DIR = previousUploadDir;
+        if (path.dirname(directory) !== fs.realpathSync(os.tmpdir()) || !path.basename(directory).startsWith('horus-global-uploads-')) throw new Error('Uploads fuera del directorio temporal');
+        fs.rmSync(directory, { recursive: true, force: true });
+      }
+    });
+
     await t.test('catalog publication, search, dates, duplicate slug and archive', async () => {
       const { item } = await catalog.create('cursos', { titulo: 'Curso de redes', slug: 'redes', descripcion: 'Redes locales', tipo: 'curso', modalidad: 'virtual', duracion: '20 horas', fecha_inicio: '2026-09-21' });
       assert.equal(item.estado, 'borrador');

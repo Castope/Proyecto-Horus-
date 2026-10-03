@@ -4,10 +4,19 @@ import { getCurrentAdmin } from '../services';
 import { PanelApiError } from '../services/panelApi';
 import type { AdminUser } from '../types';
 const STORAGE_KEY = 'horus-admin-token';
+function readSavedToken() {
+  try { return localStorage.getItem(STORAGE_KEY); } catch { return null; }
+}
+function saveToken(token: string | null) {
+  try {
+    if (token) localStorage.setItem(STORAGE_KEY, token);
+    else localStorage.removeItem(STORAGE_KEY);
+  } catch { /* La sesión actual funciona en memoria si el navegador bloquea su persistencia. */ }
+}
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem(STORAGE_KEY));
+  const [token, setToken] = useState<string | null>(readSavedToken);
   const [user, setUser] = useState<AdminUser | null>(null);
-  const [checking, setChecking] = useState(() => Boolean(localStorage.getItem(STORAGE_KEY)));
+  const [checking, setChecking] = useState(() => Boolean(token));
   const [sessionError, setSessionError] = useState('');
   const [revision, setRevision] = useState(0);
   useEffect(() => {
@@ -15,7 +24,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     const controller = new AbortController();
     let current = true;
     const timeout = window.setTimeout(() => controller.abort(), 15000);
-    localStorage.setItem(STORAGE_KEY, token);
+    saveToken(token);
     getCurrentAdmin(token, controller.signal).then(response => {
       if (!current) return;
       if (!response.user) throw new Error('No se pudo validar tu identidad.');
@@ -24,13 +33,13 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       if (!current) return;
       setUser(null);
       if (error instanceof PanelApiError && error.status === 401) {
-        localStorage.removeItem(STORAGE_KEY); setToken(null); setSessionError('');
+        saveToken(null); setToken(null); setSessionError('');
       } else setSessionError('No pudimos validar tu sesión. Puedes reintentar cuando el servidor esté disponible.');
     }).finally(() => { window.clearTimeout(timeout); if (current) setChecking(false); });
     return () => { current = false; controller.abort(); window.clearTimeout(timeout); };
   }, [token, revision]);
   useEffect(() => {
-    const expire = () => { localStorage.removeItem(STORAGE_KEY); setUser(null); setToken(null); setChecking(false); setSessionError(''); };
+    const expire = () => { saveToken(null); setUser(null); setToken(null); setChecking(false); setSessionError(''); };
     window.addEventListener('horus:session-expired', expire);
     return () => window.removeEventListener('horus:session-expired', expire);
   }, []);
@@ -38,7 +47,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     user, token, checking, sessionError, isAuthenticated: Boolean(token && user),
     retrySession: () => { setChecking(true); setSessionError(''); setRevision(value => value + 1); },
     login: (value: string) => { setChecking(true); setSessionError(''); setUser(null); setToken(value); },
-    logout: () => { localStorage.removeItem(STORAGE_KEY); setToken(null); setUser(null); setChecking(false); setSessionError(''); },
+    logout: () => { saveToken(null); setToken(null); setUser(null); setChecking(false); setSessionError(''); },
   }), [user, token, checking, sessionError]);
   return <AdminAuthContext.Provider value={value}>{children}</AdminAuthContext.Provider>;
 }

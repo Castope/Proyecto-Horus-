@@ -32,7 +32,7 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/admin/me') return json({ ok: true, user })
       if (route === '/api/admin/uploads') return json({ ok: true, path: image.slice(4) }, 201)
       if (route === '/api/settings') return json({ ok: true, settings: { empresa_nombre: 'Empresa global de prueba' } })
-      if (route === '/api/admin/stats') return json({ ok: true, stats: { catalogo: {}, mensajes: { total: 0, nuevos: 0, enProceso: 0 }, reclamaciones: { total: 0 } }, recent: { items: [], messages: [], reclamaciones: [] } })
+      if (route === '/api/admin/stats') return json({ ok: true, stats: { catalogo: {}, mensajes: { total: 0, nuevos: 0, enProceso: 0 }, reclamaciones: { total: 0 } }, actividadReciente: { mensajes: [], reclamaciones: [] } })
       if (route.startsWith('/api/admin/convenios') && req.method !== 'GET') {
         const body = JSON.parse(raw)
         convenio = { id: 1, fotos: [], ...convenio, ...body }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Resource, Row } from '../../types/workspace';
-import { label, rowState } from '../../types/workspace';
+import { canRemove, label, removeVerb, rowState } from '../../types/workspace';
 import { dateLabel, plainText } from './useCollection';
 import PanelIcon from '../PanelIcon';
 
@@ -46,7 +46,7 @@ export default function ResourceCards({ resource: r, rows, busy, onOpen, onDupli
         {r.endpoint === 'galeria' && <small>Orden de presentación: {String(row.orden ?? 0)}</small>}
         <footer><button className="hp-btn" disabled={busy} onClick={() => onOpen(row)}><PanelIcon name="edit" size={15} />Editar</button>
           {r.catalog && <button className="hp-icon-btn" disabled={busy} title="Duplicar como borrador" aria-label={'Duplicar ' + row[r.title]} onClick={() => onDuplicate(row)}><PanelIcon name="copy" size={16} /></button>}
-          <button className="hp-icon-btn hp-danger" disabled={busy || (r.catalog && row.estado === 'archivado')} title={r.catalog ? 'Archivar' : 'Eliminar'} aria-label={(r.catalog ? 'Archivar ' : 'Eliminar ') + row[r.title]} onClick={() => onRemove(row)}><PanelIcon name="trash" size={16} /></button>
+          <button className="hp-icon-btn hp-danger" disabled={busy || !canRemove(r, row)} title={removeVerb(r)} aria-label={removeVerb(r) + ' ' + row[r.title]} onClick={() => onRemove(row)}><PanelIcon name="trash" size={16} /></button>
         </footer>
       </div>
     </article>)}

@@ -1,6 +1,6 @@
 ﻿
 
-.ix-eyebrow, .ed-eyebrow, .inner-eyebrow {
+.ix-eyebrow, .inner-eyebrow {
   color: var(--gold-dk) !important;
 }
 
@@ -219,7 +219,6 @@
 }
 
 .ix-section-head .ix-eyebrow,
-.ed-section-head .ed-eyebrow,
 .ns-chip {
   background: var(--gold-10) !important;
   color: var(--gold-dk) !important;

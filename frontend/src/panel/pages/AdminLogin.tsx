@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { startTransition, useEffect, useState } from 'react';
 import type {ChangeEvent, SubmitEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -16,8 +16,12 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated) navigate('/admin/dashboard', { replace: true });
+    // As a transition, the login stays on screen until the panel is ready instead of flashing a loading page.
+    if (isAuthenticated) startTransition(() => navigate('/admin/dashboard', { replace: true }));
   }, [isAuthenticated, navigate]);
+
+  // Download the panel while the user fills in the form so signing in opens it right away.
+  useEffect(() => { void import('./AdminDashboard'); }, []);
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
@@ -30,13 +34,13 @@ export default function AdminLogin() {
     if (loading) return;
     setLoading(true);
     setMensaje('');
+    let signedIn = false;
     try {
       const response = await loginAdmin({ ...form, email: form.email.trim() });
       if (response.ok && response.token) {
-        login(response.token);
-        const successMessage = response.mensaje || 'Inicio de sesión correcto.';
-        setMensaje(successMessage);
-        toast.success(successMessage);
+        // A correct login is not a message: the form stays locked until the panel opens.
+        signedIn = true;
+        login(response.token, response.user);
       } else {
         const errorMessage = response.mensaje || response.message || 'Revisa tu correo y contraseña e inténtalo nuevamente.';
         const detail = Array.isArray(errorMessage) ? errorMessage.join(' ') : errorMessage;
@@ -48,7 +52,7 @@ export default function AdminLogin() {
       setMensaje(errorMessage);
       toast.error(errorMessage);
     } finally {
-      setLoading(false);
+      if (!signedIn) setLoading(false);
     }
   };
 
@@ -73,7 +77,7 @@ export default function AdminLogin() {
           {!loading && <span aria-hidden="true">→</span>}
         </button>
       </form>
-      <p><Link to="/admin/forgot-password">Olvidé mi contraseña</Link></p>
+      <p className="admin-auth__forgot"><Link to="/admin/forgot-password">Olvidé mi contraseña</Link></p>
       <p className="admin-auth__switch">¿No tienes una cuenta? <Link to="/admin/register">Crear cuenta</Link></p>
       <div className="admin-auth__note admin-auth__note--access"><PanelIcon name="shield" size={16} /><span>Tu espacio para gestionar Horus Group.</span></div>
     </AdminAuthLayout>

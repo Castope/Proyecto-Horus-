@@ -395,6 +395,38 @@ test('Prisma works against MySQL and legacy-compatible SQL in an isolated databa
       assert.equal(visible.items.length,1);assert.equal(visible.items[0].titulo,'Contenido revisado desde el panel');assert.equal(visible.items[0].nombre_corto,'Nombre revisado');
       await catalog.archive('servicios',first.id);await restore.restore('servicios');
       assert.equal((await client.servicio.findUnique({where:{id:first.id}})).estado,'archivado');
+      // Services are removed for real: the row disappears and its slug can be reused.
+      const removable=await catalog.create('servicios',{titulo:'Servicio temporal',slug:'servicio-temporal',descripcion:'Se elimina de verdad',categoria:'soporte',estado:'borrador'});
+      await assert.rejects(()=>catalog.create('servicios',{titulo:'Otro',slug:'servicio-temporal',descripcion:'Mismo slug',categoria:'soporte'}),error=>/«Servicio temporal» \(borrador\).*«servicio-temporal»/.test(error.getResponse().mensaje));
+      assert.equal((await catalog.remove('servicios',removable.item.id)).ok,true);
+      assert.equal(await client.servicio.findUnique({where:{id:removable.item.id}}),null);
+      await assert.rejects(()=>catalog.detail('servicios',removable.item.id));
+      const reused=await catalog.create('servicios',{titulo:'Servicio reutilizado',slug:'servicio-temporal',descripcion:'El slug quedó libre',categoria:'soporte',estado:'borrador'});
+      await catalog.remove('servicios',reused.item.id);
+      const sections=await catalog.list('servicios',{categoria:'cableado,camaras',page:1,limit:100});
+      assert.ok(sections.items.length>0&&sections.items.every(x=>['cableado','camaras'].includes(x.categoria)));
+      // "Otros servicios" is gone from the database too; each technology category can be created, published, edited and deleted.
+      const [[column]]=await db.query('SELECT COLUMN_TYPE ct FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?',[name,'servicios','categoria']);
+      assert.equal(column.ct,"enum('cableado','camaras','soporte','asesoramiento')");
+      await assert.rejects(()=>client.servicio.create({data:{titulo:'Otro servicio',slug:'otro-servicio',descripcion:'Esta categoría ya no existe',categoria:'otros'}}));
+      for(const categoria of ['cableado','camaras','soporte']){
+        const draft=await catalog.create('servicios',{titulo:'Prueba '+categoria,slug:'prueba-'+categoria,descripcion:'Servicio de prueba',categoria,estado:'borrador'});
+        assert.equal((await catalog.list('servicios',{categoria,page:1,limit:100},true)).items.some(x=>x.id===draft.item.id),false,'Un borrador no es público');
+        await catalog.update('servicios',draft.item.id,{estado:'publicado',titulo:'Prueba editada '+categoria});
+        assert.equal((await catalog.list('servicios',{categoria,page:1,limit:100},true)).items.find(x=>x.id===draft.item.id)?.titulo,'Prueba editada '+categoria);
+        await catalog.remove('servicios',draft.item.id);
+        assert.equal(await client.servicio.findUnique({where:{id:draft.item.id}}),null);
+      }
+      // Courses and capacitaciones are removed for good too, archived ones included, and their slug is released.
+      for(const tipo of ['curso','capacitacion']){
+        const course=await catalog.create('cursos',{titulo:'Prueba '+tipo,slug:'prueba-'+tipo,descripcion:'Se elimina de verdad',tipo,modalidad:'virtual',duracion:'2 horas',estado:'borrador'});
+        await catalog.archive('cursos',course.item.id);
+        assert.equal((await catalog.remove('cursos',course.item.id)).ok,true);
+        assert.equal(await client.curso.findUnique({where:{id:course.item.id}}),null);
+        const again=await catalog.create('cursos',{titulo:'Prueba '+tipo,slug:'prueba-'+tipo,descripcion:'El slug quedó libre',tipo,modalidad:'virtual',duracion:'2 horas',estado:'borrador'});
+        await catalog.remove('cursos',again.item.id);
+      }
+      await assert.rejects(()=>catalog.remove('preguntas-frecuentes',1));
       assert.equal((await restore.restore('capacitaciones')).created,4);
       const program=await client.curso.findFirst({where:{origen_original:{not:null}}});
       assert.equal(program.modalidad,null);assert.equal(program.duracion,null);assert.equal(program.fecha_inicio,null);

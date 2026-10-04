@@ -3,7 +3,7 @@ import type { AdminUser } from '../types';
 interface AdminAuthContextValue {
  user: AdminUser | null; token: string | null; isAuthenticated: boolean; checking: boolean;
  sessionError: string; retrySession: () => void;
- login: (value: string) => void; logout: () => void;
+ login: (value: string, user?: AdminUser) => void; logout: () => void;
 }
 export const AdminAuthContext = createContext<AdminAuthContextValue | undefined>(undefined);
 export function useAdminAuth() {

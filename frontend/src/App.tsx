@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import PageBoundary from './components/PageBoundary'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import RouteLoading from './components/RouteLoading'
 import { Toaster } from 'sonner'
 import MainLayout from './layouts/MainLayout'
 import Home            from './pages/Home'
@@ -33,18 +34,25 @@ const AdminMessages = lazy(() => import('./panel/pages/AdminMessages'))
 import NewsletterUnsubscribe from './pages/NewsletterUnsubscribe'
 const AdminRecovery = lazy(() => import('./panel/pages/AdminRecovery'))
 import CatalogoDetail from './pages/CatalogoDetail'
+import CursoDetail from './pages/educacion/CursoDetail'
 import Servicios from './pages/Servicios'
 import NotFound from './pages/NotFound'
+
+function RouteFallback() {
+  const { pathname } = useLocation()
+  return <RouteLoading label={pathname.startsWith('/admin') ? 'Cargando panel…' : 'Cargando página…'} />
+}
 
 export default function App() {
   return (
     <AdminAuthProvider>
       <BrowserRouter>
         <Toaster richColors position="top-right" closeButton expand />
-        <PageBoundary><Suspense fallback={<p role="status" style={{ padding: '2rem' }}>Cargando página…</p>}>
+        <PageBoundary><Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route element={<MainLayout />}>
-            <Route path="/educacion/cursos/:id" element={<CatalogoDetail kind="cursos" />} />
+            <Route path="/educacion/cursos/:id" element={<CursoDetail />} />
+            <Route path="/educacion/capacitaciones/:id" element={<CursoDetail />} />
             <Route path="/tecnologias/servicios/:id" element={<CatalogoDetail kind="servicios" />} />
             <Route path="/tecnologias/servicios" element={<Servicios />} />
             <Route path="/"                        element={<Home />} />

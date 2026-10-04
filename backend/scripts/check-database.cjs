@@ -30,7 +30,7 @@ function expectedColumns() {
       ['id','int'], ['convenio_id','int'], ['imagen_url','varchar(2048)'], ['orden','int'], ['createdAt','datetime'],
     ].map(([name,type])=>({table:'convenio_fotos',name,type,nullable:false,unique:name==='id'})),
   ];
-  return [...convenios, ...legacy.map(column=>column.table==='cursos'&&['modalidad','duracion'].includes(column.name)?{...column,nullable:true}:column),...added,...visual];
+  return [...convenios, ...legacy.map(column=>column.table==='cursos'&&['modalidad','duracion'].includes(column.name)?{...column,nullable:true}:column.table==='servicios'&&column.name==='categoria'?{...column,type:"ENUM('cableado','camaras','soporte','asesoramiento')"}:column),...added,...visual];
 }
 function normalizeType(type) { return type.toLowerCase().replace(/\binteger\b/g, 'int').replace(/int\(\d+\)/g, 'int').replace(/\s/g, ''); }
 async function check(db) {

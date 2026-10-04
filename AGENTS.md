@@ -78,7 +78,7 @@ La API usa el prefijo `/api` y el puerto 3000 por defecto. Swagger se publica en
 ### Reglas de negocio que deben preservarse
 
 - El catálogo público solo devuelve registros publicados. Los parámetros del cliente no pueden habilitar borradores ni archivados.
-- El borrado de catálogo archiva el registro. No lo reemplaces por eliminación física.
+- El borrado de cursos y preguntas frecuentes archiva el registro; no lo reemplaces por eliminación física. Por decisión explícita del proyecto, los **servicios** sí se eliminan definitivamente (`DELETE /api/admin/servicios/:id`, con confirmación en el panel); su estado `archivado` sigue disponible desde Editar.
 - La galería pública excluye elementos inactivos.
 - El contenido administrable es compartido en MySQL; las cuentas nuevas no crean inventarios propios. El token de sesión y el marcador local de refresco no son fuentes de contenido. Las rutas de uploads del proxy se conservan como `/api/uploads/<archivo>`; el frontend resuelve los uploads contra la API configurada y los enlaces antiguos de loopback sin escribir en MySQL. La página pública debe funcionar aunque el navegador bloquee storage.
 - Una base sin contenido devuelve listas vacías y contadores en cero. No insertes datos de ejemplo ni inventes resultados para completar pantallas.

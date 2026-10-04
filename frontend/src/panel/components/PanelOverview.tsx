@@ -7,7 +7,7 @@ import PanelIcon from './PanelIcon';
 import { useNavigate } from 'react-router-dom';
 import OverviewWork from './workspace/OverviewWork';
 
-export default function PanelOverview({ go }: { go: (section: string, create?: boolean) => void }) {
+export default function PanelOverview({ go }: { go: (section: string, create?: boolean, seccion?: string) => void }) {
   const { token, user } = useAdminAuth();
   const navigate = useNavigate();
   const [data, setData] = useState<DashboardStats | null>(null);
@@ -27,14 +27,15 @@ export default function PanelOverview({ go }: { go: (section: string, create?: b
   const draft = Object.values(catalog || {}).reduce((sum, item) => sum + item.borradores, 0);
   const metric = (value?: number) => loading ? '…' : error ? '—' : String(value ?? 0);
   const distribution = [
-    { title: 'Cursos y capacitaciones', value: catalog?.cursos?.total || 0, color: 'blue', section: 'cursos' },
+    { title: 'Capacitaciones', value: catalog?.cursos?.por_tipo?.capacitacion?.total || 0, color: 'blue', section: 'educacion', seccion: 'capacitaciones' },
+    { title: 'Cursos', value: catalog?.cursos?.por_tipo?.curso?.total || 0, color: 'purple', section: 'educacion', seccion: 'cursos' },
     { title: 'Servicios tecnológicos', value: catalog?.servicios?.total || 0, color: 'teal', section: 'servicios' },
     { title: 'Preguntas frecuentes', value: catalog?.['preguntas-frecuentes']?.total || 0, color: 'gold', section: 'faq' },
   ];
   return <>
     <div className="hp-heading"><div><p className="hp-kicker">VISTA GENERAL</p><h1>Hola, {user?.nombre?.split(' ')[0] || 'administrador'} <span className="hp-greeting">✦</span></h1><p>Un vistazo a tu contenido y las conversaciones por atender.</p></div><button className="hp-btn" disabled={loading} onClick={() => setReload(n => n + 1)}><PanelIcon name="refresh" />Actualizar resumen</button></div>
     {error && <p className="hp-error" role="alert">{error} Los indicadores no están disponibles.</p>}
-    <section className="hp-hero"><div><p className="hp-kicker">CONECTA. COMPARTE. CRECE.</p><h2>Tu próxima gran idea<br /><span>empieza aquí.</span></h2><p>Dale vida a un nuevo curso o retoma la conversación con tu comunidad.</p><div className="hp-actions"><button className="hp-btn hp-btn-gold" onClick={() => go('cursos', true)}>Crear un curso<PanelIcon name="plus" /></button><button className="hp-hero-link" onClick={() => go('mensajes')}>Ir a mensajes <PanelIcon name="arrow" /></button></div></div>
+    <section className="hp-hero"><div><p className="hp-kicker">CONECTA. COMPARTE. CRECE.</p><h2>Tu próxima gran idea<br /><span>empieza aquí.</span></h2><p>Dale vida a un nuevo curso o retoma la conversación con tu comunidad.</p><div className="hp-actions"><button className="hp-btn hp-btn-gold" onClick={() => go('educacion', true, 'cursos')}>Crear un curso<PanelIcon name="plus" /></button><button className="hp-hero-link" onClick={() => go('mensajes')}>Ir a mensajes <PanelIcon name="arrow" /></button></div></div>
       <div className="hp-hero-art" aria-hidden="true"><div className="hp-orbit" /><div className="hp-art-tile hp-art-one"><PanelIcon name="book" size={30} /><span>Formación</span></div><div className="hp-art-tile hp-art-two"><PanelIcon name="tools" size={27} /><span>Tecnología</span></div><span className="hp-art-star">✦</span></div></section>
     <section className="hp-metrics" aria-label="Indicadores del sistema" aria-busy={loading}>
       {[{ title: 'Contenido del catálogo', value: catalogTotal, sub: 'Cursos, servicios y preguntas', icon: 'file', section: 'cursos', color: 'blue' },
@@ -47,7 +48,7 @@ export default function PanelOverview({ go }: { go: (section: string, create?: b
     <div className="hp-overview-grid"><section className="hp-card hp-distribution"><div className="hp-card-heading"><div><p className="hp-kicker">CATÁLOGO</p><h2>Tu contenido, en perspectiva</h2></div><PanelIcon name="file" /></div>
       <div className="hp-distribution-total"><strong>{metric(catalogTotal)}</strong><span>registros en total</span></div>
       <div className="hp-stacked" aria-label="Distribución del catálogo">{!loading && !error && distribution.map(item => item.value > 0 && <span key={item.title} className={'hp-bg-' + item.color} style={{ width: (item.value / catalogTotal * 100) + '%' }} />)}</div>
-      {distribution.map(item => <button className="hp-distribution-row" key={item.title} onClick={() => go(item.section)}><span className={'hp-dot hp-bg-' + item.color} /><span>{item.title}</span><strong>{metric(item.value)}</strong><PanelIcon name="arrow" size={16} /></button>)}
+      {distribution.map(item => <button className="hp-distribution-row" key={item.title} onClick={() => go(item.section, false, item.seccion)}><span className={'hp-dot hp-bg-' + item.color} /><span>{item.title}</span><strong>{metric(item.value)}</strong><PanelIcon name="arrow" size={16} /></button>)}
       {!loading && !error && !catalogTotal && <p className="hp-muted">La distribución aparecerá al crear tus primeros registros.</p>}
     </section>
     <section className="hp-card"><div className="hp-card-heading"><div><p className="hp-kicker">COMUNIDAD</p><h2>Últimas consultas</h2></div><button className="hp-text-btn" onClick={() => go('mensajes')}>Ver todas <PanelIcon name="arrow" size={15} /></button></div>

@@ -6,15 +6,17 @@ import ResourceCards from './workspace/ResourceCards';
 import CourseAgenda from './workspace/CourseAgenda';
 import ResourcePreview from './workspace/ResourcePreview';
 import { panelRequest, errorMessage } from '../services/panelApi';
-import { type Resource, type Row, label, rowState } from '../types/workspace';
+import { type Field, type PanelScope, type Resource, type Row, adviceKind, canRemove, fieldsFor, fixedFieldKeys, label, removeVerb, rowState, slugify } from '../types/workspace';
 import PanelIcon from './PanelIcon';
 import ImageUpload from './ImageUpload';
 import OriginalContentImport from './OriginalContentImport';
 import PanelDialog from './PanelDialog';
 
 type ListResponse = { items?: Row[]; messages?: Row[]; pagination?: { total: number; pages: number } };
-type Props = { resource: Resource; autoCreate?: boolean };
-export default function ResourceManager({ resource: r, autoCreate }: Props) {
+// A scope limits the list to one section of the Education or Services menu and keeps new records inside it.
+type Props = { resource: Resource; autoCreate?: boolean; scope?: PanelScope };
+export default function ResourceManager({ resource: r, autoCreate, scope }: Props) {
+  const singular = scope?.singular ?? r.singular;
   const { token } = useAdminAuth();
   const [params] = useSearchParams();
   const visual = ['cursos', 'servicios', 'galeria', 'preguntas-frecuentes'].includes(r.endpoint);
@@ -33,11 +35,18 @@ export default function ResourceManager({ resource: r, autoCreate }: Props) {
   const defaults = (row?: Row) => Object.fromEntries(r.fields.map(field => {
     let value = row?.[field.key];
     if (field.key === 'activo') value = row ? row.activo ? 'activo' : 'inactivo' : 'activo';
+    if (field.key === 'contenido_tipo') value = adviceKind(row);
+    const fixed = scope?.filters[field.key];
+    if (!row && fixed) value = fixed.split(',')[0];
     if (field.type === 'date' && value) value = String(value).slice(0, 10);
     return [field.key, String(value ?? field.options?.[0] ?? (field.type === 'number' ? '0' : ''))];
   }));
   const [form, setForm] = useState<Record<string, string>>(() => autoCreate ? defaults() : {});
   const [formError, setFormError] = useState('');
+  // While creating, the slug follows the title until the administrator edits it by hand.
+  const [slugEdited, setSlugEdited] = useState(false);
+  // Only the fields that make sense for this section are part of the form (see fieldsFor); the rest keep their stored value.
+  const { main, advanced, groups } = fieldsFor(r, scope, form);
   const [pendingDelete, setPendingDelete] = useState<Row | null>(null);
   const [busy, setBusy] = useState(false);
   const actionLock = useRef(false);
@@ -50,6 +59,7 @@ export default function ResourceManager({ resource: r, autoCreate }: Props) {
     const params = new URLSearchParams({ page: String(page), limit: String(pageSize) });
     if (query.trim()) params.set('search', query.trim());
     if (status) params.set('estado', status);
+    for (const [key, value] of Object.entries(scope?.filters ?? {})) params.set(key, value);
     panelRequest<ListResponse>(r.endpoint + '?' + params, token, 'GET', undefined, controller.signal)
       .then(data => {
         if (controller.signal.aborted) return;
@@ -68,9 +78,19 @@ export default function ResourceManager({ resource: r, autoCreate }: Props) {
       }).catch(err => { if (!controller.signal.aborted) setError(errorMessage(err)); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [token, r, page, query, status, reload, setLoading, setError]);
+  }, [token, r, page, query, status, reload, scope, setLoading, setError]);
 
-  const openNew = () => { setForm(defaults()); setFormError(''); setEditor({}); };
+  const openNew = () => { setSlugEdited(false); setForm(defaults()); setFormError(''); setEditor({}); };
+  // Page (8 per page) where a record lands with the list order, so a new record is never left on a hidden page.
+  const locate = async (id: number) => {
+    try {
+      const lookup = new URLSearchParams({ page: '1', limit: '100' });
+      for (const [key, value] of Object.entries(scope?.filters ?? {})) lookup.set(key, value);
+      const data = await panelRequest<ListResponse>(r.endpoint + '?' + lookup, token);
+      const index = (data.items || []).findIndex(row => row.id === id);
+      return index < 0 ? 1 : Math.floor(index / pageSize) + 1;
+    } catch { return 1; }
+  };
   const openRow = async (row: Row, view = false) => {
     if (!token || actionLock.current) return;
     actionLock.current = true; setBusy(true); setError('');
@@ -94,7 +114,7 @@ export default function ResourceManager({ resource: r, autoCreate }: Props) {
       copied[r.title] = String(data.item[r.title]).slice(0, r.endpoint === 'preguntas-frecuentes' ? 285 : 145) + ' (copia)';
       if ('slug' in copied) copied.slug = copied.slug.slice(0, 140).replace(/-+$/, '') + '-copia-' + Date.now();
       copied.estado = 'borrador';
-      setForm(copied); setFormError(''); setPreview(true); setEditor({});
+      setSlugEdited(true); setForm(copied); setFormError(''); setPreview(true); setEditor({});
     } catch (err) { setError(errorMessage(err)); }
     finally { actionLock.current = false; setBusy(false); }
   };
@@ -104,9 +124,22 @@ export default function ResourceManager({ resource: r, autoCreate }: Props) {
     actionLock.current = true; setBusy(true); setFormError('');
     try {
       let payload: Record<string, unknown> = {};
+      let created: Row | undefined;
       const limpiar: string[] = [];
-      for (const field of r.fields) {
-        const value = (form[field.key] ?? '').trim();
+      const visible = [...main, ...advanced];
+      // The slug follows the title; it only needs attention (in "Opciones avanzadas") when it cannot be used.
+      let finalSlug = '';
+      if (advanced.length) {
+        finalSlug = (form.slug ?? '').trim() || (editor?.row ? '' : slugify(form.titulo || ''));
+        if (finalSlug.length < 2 || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(finalSlug)) {
+          document.getElementById('field-slug')?.closest('details')?.setAttribute('open', '');
+          document.getElementById('field-slug')?.scrollIntoView({ block: 'center' });
+          throw new Error('Revisa el identificador (slug) en «Opciones avanzadas»: usa minúsculas, números y guiones.');
+        }
+      }
+      for (const field of visible) {
+        if (field.virtual) continue;
+        const value = field.key === 'slug' ? finalSlug : (form[field.key] ?? '').trim();
         const required=field.required&&(!field.courseOnly||form.tipo!=='capacitacion');
         if (!value && !required && r.catalog) {
           if (editor?.row?.[field.key]) limpiar.push(field.key);
@@ -116,13 +149,30 @@ export default function ResourceManager({ resource: r, autoCreate }: Props) {
         payload[field.key] = field.key === 'activo' ? value === 'activo' : field.type === 'number' ? Number(value) : value;
       }
       if (limpiar.length) payload.limpiar = limpiar;
+      // Asesoramiento "Tipo" is stored in presentacion. It is only written for a new record or when the administrator changes it.
+      if (r.endpoint === 'servicios' && visible.some(field => field.key === 'contenido_tipo')) {
+        const kind = form.contenido_tipo === 'beneficio' ? 'beneficio' : 'linea';
+        if (!editor?.row || kind !== adviceKind(editor.row)) payload.presentacion = kind === 'beneficio' ? 'beneficio' : 'asesoria';
+      }
+      // Category / course type fixed by the section: set on creation, never touched when editing.
+      if (!editor?.row) for (const key of fixedFieldKeys(scope)) if (!(key in payload) && form[key]) payload[key] = form[key];
       if (r.endpoint === 'messages' && editor?.row) payload = { estado: form.estado };
       if(r.endpoint==='messages' && editor?.row){
         const path='seguimiento/messages/'+editor.row.id;
         const {item}=await panelRequest<{item:{revision:number;responsable:string;notas:string;respuesta:string}}>(path,token);
         await panelRequest(path,token,'PUT',{estado:form.estado,revision:item.revision,responsable:item.responsable,notas:item.notas,respuesta:item.respuesta});
-      }else await panelRequest(r.endpoint + (editor?.row ? '/' + editor.row.id : ''), token, editor?.row ? 'PUT' : 'POST', payload);
-      setEditor(null); setNotice('Cambios guardados correctamente.'); setReload(n => n + 1);
+      }else{
+        const saved = await panelRequest<{ item?: Row }>(r.endpoint + (editor?.row ? '/' + editor.row.id : ''), token, editor?.row ? 'PUT' : 'POST', payload);
+        if (!editor?.row && r.catalog) created = saved.item;
+      }
+      setEditor(null);
+      if (created) {
+        // Clear filters and open the page that holds the new record.
+        const landing = await locate(created.id);
+        setSearch(''); setQuery(''); setStatus(''); setPage(landing);
+        setNotice('Se creó «' + String(created[r.title]) + '» y ya aparece en la lista' + (landing > 1 ? ' (página ' + landing + ')' : '') + '.');
+      } else setNotice('Cambios guardados correctamente.');
+      setReload(n => n + 1);
     } catch (err) { setFormError(errorMessage(err)); }
     finally { actionLock.current = false; setBusy(false); }
   };
@@ -131,13 +181,13 @@ export default function ResourceManager({ resource: r, autoCreate }: Props) {
     actionLock.current = true; setBusy(true); setFormError('');
     try {
       await panelRequest(r.endpoint + '/' + pendingDelete.id, token, 'DELETE');
-      setPendingDelete(null); setNotice(r.catalog ? 'Registro archivado. Puedes recuperarlo editando su estado.' : 'Registro eliminado.');
+      setPendingDelete(null); setNotice(r.hardDelete ? (r.endpoint === 'servicios' ? 'Servicio eliminado definitivamente.' : 'Eliminado definitivamente: «' + String(pendingDelete[r.title]) + '».') : r.catalog ? 'Registro archivado. Puedes recuperarlo editando su estado.' : 'Registro eliminado.');
       setReload(n => n + 1);
     } catch (err) { setFormError(errorMessage(err)); }
     finally { actionLock.current = false; setBusy(false); }
   };
   const exportPage = () => {
-    const cols = ['id', ...r.fields.map(field => field.key)];
+    const cols = ['id', ...r.fields.filter(field => !field.virtual).map(field => field.key)];
     const escape = (value: unknown) => {
       let str = String(value ?? '');
       if (/^[\s]*[=+@-]|^[\t\r\n]/.test(str)) str = "'" + str;
@@ -148,10 +198,30 @@ export default function ResourceManager({ resource: r, autoCreate }: Props) {
     const a = document.createElement('a'); a.href = url; a.download = r.endpoint + '-pagina-' + page + '.csv'; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
+  const renderField = (field: Field) => {
+      const locked = r.endpoint === 'messages' && !!editor?.row;
+      // New records stay in the section they are created from; editing may only move them within the same group.
+      const allowed = !editor?.row ? scope?.filters[field.key]?.split(',') : scope?.choices?.[field.key];
+      const common = { id: 'field-' + field.key, value: form[field.key] || '', required: field.required&&(!field.courseOnly||form.tipo!=='capacitacion'), disabled: locked,
+        onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+          const value = event.target.value;
+          if (field.key === 'slug') setSlugEdited(true);
+          setForm(prev => ({ ...prev, [field.key]: value, ...(field.key === 'titulo' && !editor?.row && !slugEdited && 'slug' in prev ? { slug: slugify(value) } : {}) }));
+        } };
+      return <label key={field.key} className={field.type === 'textarea' ? 'hp-full' : ''} htmlFor={common.id}>{field.label}{common.required && <span className="hp-required"> *</span>}
+        {field.type === 'textarea' ? <textarea {...common} rows={field.key === 'descripcion' || field.key === 'etiquetas' ? 3 : field.key === 'alcance' && r.endpoint === 'servicios' && form.categoria !== 'asesoramiento' && !form.alcance?.trim() ? 2 : 4} minLength={field.min} maxLength={field.max} /> :
+          field.type === 'select' ? <select {...common}>{(allowed ? field.options?.filter(o => allowed.includes(o)) : field.options)?.map(o => <option key={o} value={o}>{o === '' && field.key === 'icono' ? 'Sin icono' : label(o)}</option>)}</select> :
+          <input {...common} type={field.key==='imagen_url'?'text':field.type || 'text'} minLength={field.type === 'number' ? undefined : field.min} maxLength={field.type === 'number' ? undefined : field.max} min={field.type === 'number' ? field.min : undefined} max={field.type === 'number' ? field.max : undefined}
+            />}
+        {field.key === 'imagen_url' && <ImageUpload onUploaded={url => setForm(prev => ({ ...prev, imagen_url: url }))} />}
+        {field.hint && <small className="hp-field-hint">{field.hint}</small>}
+        {field.key === 'slug' && <small>Minúsculas y guiones. <button type="button" className="hp-text-btn" onClick={() => setForm(prev => ({ ...prev, slug: slugify(prev.titulo || '') }))}>Generar desde el título</button></small>}
+      </label>;
+  };
   return <>
-    <div className="hp-heading"><div><p className="hp-kicker">ESPACIO DE TRABAJO</p><h1>{r.label}</h1><p>{r.description}</p></div>
-      <button className="hp-btn hp-btn-primary" onClick={openNew} disabled={busy}><PanelIcon name="plus" />Crear {r.singular}</button></div>
-    {['servicios','cursos','galeria'].includes(r.endpoint)&&<div className="hp-actions"><OriginalContentImport section={r.endpoint==='cursos'?'capacitaciones':r.endpoint} onRestored={message=>{setNotice(message);setReload(n=>n+1)}}/></div>}
+    <div className="hp-heading"><div><p className="hp-kicker">{scope?.kicker ?? 'ESPACIO DE TRABAJO'}</p><h1>{scope?.label ?? r.label}</h1><p>{scope?.description ?? r.description}</p></div>
+      <button className="hp-btn hp-btn-primary" onClick={openNew} disabled={busy}><PanelIcon name="plus" />Crear {singular}</button></div>
+    {['servicios','cursos','galeria'].includes(r.endpoint)&&scope?.filters.tipo!=='curso'&&<div className="hp-actions"><OriginalContentImport section={r.endpoint==='cursos'?'capacitaciones':r.endpoint} onRestored={message=>{setNotice(message);setReload(n=>n+1)}}/></div>}
     {r.endpoint === 'messages' && <p className="hw-caption"><Link className="hp-text-btn" to="/admin/messages">← Volver al centro de consultas</Link></p>}
     {notice && <div className="hp-notice" role="status"><PanelIcon name="check" />{notice}<button aria-label="Cerrar aviso" onClick={() => setNotice('')}><PanelIcon name="close" size={16} /></button></div>}
     <section className="hp-card">
@@ -163,7 +233,7 @@ export default function ResourceManager({ resource: r, autoCreate }: Props) {
         <button aria-pressed={view === 'table'} onClick={() => setView('table')}>Tabla</button>
         {r.endpoint === 'cursos' && <button aria-pressed={view === 'agenda'} onClick={() => setView('agenda')}>Agenda de cursos</button>}
       </div><span className="hw-caption">{view === 'agenda' ? 'Planifica fechas del catálogo completo' : 'Resultados paginados · 8 por página'}</span></div>}
-      {view === 'agenda' ? <CourseAgenda revision={reload} onOpen={row => void openRow(row)} /> : <>
+      {view === 'agenda' ? <CourseAgenda revision={reload} tipo={scope?.filters.tipo} onOpen={row => void openRow(row)} /> : <>
       <form className="hp-toolbar" onSubmit={e => { e.preventDefault(); setPage(1); setQuery(search.trim()); }}>
         <div className="hp-search"><PanelIcon name="search" /><input aria-label="Buscar registros" placeholder="Buscar por nombre o título…" value={search} onChange={e => setSearch(e.target.value)} maxLength={100} /></div>
         <button className="hp-btn" type="submit">Buscar</button>
@@ -178,36 +248,28 @@ export default function ResourceManager({ resource: r, autoCreate }: Props) {
             <td>{row.updatedAt || row.createdAt ? new Date(String(row.updatedAt || row.createdAt)).toLocaleDateString('es-PE') : '—'}</td>
             <td><div className="hp-row-actions"><button className="hp-icon-btn" aria-label={'Ver ' + row[r.title]} title="Ver detalle" disabled={busy} onClick={() => void openRow(row, true)}><PanelIcon name="eye" size={17} /></button>
               <button className="hp-icon-btn" aria-label={'Editar ' + row[r.title]} title={r.endpoint === 'messages' ? 'Cambiar estado' : 'Editar'} disabled={busy} onClick={() => void openRow(row)}><PanelIcon name="edit" size={17} /></button>
-              <button className="hp-icon-btn hp-danger" aria-label={(r.catalog ? 'Archivar ' : 'Eliminar ') + row[r.title]} title={r.catalog ? 'Archivar' : 'Eliminar'} disabled={busy || (r.catalog && row.estado === 'archivado')} onClick={() => { setFormError(''); setPendingDelete(row); }}><PanelIcon name="trash" size={17} /></button></div></td></tr>)}</tbody></table></div>) :
-          <div className="hp-empty"><span className="hp-empty-icon"><PanelIcon name={r.icon} size={30} /></span><h3>{query || status ? 'No encontramos coincidencias' : 'Tu próximo proyecto empieza aquí'}</h3><p>{query || status ? 'Prueba con otra búsqueda o cambia el filtro.' : 'Crea tu primer registro. Su información quedará guardada en el sistema.'}</p><button className="hp-btn hp-btn-primary" onClick={openNew}>Crear {r.singular}<PanelIcon name="plus" /></button></div>}
+              <button className="hp-icon-btn hp-danger" aria-label={removeVerb(r) + ' ' + row[r.title]} title={removeVerb(r)} disabled={busy || !canRemove(r, row)} onClick={() => { setFormError(''); setPendingDelete(row); }}><PanelIcon name="trash" size={17} /></button></div></td></tr>)}</tbody></table></div>) :
+          <div className="hp-empty"><span className="hp-empty-icon"><PanelIcon name={r.icon} size={30} /></span><h3>{query || status ? 'No encontramos coincidencias' : 'Tu próximo proyecto empieza aquí'}</h3><p>{query || status ? 'Prueba con otra búsqueda o cambia el filtro.' : 'Crea tu primer registro. Su información quedará guardada en el sistema.'}</p><button className="hp-btn hp-btn-primary" onClick={openNew}>Crear {singular}<PanelIcon name="plus" /></button></div>}
       <footer className="hp-pagination"><span>{error ? 'Sin conexión con los datos' : total + ' registros encontrados'} · {pageSize} por página</span><div><button className="hp-btn" disabled={loading || !!error || page <= 1} onClick={() => setPage(p => p - 1)}>Anterior</button><span>{page} / {Math.max(1, pages)}</span><button className="hp-btn" disabled={loading || !!error || page >= pages} onClick={() => setPage(p => p + 1)}>Siguiente</button></div></footer></>}
     </section>
-    {editor && <PanelDialog title={(editor.view ? 'Detalle de ' : editor.row ? 'Editar ' : 'Crear ') + r.singular} busy={busy} onClose={() => setEditor(null)}>
-      {editor.view ? <>{visual && <ResourcePreview resource={r} values={editor.row!} />}<dl className="hp-details">{r.fields.map(field => <div key={field.key}><dt>{field.label}</dt><dd>{label(editor.row?.[field.key]) || 'Sin especificar'}</dd></div>)}</dl><div className="hp-dialog-footer"><button className="hp-btn hp-btn-primary" onClick={() => setEditor({ ...editor, view: false })}>Editar registro<PanelIcon name="edit" /></button></div></> :
+    {editor && <PanelDialog title={(editor.view ? 'Detalle de ' : editor.row ? 'Editar ' : 'Crear ') + singular} busy={busy} onClose={() => setEditor(null)} className={groups ? 'hp-dialog-sticky' : ''}>
+      {editor.view ? <>{visual && <ResourcePreview resource={r} values={editor.row!} />}<dl className="hp-details">{[...main, ...advanced].map(field => <div key={field.key}><dt>{field.label}</dt><dd>{label(editor.row?.[field.key]) || 'Sin especificar'}</dd></div>)}</dl><div className="hp-dialog-footer"><button className="hp-btn hp-btn-primary" onClick={() => setEditor({ ...editor, view: false })}>Editar registro<PanelIcon name="edit" /></button></div></> :
       <form onSubmit={save}>
         {visual && <div className="hw-editor-tools"><strong>{editor.row ? 'Edición de contenido' : 'Prepara una nueva publicación'}</strong><button type="button" className="hp-btn" onClick={() => setPreview(value => !value)} aria-expanded={preview}><PanelIcon name="eye" size={16} />{preview ? 'Ocultar vista previa' : 'Vista previa'}</button></div>}
         {visual && preview && <ResourcePreview resource={r} values={form} />}
-        <fieldset className="hp-form-grid" disabled={busy}><legend className="hp-sr">Datos del registro</legend>
-        {r.fields.map(field => {
-          const locked = r.endpoint === 'messages' && !!editor.row;
-          const common = { id: 'field-' + field.key, value: form[field.key] || '', required: field.required&&(!field.courseOnly||form.tipo!=='capacitacion'), disabled: locked,
-            onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setForm(prev => ({ ...prev, [field.key]: event.target.value })) };
-          return <label key={field.key} className={field.type === 'textarea' ? 'hp-full' : ''} htmlFor={common.id}>{field.label}{common.required && <span className="hp-required"> *</span>}
-            {field.type === 'textarea' ? <textarea {...common} rows={4} minLength={field.min} maxLength={field.max} /> :
-              field.type === 'select' ? <select {...common}>{field.options?.map(o => <option key={o} value={o}>{label(o)}</option>)}</select> :
-              <input {...common} type={field.key==='imagen_url'?'text':field.type || 'text'} minLength={field.type === 'number' ? undefined : field.min} maxLength={field.type === 'number' ? undefined : field.max} min={field.type === 'number' ? field.min : undefined} max={field.type === 'number' ? field.max : undefined}
-                pattern={field.key === 'slug' ? '[a-z0-9]+(-[a-z0-9]+)*' : undefined} />}
-            {field.key === 'imagen_url' && <ImageUpload onUploaded={url => setForm(prev => ({ ...prev, imagen_url: url }))} />}
-            {field.key === 'slug' && <small>Minúsculas y guiones. <button type="button" className="hp-text-btn" onClick={() => setForm(prev => ({ ...prev, slug: (prev.titulo || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 180) }))}>Generar desde el título</button></small>}
-          </label>;
-        })}
+        <fieldset className={'hp-form-grid' + (groups ? ' hp-form-sections' : '')} disabled={busy}><legend className="hp-sr">Datos del registro</legend>
+        {groups ? groups.map(group => <section className="hp-form-section" key={group.key} aria-labelledby={'hp-section-' + group.key}>
+          <h3 id={'hp-section-' + group.key}>{group.title}</h3>
+          {group.rows.map((row, index) => <div className={'hp-form-row' + (row.length > 1 ? ' is-pair' : '')} key={index}>{row.map(renderField)}</div>)}
+        </section>) : main.map(renderField)}
+        {advanced.length > 0 && <details className="hp-advanced hp-full"><summary>Opciones avanzadas</summary><div className="hp-form-row hp-advanced-body">{advanced.map(renderField)}</div></details>}
         {r.endpoint === 'messages' && editor.row && <label className="hp-full">Estado de atención<select value={form.estado} onChange={e => setForm(prev => ({ ...prev, estado: e.target.value }))}>{r.states.map(s => <option key={s} value={s}>{label(s)}</option>)}</select></label>}
-      </fieldset>{formError && <p className="hp-error" role="alert">{formError}</p>}
-        <div className="hp-dialog-footer"><button type="button" className="hp-btn" disabled={busy} onClick={() => setEditor(null)}>Cancelar</button><button className="hp-btn hp-btn-primary" disabled={busy}>{busy ? 'Guardando…' : 'Guardar cambios'}<PanelIcon name="check" /></button></div></form>}
+      </fieldset>
+        <div className="hp-dialog-footer">{formError && <p className="hp-error hp-footer-error" role="alert">{formError}</p>}<button type="button" className="hp-btn" disabled={busy} onClick={() => setEditor(null)}>Cancelar</button><button className="hp-btn hp-btn-primary" disabled={busy}>{busy ? 'Guardando…' : 'Guardar cambios'}<PanelIcon name="check" /></button></div></form>}
     </PanelDialog>}
-    {pendingDelete && <PanelDialog title={r.catalog ? 'Archivar registro' : 'Eliminar registro'} busy={busy} onClose={() => setPendingDelete(null)}>
-      <div className="hp-confirm"><PanelIcon name="trash" size={34} /><h3>{String(pendingDelete[r.title])}</h3><p>{r.catalog ? 'Dejará de aparecer en las consultas públicas. Podrás publicarlo nuevamente desde Editar.' : 'Este registro se eliminará de la base de datos. Esta acción no se puede deshacer.'}</p></div>
-      {formError && <p className="hp-error" role="alert">{formError}</p>}<div className="hp-dialog-footer"><button className="hp-btn" disabled={busy} onClick={() => setPendingDelete(null)}>Cancelar</button><button className="hp-btn hp-btn-danger" disabled={busy} onClick={() => void remove()}>{busy ? 'Procesando…' : r.catalog ? 'Confirmar archivo' : 'Confirmar eliminación'}</button></div>
+    {pendingDelete && <PanelDialog title={r.hardDelete ? 'Eliminar ' + singular : r.catalog ? 'Archivar registro' : 'Eliminar registro'} busy={busy} onClose={() => setPendingDelete(null)}>
+      <div className="hp-confirm"><PanelIcon name="trash" size={34} /><h3>{String(pendingDelete[r.title])}</h3><p>{r.catalog && !r.hardDelete ? 'Dejará de aparecer en las consultas públicas. Podrás publicarlo nuevamente desde Editar.' : 'Se eliminará definitivamente de la base de datos y dejará de aparecer en el sitio. Esta acción no se puede deshacer.'}</p></div>
+      {formError && <p className="hp-error" role="alert">{formError}</p>}<div className="hp-dialog-footer"><button className="hp-btn" disabled={busy} onClick={() => setPendingDelete(null)}>Cancelar</button><button className="hp-btn hp-btn-danger" disabled={busy} onClick={() => void remove()}>{busy ? 'Procesando…' : r.catalog && !r.hardDelete ? 'Confirmar archivo' : 'Eliminar definitivamente'}</button></div>
     </PanelDialog>}
   </>;
 }

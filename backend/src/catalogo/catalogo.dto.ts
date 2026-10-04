@@ -148,9 +148,9 @@ export class CreateServicioDto extends VisualContentDto {
   @IsString() @Length(3, 20000)
   descripcion: string;
 
-  @ApiProperty({ enum: ["cableado","camaras","soporte","asesoramiento","otros"] })
+  @ApiProperty({ enum: ["cableado","camaras","soporte","asesoramiento"] })
   @Transform(trim)
-  @IsIn(["cableado","camaras","soporte","asesoramiento","otros"])
+  @IsIn(["cableado","camaras","soporte","asesoramiento"])
   categoria: string;
 
   @ApiPropertyOptional()

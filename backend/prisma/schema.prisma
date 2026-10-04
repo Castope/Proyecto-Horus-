@@ -215,7 +215,6 @@ enum ServicioCategoria {
   camaras
   soporte
   asesoramiento
-  otros
 }
 
 enum ServicioEstado {

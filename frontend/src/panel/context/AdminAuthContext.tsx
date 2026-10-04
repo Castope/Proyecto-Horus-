@@ -1,5 +1,5 @@
 import { AdminAuthContext } from './adminAuth';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { getCurrentAdmin } from '../services';
 import { PanelApiError } from '../services/panelApi';
 import type { AdminUser } from '../types';
@@ -19,8 +19,11 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [checking, setChecking] = useState(() => Boolean(token));
   const [sessionError, setSessionError] = useState('');
   const [revision, setRevision] = useState(0);
+  // Token that the server has just issued together with its user (login); it needs no second validation.
+  const issuedNow = useRef<string | null>(null);
   useEffect(() => {
     if (!token) return;
+    if (issuedNow.current === token) { issuedNow.current = null; saveToken(token); return; }
     const controller = new AbortController();
     let current = true;
     const timeout = window.setTimeout(() => controller.abort(), 15000);
@@ -46,7 +49,10 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo(() => ({
     user, token, checking, sessionError, isAuthenticated: Boolean(token && user),
     retrySession: () => { setChecking(true); setSessionError(''); setRevision(value => value + 1); },
-    login: (value: string) => { setChecking(true); setSessionError(''); setUser(null); setToken(value); },
+    login: (value: string, loggedUser?: AdminUser) => {
+      if (loggedUser) { issuedNow.current = value; setUser(loggedUser); setChecking(false); setSessionError(''); setToken(value); return; }
+      setChecking(true); setSessionError(''); setUser(null); setToken(value);
+    },
     logout: () => { saveToken(null); setToken(null); setUser(null); setChecking(false); setSessionError(''); },
   }), [user, token, checking, sessionError]);
   return <AdminAuthContext.Provider value={value}>{children}</AdminAuthContext.Provider>;

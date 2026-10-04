@@ -122,6 +122,10 @@
 }
 .admin-auth__submit:hover:not(:disabled) { background: #244d67; transform: translateY(-1px); }
 .admin-auth__submit:disabled { opacity: .65; cursor: wait; }
+.admin-auth__forgot { margin-top: 18px; text-align: center; font-size: 13px; line-height: 1.6; }
+.admin-auth__forgot a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 8px; color: #214d72; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; border-radius: 6px; }
+.admin-auth__forgot a:hover { color: #193950; background: #eef2f6; }
+.admin-auth__forgot + .admin-auth__switch { margin-top: 6px; }
 .admin-auth__switch { margin-top: 24px; color: var(--auth-muted); text-align: center; font-size: 12px; line-height: 1.8; }
 .admin-auth__switch a, .admin-auth__note a { color: #214d72; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 .admin-auth__note { margin-top: 22px; padding-top: 20px; border-top: 1px solid #e8ebef; color: var(--auth-muted); text-align: center; font-size: 11px; line-height: 1.8; }

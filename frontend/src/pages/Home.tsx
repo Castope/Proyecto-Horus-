@@ -9,6 +9,7 @@ import HomeHighlights from '../components/home/HomeHighlights'
 import HomeLocation from '../components/home/HomeLocation'
 import '../styles/home-redesign.css'
 import '../styles/home-motion.css'
+import '../styles/home-hero.css'
 
 export default function Home() {
   const [page, setPage] = useState(1)

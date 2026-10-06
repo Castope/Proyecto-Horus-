@@ -1,6 +1,7 @@
 import { useCompanySetting } from '../context/companySettings'
 import { Link } from 'react-router-dom'
 import logoHorus from '../assets/images/logo-horus.png'
+import { INSTAGRAM_URL, WHATSAPP_URL } from '../siteLinks'
 
 export default function Footer() {
   const setting = useCompanySetting()
@@ -32,7 +33,7 @@ export default function Footer() {
             <ul className="footer-contact">
               <li><i className="fas fa-phone" />{setting('telefono_principal', '+51 927 582 305')}</li>
               <li><i className="fas fa-envelope" />{setting('email_contacto', 'horusgroupcajamarca@gmail.com')}</li>
-              <li><i className="fas fa-map-marker-alt" />{setting('direccion', 'Jr. Jose Gálvez #322, Cajamarca')}</li>
+              <li><i className="fas fa-map-marker-alt" />{setting('direccion', 'Cajamarca - Peru')}</li>
             </ul>
           </div>
 
@@ -43,14 +44,14 @@ export default function Footer() {
                 <span className="ix-social-icon ix-social-fb"><i className="fab fa-facebook-f" /></span>
                 <span>Facebook</span>
               </a>
-              <a href={'https://wa.me/'+setting('whatsapp','51927582305').replace(/[^0-9]/g,'')} target="_blank" rel="noreferrer" className="ix-social-item">
+              <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" className="ix-social-item">
                 <span className="ix-social-icon ix-social-wa"><i className="fab fa-whatsapp" /></span>
                 <span>WhatsApp</span>
               </a>
-              <span className="ix-social-item" aria-label="YouTube: enlace pendiente">
-                <span className="ix-social-icon ix-social-yt"><i className="fab fa-youtube" /></span>
-                <span>YouTube · Próximamente</span>
-              </span>
+              <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="ix-social-item">
+                <span className="ix-social-icon ix-social-ig"><i className="fab fa-instagram" /></span>
+                <span>Instagram</span>
+              </a>
             </div>
           </div>
 
@@ -59,7 +60,11 @@ export default function Footer() {
         <div className={'footer-bottom' + reveal}>
           <p>&copy; {new Date().getFullYear()} Horus Group SRL. Todos los derechos reservados.</p>
           <Link to="/libro-reclamaciones" className="footer-libro-link">
-            <i className="fas fa-book-open" /> Libro de Reclamaciones
+            <span className="footer-libro-icon" aria-hidden="true"><i className="fas fa-book" /></span>
+            <span className="footer-libro-text">
+              <strong>Libro de Reclamaciones</strong>
+              <small>Ley N° 29571 – INDECOPI</small>
+            </span>
           </Link>
         </div>
       </div>

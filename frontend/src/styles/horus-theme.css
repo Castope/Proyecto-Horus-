@@ -121,8 +121,38 @@
 .site-layout .ix-footer-heading { color: var(--horus-gold-light); font-size: .95rem; letter-spacing: .04em; }
 .site-layout .ix-footer-list li a, .site-layout .ix-social-item { color: #d5e0eb; font-size: .95rem; }
 .site-layout .footer-contact i { color: var(--horus-gold); }
+/* The contact column is wide enough for the e-mail address to stay on one line; it only breaks as a last resort. */
+.site-layout .footer-contact li { overflow-wrap: break-word; }
+@media (min-width: 1025px) { .site-layout .ix-footer-top { grid-template-columns: 1.3fr .85fr minmax(max-content, 1.3fr) 1fr; } }
+@media (max-width: 480px) { .site-layout .footer-contact li { font-size: .88rem; } }
 .site-layout .footer-bottom { border-top-color: #c9a96135; }
-.site-layout .footer-bottom p, .site-layout .footer-libro-link { font-size: .9rem; color: #d5e0eb; }
+.site-layout .footer-bottom p { font-size: .9rem; color: #d5e0eb; }
+/* Libro de Reclamaciones: the link to /libro-reclamaciones, shown on every page through the footer. */
+.site-layout .footer-libro-link {
+  display: inline-flex; align-items: center; gap: .9rem; max-width: 100%; padding: .65rem 1.15rem .65rem .65rem;
+  border: 1px solid #c9a96145; border-radius: 1rem; background: linear-gradient(135deg, #ffffff0f, #ffffff05); color: #fff; text-decoration: none;
+  box-shadow: 0 10px 24px #02101f40;
+}
+.site-layout .footer-libro-icon {
+  flex-shrink: 0; display: grid; place-items: center; width: 2.9rem; height: 2.9rem; border-radius: .8rem; font-size: 1.15rem;
+  background: linear-gradient(145deg, var(--horus-gold-light), var(--horus-gold)); color: var(--horus-navy-deep); box-shadow: 0 6px 14px #0000004d;
+}
+.site-layout .footer-libro-text { display: grid; gap: .15rem; min-width: 0; line-height: 1.25; text-align: left; }
+.site-layout .footer-libro-text strong { font-family: var(--horus-font-display); font-size: 1rem; font-weight: 800; color: #fff; }
+.site-layout .footer-libro-text small { font-size: .8rem; font-weight: 600; letter-spacing: .01em; color: var(--horus-gold); }
+.site-layout .footer-libro-link:hover { border-color: var(--horus-gold); background: linear-gradient(135deg, #c9a96120, #ffffff08); }
+.site-layout .footer-libro-link:focus-visible { outline: 3px solid var(--horus-gold); outline-offset: 3px; }
+@media (max-width: 480px) {
+  .site-layout .footer-libro-link { gap: .7rem; padding: .55rem .9rem .55rem .55rem; }
+  .site-layout .footer-libro-icon { width: 2.5rem; height: 2.5rem; font-size: 1rem; }
+  .site-layout .footer-libro-text strong { font-size: .92rem; }
+  .site-layout .footer-libro-text small { font-size: .76rem; }
+}
+@media (min-width: 341px) and (max-width: 480px) { .site-layout .footer-libro-text small { white-space: nowrap; } }
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .site-layout .footer-libro-link { transition: border-color .2s ease, background .2s ease, transform .2s ease; }
+  .site-layout .footer-libro-link:hover { transform: translateY(-2px); }
+}
 
 .site-layout .ix-footer-brand img { transition: opacity 500ms ease 100ms; }
 .site-layout .ix-footer-brand.reveal-ready:not(.visible) img { opacity: 0; }

@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react'
 import PageBoundary from './components/PageBoundary'
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import RouteLoading from './components/RouteLoading'
 import { Toaster } from 'sonner'
 import MainLayout from './layouts/MainLayout'
@@ -35,7 +35,6 @@ import NewsletterUnsubscribe from './pages/NewsletterUnsubscribe'
 const AdminRecovery = lazy(() => import('./panel/pages/AdminRecovery'))
 import CatalogoDetail from './pages/CatalogoDetail'
 import CursoDetail from './pages/educacion/CursoDetail'
-import Servicios from './pages/Servicios'
 import NotFound from './pages/NotFound'
 
 function RouteFallback() {
@@ -54,7 +53,7 @@ export default function App() {
             <Route path="/educacion/cursos/:id" element={<CursoDetail />} />
             <Route path="/educacion/capacitaciones/:id" element={<CursoDetail />} />
             <Route path="/tecnologias/servicios/:id" element={<CatalogoDetail kind="servicios" />} />
-            <Route path="/tecnologias/servicios" element={<Servicios />} />
+            <Route path="/tecnologias/servicios" element={<Navigate to="/tecnologias/cableado-estructurado" replace />} />
             <Route path="/"                        element={<Home />} />
             <Route path="/quienes-somos"           element={<QuienesSomos />} />
             <Route path="/galeria"                 element={<Galeria />} />

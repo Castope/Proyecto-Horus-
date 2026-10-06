@@ -1,4 +1,5 @@
 import { useCompanySetting } from '../context/companySettings'
+import { WHATSAPP_URL } from '../siteLinks'
 import { useState, useEffect } from 'react'
 import type { ChangeEvent, SubmitEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
@@ -90,7 +91,7 @@ export default function Contactos() {
                   <div className="ct-channel-info"><strong>{setting('telefono_principal','+51 927 582 305')}</strong><span>Llamada directa</span></div>
                   <i className="fas fa-chevron-right ct-channel-arrow" />
                 </a>
-                <a href={'https://wa.me/'+setting('whatsapp','51927582305').replace(/[^0-9]/g,'')} target="_blank" rel="noreferrer" className="ct-channel">
+                <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" className="ct-channel">
                   <div className="ct-channel-icon ct-icon-green"><i className="fab fa-whatsapp" /></div>
                   <div className="ct-channel-info"><strong>WhatsApp</strong><span>Respuesta inmediata</span></div>
                   <i className="fas fa-chevron-right ct-channel-arrow" />
@@ -190,8 +191,8 @@ export default function Contactos() {
             <div className="ct-info-card fade-up">
               <div className="ct-info-card-icon"><i className="fas fa-map-marker-alt" /></div>
               <h3>Dónde estamos</h3>
-              <p>Jr. Jose Gálvez #322<br />Cajamarca, Perú</p>
-              <a href="https://maps.google.com/?q=Jr.+Jose+Galvez+322+Cajamarca+Peru" target="_blank" rel="noreferrer" className="ct-info-link">
+              <p>{setting('direccion', 'Cajamarca - Peru')}</p>
+              <a href={'https://maps.google.com/?q=' + encodeURIComponent(setting('direccion', 'Cajamarca - Peru'))} target="_blank" rel="noreferrer" className="ct-info-link">
                 Ver en Google Maps <i className="fas fa-external-link-alt" />
               </a>
             </div>
@@ -205,7 +206,7 @@ export default function Contactos() {
               <div className="ct-info-card-icon ct-info-icon-green"><i className="fab fa-whatsapp" /></div>
               <h3>WhatsApp directo</h3>
               <p>Para consultas rápidas y cotizaciones. Respondemos en minutos.</p>
-              <a href={'https://wa.me/'+setting('whatsapp','51927582305').replace(/[^0-9]/g,'')} target="_blank" rel="noreferrer" className="ct-info-link ct-info-link-green">
+              <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" className="ct-info-link ct-info-link-green">
                 Abrir WhatsApp <i className="fas fa-external-link-alt" />
               </a>
             </div>

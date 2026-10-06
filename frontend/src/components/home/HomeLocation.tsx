@@ -14,7 +14,7 @@ export default function HomeLocation() {
             <div className="home-loc-items">
               <div className="home-loc-item fade-up">
                 <div className="home-loc-icon"><i aria-hidden="true" className="fas fa-map-marker-alt" /></div>
-                <div><strong>Dirección</strong><span>{setting('direccion', 'Jr. Jose Gálvez #322, Cajamarca')}</span></div>
+                <div><strong>Dirección</strong><span>{setting('direccion', 'Cajamarca - Peru')}</span></div>
               </div>
               <div className="home-loc-item fade-up">
                 <div className="home-loc-icon"><i aria-hidden="true" className="fas fa-clock" /></div>

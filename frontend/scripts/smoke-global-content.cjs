@@ -162,7 +162,7 @@ async function main() {
     await visitor.wait('document.querySelector(".home-conv-card img")?.naturalWidth > 0')
     assert.equal(await visitor.evaluate('document.querySelector(".home-conv-card img").getAttribute("src")'), image)
     assert.equal(await visitor.evaluate('!!document.querySelector("[role=alert]")'), false)
-    for (const [route, text] of [['/educacion/cursos', 'Curso global de prueba'], ['/tecnologias/servicios', 'Servicio global de prueba'], ['/galeria', 'Foto global de prueba'], ['/preguntas-frecuentes', 'Pregunta global de prueba']]) {
+    for (const [route, text] of [['/educacion/cursos', 'Curso global de prueba'], ['/tecnologias/cableado-estructurado', 'Servicio global de prueba'], ['/galeria', 'Foto global de prueba'], ['/preguntas-frecuentes', 'Pregunta global de prueba']]) {
       await navigate(visitor, route); await visitor.wait('document.body.innerText.includes(' + JSON.stringify(text) + ')')
       assert.equal(await visitor.evaluate('!!document.querySelector("[role=alert]")'), false, route)
     }

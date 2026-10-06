@@ -2,6 +2,7 @@ import { useEffect, useId, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { useCompanySetting } from '../context/companySettings'
+import { INSTAGRAM_URL, WHATSAPP_URL } from '../siteLinks'
 import useReducedMotion from '../hooks/useReducedMotion'
 
 import photoMain     from '../assets/images/somos/marco 2.png'
@@ -55,7 +56,6 @@ function TeamCard({ img, name, role, bio, frame, open, onToggle }: Member & { op
   const setting = useCompanySetting()
   const bioId = useId()
   const facebook = setting('facebook_url', 'https://www.facebook.com/share/174BEdCReB/')
-  const whatsapp = 'https://wa.me/' + setting('whatsapp', '51927582305').replace(/[^0-9]/g, '')
   return (
     <article className={'ns-member fade-up' + (open ? ' is-open' : '')}>
       <div className={'ns-member-photo' + (frame ? ' has-frame' : '')}
@@ -68,8 +68,11 @@ function TeamCard({ img, name, role, bio, frame, open, onToggle }: Member & { op
         <a href={facebook} target="_blank" rel="noreferrer" aria-label={'Facebook de Horus Group (' + name + ')'}>
           <i className="fab fa-facebook-f" aria-hidden="true" />
         </a>
-        <a href={whatsapp} target="_blank" rel="noreferrer" aria-label={'WhatsApp de Horus Group (' + name + ')'}>
+        <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" aria-label={'WhatsApp de Horus Group (' + name + ')'}>
           <i className="fab fa-whatsapp" aria-hidden="true" />
+        </a>
+        <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" aria-label={'Instagram de Horus Group (' + name + ')'}>
+          <i className="fab fa-instagram" aria-hidden="true" />
         </a>
       </div>
       <button type="button" className="ns-member-toggle" aria-expanded={open} aria-controls={bioId} onClick={onToggle}>

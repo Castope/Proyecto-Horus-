@@ -134,19 +134,6 @@
   color: var(--gold-dk) !important;
 }
 
-.faq-item.open {
-  border-color: var(--gold) !important;
-  box-shadow: 0 4px 20px var(--gold-10) !important;
-}
-.faq-item.open .faq-toggle-icon {
-  background: var(--grad-gold) !important;
-  color: var(--night) !important;
-}
-.faq-question-number {
-  background: var(--gold-10) !important;
-  color: var(--gold-dk) !important;
-}
-
 .gf-btn.active {
   background: var(--grad-gold) !important;
   border-color: var(--gold) !important;

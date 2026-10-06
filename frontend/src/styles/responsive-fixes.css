@@ -70,7 +70,6 @@ img, video, iframe { max-width: 100%; }
   .pc-browsers-grid { grid-template-columns: 1fr 1fr !important; }
   .pc-finalidades-grid { grid-template-columns: 1fr !important; }
   .pp-derechos-grid { grid-template-columns: 1fr 1fr !important; }
-  .faq-answer-inner { padding-left: 16px !important; }
 }
 
 @media (max-width: 768px) {

@@ -25,23 +25,6 @@ img, video, iframe { max-width: 100%; }
 }
 
 @media (max-width: 768px) {
-  .ct-hero-inner { flex-direction: column !important; gap: 40px; }
-  .ct-hero-text, .ct-form-wrap { width: 100% !important; }
-  .ct-info-grid { grid-template-columns: 1fr !important; }
-  .ct-map-wrap { grid-column: 1 !important; }
-}
-
-@media (max-width: 480px) {
-  .ct-hero h1 { font-size: 2rem; }
-  .ct-channel { padding: 12px 14px !important; }
-  .ct-channel-info strong { font-size: .82rem; }
-  .ct-form-row { flex-direction: column !important; }
-  .ct-form-card { padding: 24px 16px !important; }
-  .ct-map-wrap { min-height: 200px !important; }
-  .ct-map-wrap iframe { height: 200px !important; }
-}
-
-@media (max-width: 768px) {
   .lr-layout { grid-template-columns: 1fr !important; }
   .lr-sidebar { display: none; }
   .lr-steps { gap: 4px; }

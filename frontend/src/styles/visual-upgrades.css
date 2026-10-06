@@ -153,23 +153,6 @@
   color: var(--night) !important;
 }
 
-.ct-channel-icon.ct-icon-coral {
-  background: var(--grad-gold) !important;
-  color: var(--night) !important;
-}
-.ct-channel-icon.ct-icon-indigo {
-  background: var(--grad-blue) !important;
-}
-.ct-submit {
-  background: var(--grad-gold) !important;
-  color: var(--night) !important;
-  font-weight: 700 !important;
-}
-.ct-submit:hover {
-  filter: brightness(1.08) !important;
-  transform: translateY(-2px) !important;
-}
-
 .lr-step.active .lr-step-num {
   background: var(--grad-gold) !important;
   color: var(--night) !important;

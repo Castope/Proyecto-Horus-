@@ -1,8 +1,7 @@
 import { useEffect, useId, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
-import { useCompanySetting } from '../context/companySettings'
-import { INSTAGRAM_URL, WHATSAPP_URL } from '../siteLinks'
+import useSocialLinks from '../hooks/useSocialLinks'
 import useReducedMotion from '../hooks/useReducedMotion'
 
 import photoMain     from '../assets/images/somos/marco 2.png'
@@ -53,9 +52,8 @@ function TypedTitle({ id, text }: { id: string; text: string }) {
 }
 
 function TeamCard({ img, name, role, bio, frame, open, onToggle }: Member & { open: boolean; onToggle: () => void }) {
-  const setting = useCompanySetting()
   const bioId = useId()
-  const facebook = setting('facebook_url', 'https://www.facebook.com/share/174BEdCReB/')
+  const social = useSocialLinks()
   return (
     <article className={'ns-member fade-up' + (open ? ' is-open' : '')}>
       <div className={'ns-member-photo' + (frame ? ' has-frame' : '')}
@@ -65,15 +63,15 @@ function TeamCard({ img, name, role, bio, frame, open, onToggle }: Member & { op
       <h3 className="ns-member-name">{name}</h3>
       <p className="ns-member-role">{role}</p>
       <div className="ns-member-socials">
-        <a href={facebook} target="_blank" rel="noreferrer" aria-label={'Facebook de Horus Group (' + name + ')'}>
+        {social.facebook && <a href={social.facebook} target="_blank" rel="noreferrer" aria-label={'Facebook de Horus Group (' + name + ')'}>
           <i className="fab fa-facebook-f" aria-hidden="true" />
-        </a>
-        <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" aria-label={'WhatsApp de Horus Group (' + name + ')'}>
+        </a>}
+        <a href={social.whatsapp} target="_blank" rel="noreferrer" aria-label={'WhatsApp de Horus Group (' + name + ')'}>
           <i className="fab fa-whatsapp" aria-hidden="true" />
         </a>
-        <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" aria-label={'Instagram de Horus Group (' + name + ')'}>
+        {social.instagram && <a href={social.instagram} target="_blank" rel="noreferrer" aria-label={'Instagram de Horus Group (' + name + ')'}>
           <i className="fab fa-instagram" aria-hidden="true" />
-        </a>
+        </a>}
       </div>
       <button type="button" className="ns-member-toggle" aria-expanded={open} aria-controls={bioId} onClick={onToggle}>
         {open ? 'Ocultar perfil' : 'Ver perfil'} <i className={'fas fa-chevron-' + (open ? 'up' : 'down')} aria-hidden="true" />

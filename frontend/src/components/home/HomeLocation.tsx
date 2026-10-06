@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useCompanySetting } from '../../context/companySettings'
+import LocationMap from '../LocationMap'
 
 export default function HomeLocation() {
   const setting = useCompanySetting()
@@ -30,13 +31,7 @@ export default function HomeLocation() {
             </Link>
           </div>
           <div className="home-location-map fade-up">
-            <iframe
-              src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d989.6682159535815!2d-78.5107197!3d-7.1637652!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x91b25b809bf9b7e3%3A0x70d5a58b14aa7eff!2sPlazuela%20Bolognesi!5e0!3m2!1ses-419!2spe!4v1772667902105!5m2!1ses-419!2spe"
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              title="Ubicación Horus Group"
-            />
+            <LocationMap title="Ubicación Horus Group" />
           </div>
         </div>
       </div>

@@ -16,9 +16,6 @@ export async function publicRequest<T>(path: string, options: RequestInit = {}):
   return resolveContentImages(data) as T
 }
 type SavedResponse = { ok: boolean; mensaje: string; id: number; numero_reclamo?: string; correo_enviado?: boolean }
-export const enviarContacto = (datos: object) => publicRequest<SavedResponse>('contacto', {
-  method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos),
-})
 export const registrarReclamo = (datos: object) => publicRequest<SavedResponse>('reclamaciones', {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos),
 })

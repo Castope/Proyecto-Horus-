@@ -1245,11 +1245,6 @@ input, textarea, select { font-family: var(--font); }
   .lr-hero h1   { font-size: 2rem; }
 }
 
-@media (max-width: 768px) {
-  .ct-grid { grid-template-columns: 1fr !important; }
-  .ct-hero h1 { font-size: 2rem; }
-}
-
 @media (max-width: 480px) {
   .gl-grid { columns: 1 !important; }
   .gl-filters { gap: 4px; }

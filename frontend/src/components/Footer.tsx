@@ -1,10 +1,11 @@
 import { useCompanySetting } from '../context/companySettings'
 import { Link } from 'react-router-dom'
 import logoHorus from '../assets/images/logo-horus.png'
-import { INSTAGRAM_URL, WHATSAPP_URL } from '../siteLinks'
+import useSocialLinks from '../hooks/useSocialLinks'
 
 export default function Footer() {
   const setting = useCompanySetting()
+  const social = useSocialLinks()
   const reveal = ' fade-up'
   return (
     <footer className="footer">
@@ -40,18 +41,18 @@ export default function Footer() {
           <div className={'ix-footer-col' + reveal}>
             <h5 className="ix-footer-heading">Síguenos</h5>
             <div className="ix-footer-social">
-              <a href={setting('facebook_url','https://www.facebook.com/share/174BEdCReB/')} target="_blank" rel="noreferrer" className="ix-social-item">
+              {social.facebook && <a href={social.facebook} target="_blank" rel="noreferrer" className="ix-social-item">
                 <span className="ix-social-icon ix-social-fb"><i className="fab fa-facebook-f" /></span>
                 <span>Facebook</span>
-              </a>
-              <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" className="ix-social-item">
+              </a>}
+              <a href={social.whatsapp} target="_blank" rel="noreferrer" className="ix-social-item">
                 <span className="ix-social-icon ix-social-wa"><i className="fab fa-whatsapp" /></span>
                 <span>WhatsApp</span>
               </a>
-              <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="ix-social-item">
+              {social.instagram && <a href={social.instagram} target="_blank" rel="noreferrer" className="ix-social-item">
                 <span className="ix-social-icon ix-social-ig"><i className="fab fa-instagram" /></span>
                 <span>Instagram</span>
-              </a>
+              </a>}
             </div>
           </div>
 

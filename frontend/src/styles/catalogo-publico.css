@@ -42,10 +42,5 @@
 .public-faq details { padding:1rem; margin:.7rem 0; border:1px solid #ddd; border-radius:.5rem; }
 .public-faq summary { font-weight:600; cursor:pointer; }
 .public-faq details p { white-space:pre-line; }
-.gl-card { color:inherit; text-align:left; font:inherit; cursor:pointer; border:0; padding:0; }
-dialog.public-lightbox { position:fixed; inset:0; width:100vw; height:100vh; max-width:100vw; max-height:100vh; margin:0; padding:1rem; border:0; background:rgba(10,16,30,.96); color:white; }
-dialog.public-lightbox:not([open]) { display:none; }
-dialog.public-lightbox::backdrop { background:rgba(0,0,0,.7); }
-.public-lightbox img { max-width:85vw; max-height:80vh; object-fit:contain; }
 :where(button,a,input,select,textarea,summary):focus-visible { outline:3px solid #4f46e5; outline-offset:4px; }
 @media(max-width:600px) { .public-catalog-toolbar>*,.public-catalog-toolbar form { width:100%; } .public-catalog-detail { padding-top:6rem; } }

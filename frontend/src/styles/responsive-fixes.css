@@ -25,24 +25,6 @@ img, video, iframe { max-width: 100%; }
 }
 
 @media (max-width: 768px) {
-  .gl-hero-center h1 { font-size: 2.2rem; }
-  .gl-filters-row { flex-direction: column; gap: 12px; align-items: flex-start; }
-  .gl-filters { flex-wrap: wrap; gap: 6px; }
-  .gf-btn { font-size: .75rem; padding: 6px 12px; }
-  .gl-grid { columns: 2 !important; }
-}
-
-@media (max-width: 480px) {
-  .gl-hero-center h1 { font-size: 1.8rem; }
-  .gl-hero-stats { flex-wrap: wrap; border-radius: 16px; gap: 0; }
-  .gl-stat { padding: 12px 10px !important; }
-  .gl-stat-sep { display: none; }
-  .gl-grid { columns: 1 !important; }
-  .gl-lb-img-wrap img { max-width: 95vw; max-height: 80vh; }
-  .gl-lb-nav { width: 36px; height: 36px; font-size: .8rem; }
-}
-
-@media (max-width: 768px) {
   .ct-hero-inner { flex-direction: column !important; gap: 40px; }
   .ct-hero-text, .ct-form-wrap { width: 100% !important; }
   .ct-info-grid { grid-template-columns: 1fr !important; }

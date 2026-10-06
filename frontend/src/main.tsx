@@ -19,6 +19,7 @@ import './styles/edu.css'
 import './panel/styles/admin-theme.css'
 import './panel/styles/admin-auth.css'
 import './panel/styles/admin-dashboard.css'
+import './styles/original-content.css'
 import App from './App'
 
 createRoot(document.getElementById('root')!).render(

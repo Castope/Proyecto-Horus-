@@ -4,7 +4,7 @@
 
 Esta guía define cómo trabajar en el sitio público, el panel administrativo y la API de Horus Group SRL. Aplica a todo el repositorio; las instrucciones de un `AGENTS.md` más cercano al archivo pueden precisar las de su carpeta. Las instrucciones explícitas del usuario y las del entorno de ejecución tienen prioridad.
 
-El objetivo es entregar cambios completos, verificables y proporcionados a la tarea, conservando los datos y el comportamiento que no se haya solicitado modificar. Market permanece como próxima etapa: no añadas compras, pagos ni inscripciones automáticas sin una solicitud explícita.
+El objetivo es entregar cambios completos, verificables y proporcionados a la tarea, conservando los datos y el comportamiento que no se haya solicitado modificar. Market queda fuera del alcance de este proyecto y no debe reintroducirse en el frontend público salvo decisión futura explícita. No añadas compras, pagos ni inscripciones automáticas sin una solicitud explícita.
 
 ## Forma de trabajo
 

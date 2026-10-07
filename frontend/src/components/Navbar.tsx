@@ -23,7 +23,6 @@ const NAV_ITEMS = [
     ],
   },
   { label: 'Galería',  to: '/galeria' },
-  { label: 'Market',   to: '/market' },
 ]
 
 const subscribeViewport = (callback: () => void) => { const media = window.matchMedia('(max-width: 1024px)'); media.addEventListener('change', callback); return () => media.removeEventListener('change', callback); }

@@ -40,4 +40,4 @@ Los ajustes públicos exponen solo claves conocidas; leerlos no escribe ejemplos
 
 `node node_modules/typescript/bin/tsc --noEmit --incremental false`, `npm test`, `npm run build` y `npm run test:integration`. Para un entorno con recursos limitados, la suite puede ejecutarse secuencialmente con `node --test --test-concurrency=1 -r ts-node/register test/*.test.ts`.
 
-La biblioteca es interna al panel y todos los administradores conservan sus permisos. Market no incluye tienda ni pagos en esta etapa.
+La biblioteca es interna al panel y todos los administradores conservan sus permisos. Market no forma parte de este proyecto: no hay tienda ni pagos.

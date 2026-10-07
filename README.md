@@ -17,7 +17,7 @@ Sitio institucional y panel de Horus Group SRL. Frontend React/TypeScript/Vite; 
 
 Las secciones de cableado, cámaras, soporte, asesoramiento y capacitaciones conservan sus diseños originales con datos editables desde el panel. La galería utiliza fotos activas en sus franjas animadas y filtros. Guardar contenido actualiza una web abierta en otra pestaña del mismo navegador; otros visitantes ven los cambios en su siguiente consulta.
 
-Market permanece como próxima etapa: no incluye compras, pagos ni inscripciones automáticas. La biblioteca de contenido es interna al panel.
+Market no forma parte de este proyecto: la ruta antigua /market redirige al inicio y no hay compras, pagos ni inscripciones automáticas. La biblioteca de contenido es interna al panel.
 
 ## Preparación
 

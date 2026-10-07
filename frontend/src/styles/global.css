@@ -1272,12 +1272,6 @@ input, textarea, select { font-family: var(--font); }
   .footer-bottom p { font-size: .78rem; }
 }
 
-@media (max-width: 480px) {
-  .mkt-content h1 { font-size: 2.4rem; }
-  .mkt-actions    { flex-direction: column; }
-  .mkt-pills      { gap: 6px; }
-}
-
 @media (max-width: 768px) {
 
   .footer { padding: 48px 0 0; }

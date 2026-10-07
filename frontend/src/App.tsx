@@ -7,7 +7,7 @@ import MainLayout from './layouts/MainLayout'
 import Home            from './pages/Home'
 import QuienesSomos    from './pages/QuienesSomos'
 import Galeria         from './pages/Galeria'
-import Market          from './pages/Market'
+import './styles/catalogo-publico.css'
 import Contactos       from './pages/Contactos'
 
 import CableadoEstructurado  from './pages/tecnologias/CableadoEstructurado'
@@ -58,7 +58,7 @@ export default function App() {
             <Route path="/quienes-somos"           element={<QuienesSomos />} />
             <Route path="/galeria"                 element={<Galeria />} />
             <Route path="/newsletter/baja" element={<NewsletterUnsubscribe />} />
-            <Route path="/market"                  element={<Market />} />
+            <Route path="/market/*"                element={<Navigate to="/" replace />} />
             <Route path="/contactos"               element={<Contactos />} />
 
             <Route path="/tecnologias/cableado-estructurado"  element={<CableadoEstructurado />} />

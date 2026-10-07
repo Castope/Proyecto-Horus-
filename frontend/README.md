@@ -1,6 +1,6 @@
 # Frontend Horus
 
-React, TypeScript y Vite. El sitio institucional consulta catálogos publicados, galería activa, FAQ y ajustes públicos. Market ofrece suscripción a novedades; las compras quedan para otra etapa.
+React, TypeScript y Vite. El sitio institucional consulta catálogos publicados, galería activa, FAQ y ajustes públicos. Market no forma parte de este proyecto: la ruta antigua /market redirige al inicio.
 
 ## Comandos
 

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ChatTurn } from './chatApi';
 import { publicRequest } from '../../api';
 import { usePublicResource } from '../../hooks/usePublicResource';
+import { publicErrorMessage } from '../../publicErrors';
 import ChatIcon from './ChatIcon';
 type Section='cursos'|'servicios'|'preguntas-frecuentes';
 type Item={id:number;titulo?:string;pregunta?:string;descripcion?:string;respuesta?:string;temario?:string;modalidad?:string;duracion?:string;fecha_inicio?:string;alcance?:string};
@@ -21,7 +22,7 @@ function GuidedCatalog({section,onAnswer,onContact,onWrite}:{section:Section}&Pr
  try{const {item:current}=await publicRequest<{item:Item}>(section+'/'+item.id,{signal:c.signal});if(c.signal.aborted)return;
  const content=action==='modalidad'?'Modalidad: '+text(current.modalidad)+'\nDuración: '+text(current.duracion):action==='fecha'?current.fecha_inicio?'Fecha publicada: '+current.fecha_inicio.slice(0,10)+'. Consulta la vigencia y disponibilidad con el equipo.':'Sin fecha publicada. Consulta con el equipo.':text(current[action]);
  onAnswer(label+': '+name(current),{role:'assistant',content:(name(current)+'\n\n'+content).slice(0,4000),sources:[{id:section+'-'+current.id,title:name(current),text:content}]});
- }catch(e){if(controller.current===c)setActionError(c.signal.aborted?'La consulta tardó demasiado.':e instanceof Error?e.message:'No se pudo consultar el contenido.');}
+ }catch(e){if(controller.current===c)setActionError(publicErrorMessage(e,c.signal.aborted));}
  finally{window.clearTimeout(timeout);if(controller.current===c){controller.current=null;setBusy(false)}}
  };
  return <><fieldset disabled={busy}><label>Buscar por nombre<input type="search" maxLength={100} value={search} onChange={e=>{setPage(1);setSelected('');setSearch(e.target.value)}}/></label>{section==='cursos'&&<label>Modalidad<select value={modality} onChange={e=>{setPage(1);setSelected('');setModality(e.target.value)}}><option value="">Todas</option><option value="presencial">Presencial</option><option value="virtual">Virtual</option><option value="hibrida">Híbrida</option></select></label>}

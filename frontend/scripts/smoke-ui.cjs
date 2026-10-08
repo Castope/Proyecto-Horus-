@@ -39,6 +39,7 @@ const server=http.createServer(async(req,res)=>{
  if(/^\/api\/admin\/servicios\/\d+$/.test(p)&&req.method!=='DELETE'){const entry=serviceEntries.find(x=>x.id===Number(p.split('/').pop()));if(!entry)return json({ok:false,mensaje:'Contenido no encontrado.'},404);if(req.method==='PUT'){let body='';for await(const chunk of req)body+=chunk;const sent=JSON.parse(body);serviceBodies.push({method:'PUT',id:entry.id,body:sent});const {limpiar,...rest}=sent;Object.assign(entry,rest);for(const key of limpiar||[])entry[key]=null}return json({ok:true,item:entry})}
  if(p==='/api/cursos/1')return json({ok:true,item:fixtureCourse});
  if(p==='/api/servicios/1')return json({ok:true,item:service});
+ if(/^\/api\/(cursos|servicios)\/\d+$/.test(p)&&req.method==='GET')return json({statusCode:404,message:'Cannot GET '+p,error:'Not Found'},404);
  if(p==='/api/convenios/1')return json({ok:true,item:fixtureConvenio});
  if(p==='/api/convenios')return json({ok:true,items:[fixtureConvenio],pagination:{page:1,limit:6,total:1,pages:1}});
  if(p==='/api/preguntas-frecuentes'&&faqError)return json({message:'Fallo de prueba'},503);
@@ -116,6 +117,12 @@ async function main(){
  assert.equal(await evaluate('!document.querySelector("meta[name=robots]")'),true,'El noindex de la 404 se retira al salir.');
  await evaluate('history.back()');await wait('location.pathname==="/ruta-inexistente-de-prueba"&&!!document.querySelector(".nf-page h1")');
  console.log('UI: Navbar de escritorio (landmark, grupo activo, hover/aria-expanded, clic fuera) y página 404: OK.');
+ // Detalles inexistentes: estado específico (no un 404 genérico ni un error de conexión), con regreso a una ruta pública válida.
+ for(const [route,heading,label,href] of [['/educacion/cursos/99999','Curso no disponible','Volver a cursos','/educacion/cursos'],['/educacion/capacitaciones/99999','Capacitación no disponible','Volver a capacitaciones','/educacion/capacitaciones'],['/tecnologias/servicios/99999','Servicio no disponible','Ver servicios de tecnología','/tecnologias/cableado-estructurado']]){
+  await navigate(route);await wait('[...document.querySelectorAll("h1")].some(h=>h.textContent===""+'+JSON.stringify(heading)+')');
+  assert.deepEqual(JSON.parse(await evaluate('JSON.stringify({main:document.querySelectorAll("main").length,h1:document.querySelectorAll("h1").length,title:document.title,mensaje:document.querySelector(".tech-state p")?.textContent,estado:document.querySelector(".tech-state")?.getAttribute("role"),reintentar:[...document.querySelectorAll(".tech-state button")].length,volver:[...document.querySelectorAll(".tech-state a")].map(a=>a.textContent.trim()+"|"+a.getAttribute("href")),nav:!!document.querySelector("header.nav"),footer:!!document.querySelector("footer.footer")})')),{main:1,h1:1,title:heading+' — Horus Group SRL',mensaje:'El contenido que buscas no está disponible.',estado:'status',reintentar:0,volver:[label+'|'+href],nav:true,footer:true},route+' muestra "'+heading+'".');
+ }
+ console.log('UI: detalles de curso, capacitación y servicio inexistentes (h1, título, mensaje y regreso): OK.');
  // Login: a wrong password is a red error; a correct one shows no message at all and opens the panel.
  await navigate('/admin/login');await wait('!!document.getElementById("email")');
  const typeLogin=(id,value)=>evaluate('(()=>{const el=document.getElementById('+JSON.stringify(id)+');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value").set.call(el,'+JSON.stringify(value)+');el.dispatchEvent(new Event("input",{bubbles:true}))})()');

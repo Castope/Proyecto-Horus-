@@ -592,7 +592,9 @@ async function main() {
     await key('Escape'); await wait('!document.querySelector("#convDesc")')
     convenioDetailFailure = true
     await evaluate('document.querySelector(".home-conv-card").click()')
-    await wait('document.querySelector("#home-conv-center [role=alert]")?.textContent.includes("Fallo aislado")')
+    // El texto técnico del servidor ("Fallo aislado de convenios") no llega al visitante: se muestra el mensaje fijo en español.
+    await wait('document.querySelector("#home-conv-center [role=alert]")?.textContent.includes("Ocurrió un problema al cargar el contenido. Inténtalo más tarde.")')
+    assert.equal(await evaluate('document.querySelector("#home-conv-center").textContent.includes("Fallo aislado")'), false)
     assert.equal(await evaluate('!!document.querySelector("#convDesc,.home-conv-gallery")'), false)
     convenioDetailFailure = false
     await evaluate('document.querySelector("#home-conv-center .home-button").click()')
@@ -600,7 +602,8 @@ async function main() {
     await key('Escape'); await wait('!document.querySelector("#convDesc")')
     conveniosFailure = true
     await evaluate('window.dispatchEvent(new CustomEvent("horus:content-updated",{detail:"convenios"}))')
-    await wait('document.querySelector(".home-conv-notice")?.textContent.includes("Fallo aislado")')
+    await wait('document.querySelector(".home-conv-notice")?.textContent.includes("Ocurrió un problema al cargar el contenido. Inténtalo más tarde.")')
+    assert.equal(await evaluate('document.querySelector(".home-conv-notice").textContent.includes("Fallo aislado")'), false)
     assert.equal(await evaluate('document.querySelectorAll(".home-conv-card").length'), 0, 'Sin fallback estático')
     conveniosFailure = false
     await evaluate('document.querySelector(".home-conv-notice button").click()')

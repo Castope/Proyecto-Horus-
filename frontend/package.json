@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "check": "tsc --noEmit",
-    "test:deploy": "node --test tests/deployment.test.mjs"
+    "test:deploy": "node --test tests/deployment.test.mjs",
+    "test:errors": "node --experimental-strip-types --test tests/public-errors.test.mjs"
   },
   "dependencies": {
     "react": "^19.2.5",

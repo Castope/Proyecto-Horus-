@@ -54,6 +54,7 @@
 /* Loading, error and empty states */
 .tech-state { display: grid; place-items: center; gap: 1rem; min-height: 14rem; padding: 2rem; text-align: center; border: 1px dashed var(--tech-chip-line); border-radius: 1rem; background: var(--tech-chip-bg); }
 .tech-state p { margin: 0; max-width: 46ch; color: var(--tech-ink); }
+.tech-state .tech-actions { justify-content: center; margin-top: 0; }
 .tech-skeleton { display: grid; gap: 1.25rem; }
 .tech-skeleton > span:not(.tech-sr) { display: block; height: 11rem; border: 1px solid var(--tech-line); border-radius: 1rem; background: linear-gradient(90deg, var(--tech-chip-bg), #ffffff1c, var(--tech-chip-bg)); background-size: 200% 100%; }
 .tech-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 1rem; margin-top: 2rem; color: var(--tech-ink); }

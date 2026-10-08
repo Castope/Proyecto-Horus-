@@ -673,6 +673,7 @@ input, textarea, select { font-family: var(--font); }
   letter-spacing: .04em;
   white-space: nowrap;
 }
+.nav-menu { display: contents; } /* el <nav> es solo el contenedor semántico: el diseño sigue siendo el de .nav-links */
 .nav-links {
   display: flex;
   align-items: center;
@@ -718,7 +719,6 @@ input, textarea, select { font-family: var(--font); }
   vertical-align: middle;
   transition: transform var(--transition);
 }
-.nav-drop:hover > a::after { transform: rotate(180deg); }
 .dropdown {
   position: absolute;
   top: 100%;
@@ -735,12 +735,6 @@ input, textarea, select { font-family: var(--font); }
   transform: translateY(-8px);
   transition: all var(--transition);
   pointer-events: none;
-}
-.nav-drop:hover .dropdown {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-  pointer-events: all;
 }
 .dropdown li a {
   display: flex;
@@ -1075,11 +1069,11 @@ input, textarea, select { font-family: var(--font); }
     padding: calc(var(--nav-h) + 16px) 16px 32px;
     overflow-y: auto;
     transform: translateX(100%);
-    transition: transform var(--transition);
+    transition: transform var(--transition), box-shadow var(--transition);
     z-index: 1001;
-    box-shadow: -8px 0 32px rgba(0,0,0,.5);
   }
-  .nav-links.open { transform: translateX(0); }
+  /* La sombra solo existe con el cajón abierto: cerrado queda fuera de pantalla y su sombra se colaría por el borde derecho. */
+  .nav-links.open { transform: translateX(0); box-shadow: -8px 0 32px rgba(0,0,0,.5); }
   .nav-links > li > a { padding: 12px 16px; border-radius: var(--radius); font-size: .95rem; color: rgba(255,255,255,.75); }
   .nav-links > li > a:hover, .nav-links > li > a.active { color: var(--gold); background: rgba(201,168,76,.08); }
   .nav-links > li > a.nav-cta { margin-top: 8px; text-align: center; justify-content: center; }

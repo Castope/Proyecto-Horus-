@@ -73,6 +73,7 @@ export default function App() {
             <Route path="/politicas/privacidad"        element={<PoliticasPrivacidad />} />
             <Route path="/preguntas-frecuentes"        element={<PreguntasFrecuentes />} />
             <Route path="/libro-reclamaciones"         element={<LibroReclamaciones />} />
+            <Route path="*"                            element={<NotFound />} />
           </Route>
 
           <Route path="/admin/forgot-password" element={<AdminRecovery />} />
@@ -85,7 +86,6 @@ export default function App() {
             <Route path="/admin/messages" element={<AdminMessages />} />
           </Route>
 
-          <Route path="*" element={<NotFound />} />
         </Routes>
         </Suspense></PageBoundary>
       </BrowserRouter>

@@ -39,6 +39,24 @@ export default function Navbar() {
   const menuOpen = menuPath === pathname
   const openDrop = drop?.path === pathname ? drop.label : null
   const mobile = useSyncExternalStore(subscribeViewport, () => window.matchMedia('(max-width: 1024px)').matches, () => false)
+  const hoverTimer = useRef(0)
+  const lastPointer = useRef('')
+  useEffect(() => () => window.clearTimeout(hoverTimer.current), [])
+  // Un clic fuera del menú desplegable lo cierra (en móvil el cajón ya tiene su propio overlay).
+  useEffect(() => {
+    if (!openDrop || mobile) return
+    const outside = (event: PointerEvent) => { if (!(event.target as Element | null)?.closest('.nav-drop')) setDrop(null) }
+    document.addEventListener('pointerdown', outside)
+    return () => document.removeEventListener('pointerdown', outside)
+  }, [openDrop, mobile])
+  // El ratón abre y cierra el menú por JavaScript (no con :hover) para que aria-expanded y lo que se ve coincidan siempre.
+  const hover = (label: string, over: boolean) => {
+    window.clearTimeout(hoverTimer.current)
+    if (over) { setClosingDrop(null); setDrop({ path: pathname, label }); return }
+    hoverTimer.current = window.setTimeout(() => setDrop(current => current?.label === label ? null : current), 120)
+  }
+  // Un grupo (Tecnologías, Educación) figura como activo cuando la página actual es una de sus rutas o un detalle suyo.
+  const groupActive = (children: { to: string }[]) => pathname.startsWith('/' + children[0].to.split('/')[1])
 
 
   useEffect(() => {
@@ -92,12 +110,16 @@ export default function Navbar() {
           onClick={() => setMenuPath(null)}
         />
 
+        <nav className="nav-menu" aria-label="Navegación principal">
         <ul ref={listRef} id="public-navigation" inert={mobile && !menuOpen} className={`nav-links${menuOpen ? ' open' : ''}`}>
           {NAV_ITEMS.map(item =>
             item.children ? (
               <li
                 key={item.label}
                 className={`nav-drop${openDrop === item.label ? ' open' : ''}${closingDrop?.path === pathname && closingDrop.label === item.label && openDrop !== item.label ? ' is-closing' : ''}`}
+                onPointerEnter={event => { if (!mobile && event.pointerType === 'mouse') hover(item.label, true) }}
+                onPointerLeave={event => { if (!mobile && event.pointerType === 'mouse') hover(item.label, false) }}
+                onBlur={event => { const next = event.relatedTarget as Node | null; if (!mobile && next && !event.currentTarget.contains(next)) setDrop(null) }}
                 onKeyDown={event => {
                   if (event.key !== 'Escape' || openDrop !== item.label) return
                   event.preventDefault(); event.stopPropagation()
@@ -105,7 +127,10 @@ export default function Navbar() {
                   event.currentTarget.querySelector('button')?.focus()
                 }}
               >
-                <button type="button" aria-expanded={openDrop === item.label} aria-controls={"drop-"+item.label} onClick={() => toggleDrop(item.label)}>
+                <button type="button" className={groupActive(item.children) ? 'active' : undefined} aria-current={groupActive(item.children) ? 'true' : undefined} aria-expanded={openDrop === item.label} aria-controls={"drop-"+item.label}
+                  onPointerDown={event => { lastPointer.current = event.pointerType }}
+                  // Con el ratón el menú ya se abrió al pasar por encima: un clic no debe cerrarlo (se cierra al salir). Con teclado o táctil, alterna.
+                  onClick={event => { if (!mobile && event.detail > 0 && lastPointer.current === 'mouse' && openDrop === item.label) return; toggleDrop(item.label) }}>
                   {item.label}
                 </button>
                 <ul id={"drop-"+item.label} className="dropdown" inert={mobile && openDrop !== item.label}>
@@ -129,6 +154,7 @@ export default function Navbar() {
             <NavLink to="/contactos" className="nav-cta">Contáctanos</NavLink>
           </li>
         </ul>
+        </nav>
 
         <button
           className={`nav-toggle${menuOpen ? ' open' : ''}`}

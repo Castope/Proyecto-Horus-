@@ -95,6 +95,27 @@ async function main(){
  assert.equal(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),true);
  console.log('UI: diálogos, foco y menú móvil comprobados.');
  await send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+ // Navbar de escritorio: landmark, grupo activo, hover coherente con aria-expanded, clic fuera; y la 404 con el diseño del sitio.
+ await navigate('/educacion/cursos');await wait('!!document.querySelector(".nav-drop > button")');
+ assert.equal(await evaluate('document.querySelectorAll("nav[aria-label=\'Navegación principal\']").length'),1,'El menú principal es un landmark nav.');
+ assert.equal(await evaluate('(()=>{const [t,e]=document.querySelectorAll(".nav-drop > button");return [t.classList.contains("active"),e.classList.contains("active"),e.getAttribute("aria-current")].join()})()'),'false,true,true','Educación figura como grupo activo en /educacion/cursos.');
+ assert.equal(await evaluate('[...document.querySelectorAll(".nav-links a[aria-current=page]")].map(a=>a.textContent.trim()).join()'),'Cursos','Solo la página actual (Cursos, dentro de Educación) se marca con aria-current=page.');
+ await evaluate('document.querySelector(".nav-drop").dispatchEvent(new PointerEvent("pointerover",{bubbles:true,pointerType:"mouse"}))');
+ await wait('document.querySelector(".nav-drop > button").getAttribute("aria-expanded")==="true"');
+ assert.equal(await evaluate('getComputedStyle(document.querySelector(".nav-drop .dropdown")).visibility'),'visible','El hover abre el menú y aria-expanded lo refleja.');
+ await evaluate('document.querySelector(".nav-drop").dispatchEvent(new PointerEvent("pointerout",{bubbles:true,pointerType:"mouse",relatedTarget:document.body}))');
+ await wait('document.querySelector(".nav-drop > button").getAttribute("aria-expanded")==="false"');
+ await wait('getComputedStyle(document.querySelector(".nav-drop .dropdown")).visibility==="hidden"'); // el fade de salida dura 200 ms
+ console.log('UI: al salir el ratón el menú y aria-expanded se cierran juntos.');
+ await evaluate('document.querySelector(".nav-drop > button").click()');await wait('document.querySelector(".nav-drop > button").getAttribute("aria-expanded")==="true"');
+ await evaluate('document.querySelector("main").dispatchEvent(new PointerEvent("pointerdown",{bubbles:true,pointerType:"mouse"}))');
+ await wait('document.querySelector(".nav-drop > button").getAttribute("aria-expanded")==="false"');
+ await navigate('/ruta-inexistente-de-prueba');await wait('!!document.querySelector(".nf-page h1")');
+ assert.deepEqual(JSON.parse(await evaluate('JSON.stringify({main:document.querySelectorAll("main").length,h1:[...document.querySelectorAll("h1")].map(h=>h.textContent),nav:!!document.querySelector("header.nav"),footer:!!document.querySelector("footer.footer"),title:document.title.startsWith("Página no encontrada — "),robots:document.querySelector("meta[name=robots]")?.content,inicio:document.querySelector(".nf-page a[href=\\"/\\"]")?.textContent.trim(),contacto:!!document.querySelector(".nf-page a[href=\\"/contactos\\"]"),legacy:!!document.querySelector(".btn-coral"),inline:document.querySelectorAll(".nf-page [style]").length,overflow:document.documentElement.scrollWidth-innerWidth<=0})')),{main:1,h1:['Página no encontrada'],nav:true,footer:true,title:true,robots:'noindex',inicio:'Volver al inicio',contacto:true,legacy:false,inline:0,overflow:true},'La 404 usa el layout del sitio, un solo main y un solo h1.');
+ await evaluate('document.querySelector(".nf-page a[href=\\"/\\"]").click()');await wait('location.pathname==="/"&&!!document.querySelector(".home-hero")');
+ assert.equal(await evaluate('!document.querySelector("meta[name=robots]")'),true,'El noindex de la 404 se retira al salir.');
+ await evaluate('history.back()');await wait('location.pathname==="/ruta-inexistente-de-prueba"&&!!document.querySelector(".nf-page h1")');
+ console.log('UI: Navbar de escritorio (landmark, grupo activo, hover/aria-expanded, clic fuera) y página 404: OK.');
  // Login: a wrong password is a red error; a correct one shows no message at all and opens the panel.
  await navigate('/admin/login');await wait('!!document.getElementById("email")');
  const typeLogin=(id,value)=>evaluate('(()=>{const el=document.getElementById('+JSON.stringify(id)+');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value").set.call(el,'+JSON.stringify(value)+');el.dispatchEvent(new Event("input",{bubbles:true}))})()');

@@ -916,11 +916,16 @@ async function main() {
     await wait('!document.querySelector(".nav-drop.is-closing")')
     assert.equal(await evaluate('getComputedStyle(document.querySelector(".dropdown")).visibility'), 'hidden')
     console.log('Navbar móvil: cierre con fade, aria-expanded, inert y foco conservado: OK.')
+    assert.notEqual(await evaluate('getComputedStyle(document.querySelector(".nav-links")).boxShadow'), 'none', 'Abierto, el cajón del menú proyecta su sombra.')
 
     await key('Escape')
     await wait('document.querySelector(".nav-toggle").getAttribute("aria-expanded")==="false"')
     await wait('document.activeElement.classList.contains("nav-toggle")')
     assert.equal(await evaluate('document.activeElement.classList.contains("nav-toggle")'), true)
+    await sleep(450)
+    // Regresión: con el menú móvil cerrado no puede quedar sombra ni nada del cajón dentro de la pantalla (antes se colaba por el borde derecho).
+    assert.deepEqual(JSON.parse(await evaluate('(()=>{const panel=document.querySelector(".nav-links");const style=getComputedStyle(panel);return JSON.stringify({shadow:style.boxShadow,outside:panel.getBoundingClientRect().left>=innerWidth,overflow:document.documentElement.scrollWidth<=innerWidth,inert:panel.inert})})()')), { shadow: 'none', outside: true, overflow: true, inert: true }, 'Menú móvil cerrado: sin sombra en el borde derecho, fuera de pantalla e inerte.')
+    console.log('Navbar móvil: sin sombra residual con el menú cerrado: OK.')
     await evaluate('document.querySelector(".home-conv-card").click()')
     await wait('!!document.querySelector("#convModal[open]")')
     assert.equal(await evaluate('getComputedStyle(document.querySelector("#convModal")).display'), 'block')

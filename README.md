@@ -31,7 +31,7 @@ La migración `20261002-original-design` añade los campos de presentación de s
 
 En las secciones **Servicios**, **Cursos y capacitaciones** y **Galería** del panel, **Recuperar contenido original** muestra una vista previa y permite publicar o guardar sin publicar. Solo importa contenido que existía en la revisión `fb2880b`; conserva registros existentes, ediciones y estados, incluidos archivados. No modifica los ajustes institucionales. En MySQL local de desarrollo, `npm run content:restore` es la alternativa explícita, después del build y las migraciones. No se ejecuta al arrancar ni al consultar la web.
 
-Configurar `MAIL_USER` y `MAIL_PASS` para correos. En producción, montar un volumen persistente y configurar `UPLOAD_DIR`. Sin almacenamiento persistente configurado, la carga de imágenes en producción responde con un error explícito.
+Configurar el correo con `MAIL_PROVIDER` (`resend` o `gmail`) según `backend/MAIL.md`. En producción, montar un volumen persistente y configurar `UPLOAD_DIR`. Sin almacenamiento persistente configurado, la carga de imágenes en producción responde con un error explícito.
 
 ## Desarrollo
 

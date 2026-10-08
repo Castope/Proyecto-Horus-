@@ -63,7 +63,7 @@ Sustituir los ejemplos de JWT y dominio antes de desplegar. `CORS_ORIGINS` debe 
 
 Montar un volumen persistente en `/data` del backend para las imágenes subidas; `UPLOAD_DIR=/data/uploads` mantiene los archivos entre despliegues. Sin esa variable, la API rechaza cargas en producción en vez de guardarlas en disco temporal.
 
-Para envío de correos, configurar `MAIL_USER` y `MAIL_PASS` según el transporte existente. No copiar credenciales al repositorio ni al frontend. Confirmar que el plan y la red elegidos permiten la conexión SMTP utilizada por la aplicación.
+Para envío de correos, elegir `MAIL_PROVIDER` (`resend` o `gmail`; sin valor se usa Gmail) y configurar sus variables según `backend/MAIL.md`. No copiar credenciales al repositorio ni al frontend. Confirmar que el plan y la red elegidos permiten la conexión SMTP utilizada por la aplicación.
 
 ## 3. Preparar MySQL explícitamente
 

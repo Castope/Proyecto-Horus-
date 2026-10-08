@@ -30,6 +30,9 @@ export function validateDeployment(env: Record<string, unknown>) {
   for (const key of ['DB_SSL', 'DB_SYNC', 'SWAGGER_ENABLED']) {
     if (env[key] !== undefined && !['true', 'false'].includes(String(env[key]))) throw new Error(key + ' debe ser true o false.');
   }
+  if (env.MAIL_PROVIDER !== undefined && !['resend', 'gmail'].includes(String(env.MAIL_PROVIDER).trim().toLowerCase())) {
+    throw new Error('MAIL_PROVIDER debe ser resend o gmail.');
+  }
   if (env.JWT_SECRET !== undefined && (typeof env.JWT_SECRET !== 'string' || env.JWT_SECRET.length < 32)) {
     throw new Error('JWT_SECRET debe tener al menos 32 caracteres.');
   }

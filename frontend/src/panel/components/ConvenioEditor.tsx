@@ -3,6 +3,7 @@ import { useAdminAuth } from '../context';
 import { panelRequest, errorMessage } from '../services/panelApi';
 import type { ConvenioDetalle, ConvenioResponse } from '../../types/convenios';
 import PanelDialog from './PanelDialog';
+import { useUnsavedChanges } from '../unsaved/unsavedContext';
 import ImageUpload from './ImageUpload';
 import ConvenioPhotosEditor from './ConvenioPhotosEditor';
 import PublicImage from '../../components/PublicImage';
@@ -22,6 +23,10 @@ export default function ConvenioEditor({ initial, onClose, onSaved }: {
   const [error, setError] = useState(''), [notice, setNotice] = useState('');
   const controller = useRef<AbortController | null>(null);
   const locked = busy || uploading || photosBusy;
+  // Los datos del convenio difieren de lo abierto o de lo último guardado: cerrar el editor pide confirmación.
+  const [baseline, setBaseline] = useState(() => JSON.stringify(fields));
+  const confirmLeave = useUnsavedChanges(JSON.stringify(fields) !== baseline, 'convenio');
+  const requestClose = () => confirmLeave(onClose);
   useEffect(() => () => { controller.current?.abort(); controller.current = null; }, []);
   const text = (name: keyof Omit<typeof fields, 'visible'>, value: string) => setFields(v => ({ ...v, [name]: value }));
   const submit = async (event: SubmitEvent<HTMLFormElement>) => {
@@ -29,14 +34,15 @@ export default function ConvenioEditor({ initial, onClose, onSaved }: {
     const c = new AbortController(); controller.current = c;
     const timeout = window.setTimeout(() => c.abort(), 15000);
     setBusy(true); setError(''); setNotice('');
+    const sentFields = JSON.stringify(fields); // lo enviado: una edición posterior mientras guarda sigue contando como cambio
     try {
       const response = await panelRequest<ConvenioResponse>('convenios' + (item ? '/' + item.id : ''), token, item ? 'PUT' : 'POST',
         { ...fields, orden: Number(fields.orden) }, c.signal);
-      if (!c.signal.aborted) { setItem(response.item); setNotice('Convenio guardado correctamente.'); onSaved(); }
+      if (!c.signal.aborted) { setBaseline(sentFields); setItem(response.item); setNotice('Convenio guardado correctamente.'); onSaved(); }
     } catch (e) { if (controller.current === c) setError(c.signal.aborted ? 'La operación tardó demasiado. Revisa el listado antes de reintentar.' : errorMessage(e)); }
     finally { window.clearTimeout(timeout); if (controller.current === c) { controller.current = null; setBusy(false); } }
   };
-  return <PanelDialog title={item ? 'Editar convenio' : 'Nuevo convenio'} busy={locked} onClose={onClose}
+  return <PanelDialog title={item ? 'Editar convenio' : 'Nuevo convenio'} busy={locked} onClose={requestClose}
     className="hp-convenio-dialog" lockScroll footer={<>
       <div className="hp-convenio-feedback">
         {error && <p className="hp-error" role="alert">{error}</p>}
@@ -44,7 +50,7 @@ export default function ConvenioEditor({ initial, onClose, onSaved }: {
       </div>
       <div className="hp-convenio-actions">
         <button type="submit" form={formId} className="hp-btn hp-btn-primary" disabled={locked} aria-busy={busy}>{busy ? 'Guardando…' : 'Guardar convenio'}</button>
-        <button type="button" className="hp-btn" disabled={locked} onClick={onClose}>Cerrar</button>
+        <button type="button" className="hp-btn" disabled={locked} onClick={requestClose}>Cerrar</button>
       </div>
     </>}>
     <form id={formId} className="hp-form hp-convenio-form" onSubmit={submit}>

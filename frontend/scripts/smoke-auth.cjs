@@ -169,7 +169,8 @@ async function main() {
     const text = await a.evaluate('document.body.innerText'); const log2 = await state();
     ck(!/Hola, Ana|Ana Administradora/.test(text) && log2.me.includes('token-B'), 'cambio de administrador → la otra pestaña no sigue con la identidad anterior y revalida el token nuevo', log2.me);
     await b.evaluate('localStorage.setItem(' + JSON.stringify(KEY) + ", 'token-ajeno'); 1");
-    await a.wait("location.pathname === '/admin/login'", 'token reemplazado por uno inválido'); ck((await storage(a)) === null, 'un token reemplazado y rechazado por el servidor cierra la sesión y limpia el almacenamiento');
+    await sleep(1800); // el token desconocido se valida con el backend; al ser rechazado no autentica nada y se restablece el último válido
+    ck((await a.path()) === '/admin/dashboard' && (await storage(a)) === 'token-B' && (await a.evaluate("document.body.innerText.includes('Beto')")), 'un token de otra pestaña que el backend rechaza no sustituye la sesión validada: se restablece el último token válido');
     await a.close(); await b.close(); }
 
   // ===== 3. 401 =====

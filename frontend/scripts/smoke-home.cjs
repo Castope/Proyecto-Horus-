@@ -837,6 +837,9 @@ async function main() {
         assert.equal(await convenioAdmin.evaluate('document.querySelector(".hp-convenio-form [name=nombre]").value'), 'Texto conservado en móvil', 'Cambiar el tamaño no pierde campos.')
       }
       await convenioAdmin.evaluate('Array.from(document.querySelectorAll(".hp-convenio-dialog button")).find(b=>b.textContent==="Cerrar").click()')
+      // El nombre editado en esta prueba no se guardó: cerrar pide confirmar el descarte (cambios sin guardar).
+      await convenioAdmin.wait('!!document.querySelector("dialog.hp-unsaved-dialog[open]")')
+      await convenioAdmin.evaluate('document.querySelector("dialog.hp-unsaved-dialog[open] .hp-btn-danger").click()')
       await convenioAdmin.wait('!document.querySelector(".hp-convenio-dialog")')
       assert.equal(await convenioAdmin.evaluate('document.body.style.overflow'), '')
       assert.equal(await convenioAdmin.evaluate('document.documentElement.style.overflow'), '')

@@ -174,7 +174,7 @@ async function main(){
   await adminWait('document.querySelectorAll(".hw-resource").length===8');
   await adminEval('document.querySelector(".hw-resource footer button").click()');await adminWait('!!document.getElementById("field-nombre_corto")');
   await adminEval(`(()=>{for(const [name,value] of Object.entries({titulo:'Servicio actualizado desde el panel',nombre_corto:'Cat editable',etiquetas:'Etiqueta actualizada'})){const el=document.getElementById('field-'+name);Object.getOwnPropertyDescriptor(el.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(el,value);el.dispatchEvent(new Event('input',{bubbles:true}));}})()`);
-  await sleep(100);await adminEval('document.querySelector("dialog form").requestSubmit()');await adminWait('document.body.innerText.includes("Cambios guardados correctamente.")');
+  await sleep(100);await adminEval('document.querySelector("dialog form").requestSubmit()');await adminWait('document.body.innerText.includes("Cambios guardados correctamente.")&&!document.querySelector("dialog[open]")');
   await wait('document.querySelector(".cable-panel-info h3")?.textContent==="Servicio actualizado desde el panel"');assert.equal(await evaluate('document.querySelector("[role=tab]").textContent.includes("Cat editable")'),true);assert.equal(await evaluate('document.querySelector(".cable-panel-info .tech-chips li").textContent'),"Etiqueta actualizada");
   await adminEval('Array.from(document.querySelectorAll("button")).find(x=>x.textContent.trim()==="Recuperar contenido original").click()');
   await adminWait('document.querySelector(".original-import-list")?.children.length===19');
@@ -300,13 +300,13 @@ async function main(){
   await goSub(labels.camaras,'camaras');await adminWait('document.querySelectorAll(".hw-resource").length>0');
   const editTarget=camHidden.titulo;
   await openEdit(editTarget);
-  await typeInto('field-etiquetas','Etiqueta nueva');await submitForm();await adminWait('document.body.innerText.includes("Cambios guardados correctamente.")');
+  await typeInto('field-etiquetas','Etiqueta nueva');await submitForm();await adminWait('document.body.innerText.includes("Cambios guardados correctamente.")&&!document.querySelector("dialog[open]")');
   const edited=serviceBodies.at(-1);assert.equal(edited.method,'PUT');
   for(const name of ['color','presentacion','nombre_corto','dato_principal','dato_secundario','categoria','limpiar'])assert.ok(!(name in edited.body),'Editar no envía el campo oculto '+name+'.');
   assert.equal(edited.body.etiquetas,'Etiqueta nueva');
   assert.deepEqual([camHidden.color,camHidden.presentacion,camHidden.nombre_corto,camHidden.dato_principal,camHidden.dato_secundario],['coral','camara','Pestaña oculta','99','Mbps ocultos'],'Los valores ocultos siguen guardados.');
   // Clearing a visible optional field does clear it, and only that one.
-  await openEdit(editTarget);await typeInto('field-etiquetas','');await submitForm();await adminWait('document.body.innerText.includes("Cambios guardados correctamente.")');
+  await openEdit(editTarget);await typeInto('field-etiquetas','');await submitForm();await adminWait('document.body.innerText.includes("Cambios guardados correctamente.")&&!document.querySelector("dialog[open]")');
   assert.deepEqual(serviceBodies.at(-1).body.limpiar,['etiquetas']);assert.equal(camHidden.etiquetas,null);assert.equal(camHidden.color,'coral');
   // Asesoramiento: line / benefit, stored internally in presentacion.
   await adminEval('Array.from(document.querySelectorAll(".hp-nav-item")).find(x=>x.textContent.includes("Educación")).click()');
@@ -328,12 +328,12 @@ async function main(){
   sent=serviceBodies.at(-1).body;assert.equal(sent.presentacion,'beneficio');assert.equal(sent.categoria,'asesoramiento');assert.ok(!('alcance' in sent)&&!('imagen_url' in sent));
   // Editing a line without touching the type does not rewrite presentacion; changing it does.
   await openEdit('Línea de prueba');assert.equal(await adminEval('document.getElementById("field-contenido_tipo").value'),'linea');
-  await typeInto('field-descripcion','Descripción editada');await submitForm();await adminWait('document.body.innerText.includes("Cambios guardados correctamente.")');
+  await typeInto('field-descripcion','Descripción editada');await submitForm();await adminWait('document.body.innerText.includes("Cambios guardados correctamente.")&&!document.querySelector("dialog[open]")');
   assert.ok(!('presentacion' in serviceBodies.at(-1).body),'Sin cambiar el tipo no se toca presentacion.');
   await openEdit('Beneficio de prueba');assert.equal(await adminEval('document.getElementById("field-contenido_tipo").value'),'beneficio');
-  await pickValue('field-contenido_tipo','linea');await submitForm();await adminWait('document.body.innerText.includes("Cambios guardados correctamente.")');
+  await pickValue('field-contenido_tipo','linea');await submitForm();await adminWait('document.body.innerText.includes("Cambios guardados correctamente.")&&!document.querySelector("dialog[open]")');
   assert.equal(serviceBodies.at(-1).body.presentacion,'asesoria');
-  await openEdit('Beneficio de prueba');await pickValue('field-contenido_tipo','beneficio');await submitForm();await adminWait('document.body.innerText.includes("Cambios guardados correctamente.")');
+  await openEdit('Beneficio de prueba');await pickValue('field-contenido_tipo','beneficio');await submitForm();await adminWait('document.body.innerText.includes("Cambios guardados correctamente.")&&!document.querySelector("dialog[open]")');
   assert.equal(serviceBodies.at(-1).body.presentacion,'beneficio');
   // Courses and capacitaciones.
   const courseFields=['titulo','descripcion','imagen_url','modalidad','duracion','fecha_inicio','area','certificacion','temario','orden','estado','slug'];
@@ -351,7 +351,7 @@ async function main(){
   await submitForm();await adminWait('document.body.innerText.includes("Se creó «Capacitación de forma»")');
   course=courseBodies.at(-1).body;assert.equal(course.tipo,'capacitacion');assert.ok(!('modalidad' in course)&&!('duracion' in course));
   fixtureCap.icono='star';fixtureCap.color='coral';fixtureCap.area='Área guardada';
-  await openEdit('Capacitación de prueba');await typeInto('field-certificacion','Certificado oficial');await submitForm();await adminWait('document.body.innerText.includes("Cambios guardados correctamente.")');
+  await openEdit('Capacitación de prueba');await typeInto('field-certificacion','Certificado oficial');await submitForm();await adminWait('document.body.innerText.includes("Cambios guardados correctamente.")&&!document.querySelector("dialog[open]")');
   course=courseBodies.at(-1).body;assert.equal(course.certificacion,'Certificado oficial');
   for(const name of ['icono','color','tipo','limpiar'])assert.ok(!(name in course),'Editar no envía '+name+'.');
   assert.deepEqual([fixtureCap.icono,fixtureCap.color,fixtureCap.area],['star','coral','Área guardada'],'Los valores ocultos de la capacitación siguen guardados.');

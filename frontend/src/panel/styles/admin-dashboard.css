@@ -58,3 +58,7 @@
 .hp-advanced-body{margin-bottom:0}
 .hp-footer-error{flex:1;margin:0!important;padding:8px 12px;font-size:13px;line-height:1.4;text-align:left}
 @media(max-width:640px){.hp-form-row.is-pair{grid-template-columns:minmax(0,1fr)}.hp-form-section{padding:18px 18px 4px}.hp-form-sections .hp-advanced{margin:4px 18px 20px}.hp-dialog-sticky>header,.hp-dialog-sticky .hp-dialog-footer{padding-left:18px;padding-right:18px}.hp-dialog-sticky .hw-editor-tools{padding-left:18px;padding-right:18px}.hp-dialog-sticky .hp-dialog-footer{flex-wrap:wrap}.hp-footer-error{flex-basis:100%}}
+
+/* Aviso de cambios sin guardar: los botones se reparten el ancho y bajan a otra fila en pantallas estrechas. */
+.hp-unsaved-dialog .hp-dialog-footer{flex-wrap:wrap;gap:10px}
+.hp-unsaved-dialog .hp-dialog-footer .hp-btn{flex:1 1 150px;justify-content:center}

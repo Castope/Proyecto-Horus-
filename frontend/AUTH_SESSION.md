@@ -34,17 +34,25 @@ Cada formulario usa un candado síncrono (`useRef`): doble clic, Enter repetido 
 ## Operaciones de contraseña con resultado incierto
 Un timeout, una red caída o una respuesta ilegible **no** demuestran que el servidor no aplicó el cambio. En restablecer y cambiar contraseña el mensaje recomienda comprobar el estado (iniciar sesión con la nueva contraseña) antes de repetir, no afirma que la contraseña siga igual y **no hay reintentos automáticos**. Los mensajes están en [authErrors.ts](src/panel/services/authErrors.ts); nunca se muestra texto del backend.
 
-## Trabajo no guardado (estado actual)
-Los formularios de gestión guardan su borrador solo en el estado del componente. Se pierde cuando:
-1. **La sesión caduca o el servidor responde 401** (`expire` → login): `AdminRoute` redirige y el panel se desmonta.
-2. **Otra pestaña inicia sesión** (incluso con la misma cuenta, que emite un token nuevo): esta pestaña adopta el token y muestra "Cargando panel…" mientras revalida, lo que desmonta el panel.
-3. **Reintentar la validación de sesión** tras un fallo de red (`checking`).
-4. **Cerrar sesión** a propósito o recargar la página.
+## Trabajo no guardado (implementado en la etapa C)
+Un aviso común ([UnsavedChangesProvider](src/panel/unsaved/UnsavedChangesProvider.tsx)) protege los formularios del panel. Cada formulario declara si tiene cambios con `useUnsavedChanges(dirty, etiqueta)`; solo se registra un indicador y una etiqueta de texto, **nunca el contenido** (nada se escribe en `localStorage` ni `sessionStorage`).
 
-Tras reautenticarse se abre siempre `/admin/dashboard`: la ruta original no se conserva (`AdminRoute` redirige sin estado y el login no lo lee).
+- **Qué cuenta como cambio:** que el formulario difiera de la foto tomada al abrirlo o del último guardado correcto. Cargar datos no lo marca; un guardado fallido no lo limpia; un guardado correcto sí.
+- **Qué avisa:** navegación del panel (menú, enlaces, filtros de la URL y botón Atrás/Adelante, mediante `useBlocker`; por eso `App.tsx` usa un router de datos), acciones internas que sustituyen el formulario (buscar, filtrar, paginar, actualizar, recargar, cambiar de consulta, acciones rápidas de estado, cerrar/cancelar/Escape de un editor) y cerrar sesión a propósito. Recargar o cerrar la pestaña usa `beforeunload` del navegador.
+- **Cómo se usa el aviso:** «Seguir editando» (foco inicial, también con Escape) o «Descartar cambios». Nunca bloquea de forma permanente.
+- **Formularios protegidos:** seguimiento de consultas y de reclamaciones (`AttentionEditor`), bandeja de Mensajes, cotizaciones (`QuoteForm`), editor de contenido (`ResourceManager`: cursos, servicios, galería, FAQ…), convenios (`ConvenioEditor`), información de la empresa (`PanelSettings`) y cambio de contraseña (`PanelPreferences`, solo avisa; las contraseñas no se guardan).
+- **No protegidos / pendientes:** fotografías de convenios (cada subida se guarda al instante), importación de contenido original (no es un formulario), agenda de cursos y las acciones de listas (activar/archivar), que no editan texto.
 
-### Propuesta para una etapa posterior (no implementada)
-- **Conservar la ruta:** `AdminRoute` redirige con `state={{ from: location }}`; el login vuelve a esa ruta solo si es una ruta `/admin/...` del mismo origen.
-- **No desmontar al revalidar:** al adoptar un token nuevo con el panel ya abierto, mantener el panel visible y revalidar en segundo plano; solo si `/admin/me` devuelve otra identidad o un 401 se sustituye o se cierra.
-- **Borradores seguros:** guardar en `sessionStorage` (no `localStorage`) únicamente el contenido editorial en edición —nunca contraseñas ni datos personales de clientes—, asociado al id de cuenta, con caducidad corta, restaurable tras volver a entrar con la misma cuenta y borrado al cerrar sesión de forma explícita.
-- **Aviso previo:** mostrar un aviso antes de que expire la sesión (el JWT dura 8 h) para que se pueda guardar.
+### Sesión y cambios sin guardar
+- **Sesión invalidada por el servidor (401 de la sesión vigente):** el cierre es forzoso y **no pasa por el aviso**: no puede retener una sesión inválida. Los cambios sin guardar **no se conservan** (no se guardan borradores por privacidad); el login lo explica.
+- **Misma cuenta, token nuevo desde otra pestaña:** el panel no se desmonta ni recarga; el token nuevo solo se adopta cuando el actual falla con 401. Si `/admin/me` falla de forma pasajera tampoco se desmonta.
+- **Otra cuenta:** el panel se desmonta y se vuelve a montar con la identidad nueva (`key` por id de cuenta); no queda ningún formulario ni dato de la cuenta anterior, y no se pide confirmación.
+- **Límite:** si el token falla con 401 y el cambio silencioso a un token de la misma cuenta recarga una pantalla que no usa `useLatest` (listas de otros módulos), esa pantalla vuelve a cargar sus datos. Las pantallas con formularios de texto largo ya no dependen del token.
+
+### Ruta tras volver a entrar
+`AdminRoute` redirige a `/admin/login` con la ruta actual en el estado del router, **solo** si el cierre no fue voluntario. [returnPath.ts](src/panel/context/returnPath.ts) valida: únicamente `/admin/dashboard` y `/admin/messages`, sin URLs externas ni rutas con `//`, `\` o caracteres de control, y solo con parámetros `section`, `seccion`, `estado`, `vista`, `id` de valores simples (se descartan tokens, correos, `contacto`, `crear`…). Si no es válida se usa `/admin/dashboard`.
+
+### Pendiente para una etapa posterior
+- Borradores seguros en `sessionStorage` (solo contenido editorial, con id de cuenta y caducidad corta, nunca contraseñas ni datos de clientes), restaurables al volver a entrar con la misma cuenta.
+- Aviso previo a la caducidad del JWT (8 h).
+- Que las demás listas del panel tampoco recarguen por un cambio de token de la misma cuenta.

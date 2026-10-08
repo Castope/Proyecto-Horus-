@@ -11,6 +11,7 @@ import PanelIcon from './PanelIcon';
 import ImageUpload from './ImageUpload';
 import OriginalContentImport from './OriginalContentImport';
 import PanelDialog from './PanelDialog';
+import { useUnsavedChanges } from './../unsaved/unsavedContext';
 
 type ListResponse = { items?: Row[]; messages?: Row[]; pagination?: { total: number; pages: number } };
 // A scope limits the list to one section of the Education or Services menu and keeps new records inside it.
@@ -43,6 +44,11 @@ export default function ResourceManager({ resource: r, autoCreate, scope }: Prop
   }));
   const [form, setForm] = useState<Record<string, string>>(() => autoCreate ? defaults() : {});
   const [formError, setFormError] = useState('');
+  // Foto del formulario al abrirlo: hay cambios sin guardar cuando el contenido editado difiere de ella.
+  const [baseline, setBaseline] = useState(() => autoCreate ? JSON.stringify(defaults()) : '');
+  const dirty = !!editor && !editor.view && JSON.stringify(form) !== baseline;
+  const confirmLeave = useUnsavedChanges(dirty, 'edición de ' + singular);
+  const closeEditor = () => confirmLeave(() => setEditor(null));
   // While creating, the slug follows the title until the administrator edits it by hand.
   const [slugEdited, setSlugEdited] = useState(false);
   // Only the fields that make sense for this section are part of the form (see fieldsFor); the rest keep their stored value.
@@ -80,7 +86,7 @@ export default function ResourceManager({ resource: r, autoCreate, scope }: Prop
     return () => controller.abort();
   }, [token, r, page, query, status, reload, scope, setLoading, setError]);
 
-  const openNew = () => { setSlugEdited(false); setForm(defaults()); setFormError(''); setEditor({}); };
+  const openNew = () => { const initial = defaults(); setSlugEdited(false); setForm(initial); setBaseline(JSON.stringify(initial)); setFormError(''); setEditor({}); };
   // Page (8 per page) where a record lands with the list order, so a new record is never left on a hidden page.
   const locate = async (id: number) => {
     try {
@@ -100,7 +106,7 @@ export default function ResourceManager({ resource: r, autoCreate, scope }: Prop
         await panelRequest<{ item?: Row; message?: Row }>(r.endpoint + '/' + row.id, token);
       const current = data.item || data.message;
       if (!current) throw new Error('No se encontró el registro.');
-      setForm({ ...defaults(current), estado: String(current.estado || 'nuevo') });
+      { const next = { ...defaults(current), estado: String(current.estado || 'nuevo') }; setForm(next); setBaseline(JSON.stringify(next)); }
       setEditor({ row: current, view }); setFormError('');
     } catch (err) { setError(errorMessage(err)); }
     finally { actionLock.current = false; setBusy(false); }
@@ -114,7 +120,7 @@ export default function ResourceManager({ resource: r, autoCreate, scope }: Prop
       copied[r.title] = String(data.item[r.title]).slice(0, r.endpoint === 'preguntas-frecuentes' ? 285 : 145) + ' (copia)';
       if ('slug' in copied) copied.slug = copied.slug.slice(0, 140).replace(/-+$/, '') + '-copia-' + Date.now();
       copied.estado = 'borrador';
-      setSlugEdited(true); setForm(copied); setFormError(''); setPreview(true); setEditor({});
+      setSlugEdited(true); setForm(copied); setBaseline(JSON.stringify(copied)); setFormError(''); setPreview(true); setEditor({});
     } catch (err) { setError(errorMessage(err)); }
     finally { actionLock.current = false; setBusy(false); }
   };
@@ -252,7 +258,7 @@ export default function ResourceManager({ resource: r, autoCreate, scope }: Prop
           <div className="hp-empty"><span className="hp-empty-icon"><PanelIcon name={r.icon} size={30} /></span><h3>{query || status ? 'No encontramos coincidencias' : 'Tu próximo proyecto empieza aquí'}</h3><p>{query || status ? 'Prueba con otra búsqueda o cambia el filtro.' : 'Crea tu primer registro. Su información quedará guardada en el sistema.'}</p><button className="hp-btn hp-btn-primary" onClick={openNew}>Crear {singular}<PanelIcon name="plus" /></button></div>}
       <footer className="hp-pagination"><span>{error ? 'Sin conexión con los datos' : total + ' registros encontrados'} · {pageSize} por página</span><div><button className="hp-btn" disabled={loading || !!error || page <= 1} onClick={() => setPage(p => p - 1)}>Anterior</button><span>{page} / {Math.max(1, pages)}</span><button className="hp-btn" disabled={loading || !!error || page >= pages} onClick={() => setPage(p => p + 1)}>Siguiente</button></div></footer></>}
     </section>
-    {editor && <PanelDialog title={(editor.view ? 'Detalle de ' : editor.row ? 'Editar ' : 'Crear ') + singular} busy={busy} onClose={() => setEditor(null)} className={groups ? 'hp-dialog-sticky' : ''}>
+    {editor && <PanelDialog title={(editor.view ? 'Detalle de ' : editor.row ? 'Editar ' : 'Crear ') + singular} busy={busy} onClose={closeEditor} className={groups ? 'hp-dialog-sticky' : ''}>
       {editor.view ? <>{visual && <ResourcePreview resource={r} values={editor.row!} />}<dl className="hp-details">{[...main, ...advanced].map(field => <div key={field.key}><dt>{field.label}</dt><dd>{label(editor.row?.[field.key]) || 'Sin especificar'}</dd></div>)}</dl><div className="hp-dialog-footer"><button className="hp-btn hp-btn-primary" onClick={() => setEditor({ ...editor, view: false })}>Editar registro<PanelIcon name="edit" /></button></div></> :
       <form onSubmit={save}>
         {visual && <div className="hw-editor-tools"><strong>{editor.row ? 'Edición de contenido' : 'Prepara una nueva publicación'}</strong><button type="button" className="hp-btn" onClick={() => setPreview(value => !value)} aria-expanded={preview}><PanelIcon name="eye" size={16} />{preview ? 'Ocultar vista previa' : 'Vista previa'}</button></div>}
@@ -265,7 +271,7 @@ export default function ResourceManager({ resource: r, autoCreate, scope }: Prop
         {advanced.length > 0 && <details className="hp-advanced hp-full"><summary>Opciones avanzadas</summary><div className="hp-form-row hp-advanced-body">{advanced.map(renderField)}</div></details>}
         {r.endpoint === 'messages' && editor.row && <label className="hp-full">Estado de atención<select value={form.estado} onChange={e => setForm(prev => ({ ...prev, estado: e.target.value }))}>{r.states.map(s => <option key={s} value={s}>{label(s)}</option>)}</select></label>}
       </fieldset>
-        <div className="hp-dialog-footer">{formError && <p className="hp-error hp-footer-error" role="alert">{formError}</p>}<button type="button" className="hp-btn" disabled={busy} onClick={() => setEditor(null)}>Cancelar</button><button className="hp-btn hp-btn-primary" disabled={busy}>{busy ? 'Guardando…' : 'Guardar cambios'}<PanelIcon name="check" /></button></div></form>}
+        <div className="hp-dialog-footer">{formError && <p className="hp-error hp-footer-error" role="alert">{formError}</p>}<button type="button" className="hp-btn" disabled={busy} onClick={closeEditor}>Cancelar</button><button className="hp-btn hp-btn-primary" disabled={busy}>{busy ? 'Guardando…' : 'Guardar cambios'}<PanelIcon name="check" /></button></div></form>}
     </PanelDialog>}
     {pendingDelete && <PanelDialog title={r.hardDelete ? 'Eliminar ' + singular : r.catalog ? 'Archivar registro' : 'Eliminar registro'} busy={busy} onClose={() => setPendingDelete(null)}>
       <div className="hp-confirm"><PanelIcon name="trash" size={34} /><h3>{String(pendingDelete[r.title])}</h3><p>{r.catalog && !r.hardDelete ? 'Dejará de aparecer en las consultas públicas. Podrás publicarlo nuevamente desde Editar.' : 'Se eliminará definitivamente de la base de datos y dejará de aparecer en el sitio. Esta acción no se puede deshacer.'}</p></div>

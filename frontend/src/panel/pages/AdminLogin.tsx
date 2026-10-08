@@ -1,9 +1,10 @@
 import { startTransition, useEffect, useRef, useState } from 'react';
 import type {ChangeEvent, SubmitEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../context';
 import { loginAdmin } from '../services';
 import { authError } from '../services/authErrors';
+import { safeAdminReturn } from '../context/returnPath';
 import AdminAuthLayout from '../components/AdminAuthLayout';
 import AdminPasswordField from '../components/AdminPasswordField';
 import PanelIcon from '../components/PanelIcon';
@@ -12,6 +13,10 @@ const LOGIN_TIMEOUT_MS = 20_000;
 
 export default function AdminLogin() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = location.state as { from?: unknown; expired?: unknown } | null;
+  const returnTo = safeAdminReturn(state?.from) ?? "/admin/dashboard"; // solo rutas internas del panel validadas
+  const expired = state?.expired === true;
   const { login, isAuthenticated } = useAdminAuth();
   const [form, setForm] = useState({ email: '', password: '' });
   const [mensaje, setMensaje] = useState('');
@@ -28,8 +33,8 @@ export default function AdminLogin() {
 
   useEffect(() => {
     // As a transition, the login stays on screen until the panel is ready instead of flashing a loading page.
-    if (isAuthenticated) startTransition(() => navigate('/admin/dashboard', { replace: true }));
-  }, [isAuthenticated, navigate]);
+    if (isAuthenticated) startTransition(() => navigate(returnTo, { replace: true }));
+  }, [isAuthenticated, navigate, returnTo]);
 
   // Download the panel while the user fills in the form so signing in opens it right away.
   useEffect(() => { void import('./AdminDashboard'); }, []);
@@ -72,6 +77,7 @@ export default function AdminLogin() {
   return (
     <AdminAuthLayout eyebrow="Tu espacio de trabajo" title="Bienvenido de nuevo" current="login"
       description="Ingresa a tu cuenta para continuar con la gestión de Horus Group.">
+      {expired && <p className="admin-auth__notice" role="status">Tu sesión terminó. Inicia sesión de nuevo para continuar; los cambios que no estaban guardados no se conservaron.</p>}
       <form className="admin-auth__form" onSubmit={handleSubmit} aria-busy={loading}>
         <fieldset className="admin-auth__fields" disabled={loading}>
           <legend className="admin-auth__sr-only">Datos de inicio de sesión</legend>

@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react'
 import PageBoundary from './components/PageBoundary'
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { RouterProvider, createBrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import RouteLoading from './components/RouteLoading'
 import { Toaster } from 'sonner'
 import MainLayout from './layouts/MainLayout'
@@ -41,10 +41,11 @@ function RouteFallback() {
   return <RouteLoading label={pathname.startsWith('/admin') ? 'Cargando panel…' : 'Cargando página…'} />
 }
 
-export default function App() {
+// Router de datos (en lugar de BrowserRouter) solo para poder usar useBlocker en el panel: avisar de cambios sin guardar
+// también al usar Atrás/Adelante. Las rutas siguen declaradas abajo con <Routes>, bajo una ruta comodín.
+function AppRoutes() {
   return (
-    <AdminAuthProvider>
-      <BrowserRouter>
+      <>
         <Toaster richColors position="top-right" closeButton expand />
         <PageBoundary><Suspense fallback={<RouteFallback />}>
         <Routes>
@@ -88,7 +89,16 @@ export default function App() {
 
         </Routes>
         </Suspense></PageBoundary>
-      </BrowserRouter>
+      </>
+  )
+}
+
+const router = createBrowserRouter([{ path: "*", element: <AppRoutes /> }])
+
+export default function App() {
+  return (
+    <AdminAuthProvider>
+      <RouterProvider router={router} />
     </AdminAuthProvider>
   )
 }

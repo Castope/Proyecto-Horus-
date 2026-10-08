@@ -115,6 +115,7 @@
 .admin-auth__hint { color: var(--auth-muted); font-size: 11px; line-height: 1.6; }
 .admin-auth__error { padding: 12px 14px; color: #972b25; background: #fff1ef; border: 1px solid #efc7c3; border-radius: 10px; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
 .admin-auth__success { padding: 12px 14px; color: #1d5b3a; background: #eef8f1; border: 1px solid #b9dcc6; border-radius: 10px; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.admin-auth__notice { margin: 0 0 14px; padding: 12px 14px; color: #5f4600; background: #fff8e1; border: 1px solid #e6cf8a; border-radius: 10px; font-size: 13px; line-height: 1.6; }
 .admin-auth__error:focus, .admin-auth__success:focus { outline: none; }
 .admin-auth__field input[aria-invalid="true"], .admin-recovery-fields input[aria-invalid="true"] { border-color: #b3382f; }
 a.admin-auth__submit { text-decoration: none; }

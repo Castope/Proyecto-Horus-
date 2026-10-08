@@ -3,6 +3,7 @@ import { useAdminAuth } from '../context';
 import { panelRequest } from '../services/panelApi';
 import { authError } from '../services/authErrors';
 import PanelIcon from './PanelIcon';
+import { useUnsavedChanges } from '../unsaved/unsavedContext';
 
 const REQUEST_TIMEOUT_MS = 20_000;
 
@@ -11,6 +12,8 @@ export default function PanelPreferences() {
   const { token, logout } = useAdminAuth();
   const [busy, setBusy] = useState(false), [actionError, setActionError] = useState(''), [mismatch, setMismatch] = useState(false);
   const [current, setCurrent] = useState(''), [password, setPassword] = useState(''), [confirm, setConfirm] = useState('');
+  // Formulario de contraseñas: solo avisa si hay algo escrito. Nunca se guarda en ningún almacenamiento.
+  useUnsavedChanges(Boolean(current || password || confirm), "cambio de contraseña");
   const locked = useRef(false); // un solo envío pendiente, también con Enter repetido o requestSubmit
   const attempt = useRef<AbortController | null>(null);
   const alive = useRef(true);

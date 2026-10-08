@@ -1,4 +1,5 @@
 import { useAdminAuth } from '../../context';
+import { useConfirmLeave } from '../../unsaved/unsavedContext';
 import { panelRequest, errorMessage } from '../../services/panelApi';
 import { useRef, useEffect, useState } from 'react';
 import { collectionRows, type CollectionResponse, useCollection, dateLabel } from './useCollection';
@@ -26,6 +27,7 @@ export default function CommunityRecords({ kind }: { kind: 'newsletter' | 'recla
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Row | null>(null);
   const complaints = kind === 'reclamaciones';
+  const confirmLeave = useConfirmLeave(); // cerrar el detalle con seguimiento sin guardar pide confirmación
   const {token}=useAdminAuth();
   const [subscriberBusy,setSubscriberBusy]=useState(false),[subscriberError,setSubscriberError]=useState('');
   const [exporting,setExporting]=useState(false),[exportError,setExportError]=useState('');
@@ -85,12 +87,12 @@ export default function CommunityRecords({ kind }: { kind: 'newsletter' | 'recla
         </table></div>}
       <footer className="hp-pagination"><span>10 registros por página</span><div><button className="hp-btn" disabled={loading || !!error || currentPage <= 1} onClick={() => setPage(currentPage - 1)}>Anterior</button><span aria-live="polite">{currentPage} / {loading || error ? '—' : pages}</span><button className="hp-btn" disabled={loading || !!error || currentPage >= pages} onClick={() => setPage(currentPage + 1)}>Siguiente</button></div></footer>
     </section>
-    {selected && <PanelDialog title={complaints ? 'Detalle de la reclamación' : 'Detalle de la suscripción'} busy={subscriberBusy} onClose={() => setSelected(null)}>
+    {selected && <PanelDialog title={complaints ? 'Detalle de la reclamación' : 'Detalle de la suscripción'} busy={subscriberBusy} onClose={() => confirmLeave(() => setSelected(null))}>
       <dl className="hp-details">{fields.map(([key, title]) => <div key={key}><dt>{title}</dt><dd className="hw-record-value">{valueLabel(selected, key)}</dd></div>)}</dl>
       {!complaints && selected.activo === true && <button className="hp-btn" disabled={subscriberBusy} onClick={()=>void deactivate()}>Desactivar suscripción</button>}
       {subscriberError && <p role="alert" className="hp-error">{subscriberError}</p>}
       {complaints && <AttentionEditor resource="reclamaciones" id={selected.id} />}
-      <div className="hp-dialog-footer"><button className="hp-btn" onClick={() => setSelected(null)}>Cerrar detalle</button></div>
+      <div className="hp-dialog-footer"><button className="hp-btn" onClick={() => confirmLeave(() => setSelected(null))}>Cerrar detalle</button></div>
     </PanelDialog>}
   </>;
 }

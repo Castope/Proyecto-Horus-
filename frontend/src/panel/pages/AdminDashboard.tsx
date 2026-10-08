@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useConfirmLeave } from '../unsaved/unsavedContext';
 import HorusBrand from '../components/HorusBrand';
 import { useAdminAuth } from '../context';
 import { educationSections, resources, serviceSections, servicesOverview, type PanelScope } from '../types/workspace';
@@ -23,6 +24,7 @@ const subscribeToViewport = (callback: () => void) => {
 
 export default function AdminDashboard() {
   const { user, logout } = useAdminAuth();
+  const confirmLeave = useConfirmLeave(); // cerrar sesión a propósito avisa si hay cambios sin guardar (el cierre forzoso por seguridad no pasa por aquí)
   const navigate = useNavigate();
   const location = useLocation();
   const [params] = useSearchParams();
@@ -100,7 +102,7 @@ export default function AdminDashboard() {
       <nav aria-label="Navegación del panel"><p className="hp-nav-label">PRINCIPAL</p>{nav('resumen', 'Resumen', 'home')}
         <p className="hp-nav-label">GESTIÓN DE CONTENIDO</p>{groupNav('educacion', 'Educación', resources.cursos.icon, educationSections)}{groupNav('servicios', resources.servicios.label, resources.servicios.icon, serviceSections)}{['galeria', 'faq', 'contenido'].map(key => nav(key, resources[key].label, resources[key].icon))}
         {nav('convenios', 'Convenios', 'file')}<p className="hp-nav-label">ATENCIÓN Y EMPRESA</p>{nav('mensajes', 'Mensajes', 'mail')}{nav('cotizaciones', 'Cotizaciones', 'file')}{nav('newsletter', 'Suscripciones', 'user')}{nav('reclamaciones', 'Reclamaciones', 'file')}{nav('ajustes', 'Información de empresa', 'settings')}</nav>
-      <div className="hp-sidebar-bottom"><button className={section === 'configuracion' ? 'is-active' : undefined} aria-current={section === 'configuracion' ? 'page' : undefined} onClick={() => go('configuracion')}><PanelIcon name="gear" />Ajustes</button><a href="/" target="_blank" rel="noreferrer"><PanelIcon name="arrow" />Visitar sitio web</a><button onClick={() => { logout(); navigate('/admin/login'); }}><PanelIcon name="logout" />Cerrar sesión</button></div>
+      <div className="hp-sidebar-bottom"><button className={section === 'configuracion' ? 'is-active' : undefined} aria-current={section === 'configuracion' ? 'page' : undefined} onClick={() => go('configuracion')}><PanelIcon name="gear" />Ajustes</button><a href="/" target="_blank" rel="noreferrer"><PanelIcon name="arrow" />Visitar sitio web</a><button onClick={() => confirmLeave(() => { logout(); navigate('/admin/login'); })}><PanelIcon name="logout" />Cerrar sesión</button></div>
       <div className="hp-profile"><span className="hp-avatar">{user?.nombre?.charAt(0).toUpperCase()}</span><div><strong>{user?.nombre}</strong><small>{user?.email}</small></div></div>
     </aside>
     <div className="hp-body" inert={mobile && menu}><header className="hp-topbar"><div><button ref={menuButtonRef} className="hp-icon-btn hp-menu-toggle" aria-label={menu ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menu} aria-controls="panel-sidebar" onClick={() => setMenuLocation(menu ? null : location.key)}><PanelIcon name="menu" /></button><span className="hp-breadcrumb">Mi espacio <span>/</span> <strong>{title}</strong></span></div><div><span className="hp-date"><PanelIcon name="calendar" size={16} />{new Date().toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' })}</span><span className="hp-topbar-divider" /><span className="hp-avatar">{user?.nombre?.charAt(0).toUpperCase()}</span></div></header>

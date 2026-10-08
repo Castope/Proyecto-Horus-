@@ -27,7 +27,7 @@ export function validateDeployment(env: Record<string, unknown>) {
       throw new Error(key + ' debe ser un puerto entre 1 y 65535.');
     }
   }
-  for (const key of ['DB_SSL', 'DB_SYNC']) {
+  for (const key of ['DB_SSL', 'DB_SYNC', 'SWAGGER_ENABLED']) {
     if (env[key] !== undefined && !['true', 'false'].includes(String(env[key]))) throw new Error(key + ' debe ser true o false.');
   }
   if (env.JWT_SECRET !== undefined && (typeof env.JWT_SECRET !== 'string' || env.JWT_SECRET.length < 32)) {

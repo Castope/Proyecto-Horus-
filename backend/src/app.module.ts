@@ -18,8 +18,10 @@ import { AdminModule } from './admin/admin.module';
 import { GaleriaModule } from './galeria/galeria.module';
 import { NewsletterModule } from './newsletter/newsletter.module';
 import { SettingsModule } from './settings/settings.module';
+import { HealthController } from './health.controller';
 
 @Module({
+  controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: PublicRateLimitGuard }],
   imports: [
     ConfigModule.forRoot({

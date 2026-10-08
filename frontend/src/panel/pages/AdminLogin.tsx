@@ -78,7 +78,6 @@ export default function AdminLogin() {
         </button>
       </form>
       <p className="admin-auth__forgot"><Link to="/admin/forgot-password">Olvidé mi contraseña</Link></p>
-      <p className="admin-auth__switch">¿No tienes una cuenta? <Link to="/admin/register">Crear cuenta</Link></p>
       <div className="admin-auth__note admin-auth__note--access"><PanelIcon name="shield" size={16} /><span>Tu espacio para gestionar Horus Group.</span></div>
     </AdminAuthLayout>
   );

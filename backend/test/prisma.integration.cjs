@@ -139,7 +139,9 @@ test('Prisma works against MySQL and legacy-compatible SQL in an isolated databa
       const password = 'Global-content-test-123!';
       try {
         origin = await start();
-        const first = await request('admin/register', null, 'POST', { nombre: 'Admin global A', email: 'global-a@example.com', password });
+        // El primer administrador se crea por el proceso controlado (servicio/CLI): el registro HTTP exige una sesión.
+        assert.equal((await fetch(origin + '/api/admin/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre: 'Intruso', email: 'intruso@example.com', password }) })).status, 401);
+        const first = await app.get(AuthService).register({ nombre: 'Admin global A', email: 'global-a@example.com', password });
         adminIds.push(first.user.id);
         const form = new FormData();
         const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jQxQAAAAASUVORK5CYII=', 'base64');
@@ -162,7 +164,10 @@ test('Prisma works against MySQL and legacy-compatible SQL in an isolated databa
         await request('admin/convenios/' + records[4][1] + '/fotos', first.token, 'POST', { imagen_url: image, orden: 0 });
         await request('admin/settings', first.token, 'PUT', { ajustes: { empresa_nombre: 'Empresa global de prueba' } });
         // El segundo administrador se registra después de crear el contenido.
-        const second = await request('admin/register', null, 'POST', { nombre: 'Admin global B', email: 'global-b@example.com', password });
+        // Alta autorizada: la hace el primer administrador con su sesión y la cuenta nueva entra por el login normal.
+        const created = await request('admin/register', first.token, 'POST', { nombre: 'Admin global B', email: 'global-b@example.com', password });
+        assert.equal(created.token, undefined);
+        const second = { user: created.user, token: (await request('admin/login', null, 'POST', { email: 'global-b@example.com', password })).token };
         adminIds.push(second.user.id);
         assert.notEqual(first.user.id, second.user.id);
         const lists = ['cursos', 'servicios', 'preguntas-frecuentes', 'galeria', 'convenios', 'settings'];

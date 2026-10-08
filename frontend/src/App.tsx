@@ -27,7 +27,6 @@ import LibroReclamaciones  from './pages/politicas/LibroReclamaciones'
 import { AdminAuthProvider } from './panel/context/AdminAuthContext'
 import AdminRoute from './panel/components/AdminRoute'
 import AdminLogin from './panel/pages/AdminLogin'
-import AdminRegister from './panel/pages/AdminRegister'
 const AdminDashboard = lazy(() => import('./panel/pages/AdminDashboard'))
 const AdminMessages = lazy(() => import('./panel/pages/AdminMessages'))
 
@@ -79,7 +78,7 @@ export default function App() {
           <Route path="/admin/forgot-password" element={<AdminRecovery />} />
           <Route path="/admin/reset-password" element={<AdminRecovery reset />} />
           <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin/register" element={<AdminRegister />} />
+          <Route path="/admin/register" element={<Navigate to="/admin/login" replace />} />
 
           <Route element={<AdminRoute />}>
             <Route path="/admin/dashboard" element={<AdminDashboard />} />

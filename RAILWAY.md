@@ -15,11 +15,17 @@ Conectar el mismo repositorio de GitHub a ambos servicios de aplicación. Config
 | Build Command personalizado | Vacío | Vacío |
 | Start Command personalizado | Vacío; usa el CMD de la imagen | Vacío; usa el CMD de la imagen |
 | Pre-Deploy Command | Vacío inicialmente | Vacío |
-| Healthcheck Path | `/api/docs` | `/healthz` |
+| Healthcheck Path | `/api/health` | `/healthz` |
 | Puerto | `3000` | `8080` |
 | Dominio público | No es necesario | Generar dominio HTTPS con puerto de destino `8080` |
 
-El healthcheck del frontend comprueba su servidor estático; no comprueba MySQL ni el proxy. `/api/docs` comprueba que NestJS terminó de arrancar, pero no valida el esquema completo. Verificar la API y la base por separado al final.
+El healthcheck del frontend comprueba su servidor estático; no comprueba MySQL ni el proxy. `/api/health` comprueba que NestJS terminó de arrancar, pero no valida la base ni el esquema completo. Swagger (`/api/docs`) está apagado en producción por defecto; solo se habilita con `SWAGGER_ENABLED=true` y entonces exige HTTPS y una cuenta de administrador. Verificar la API y la base por separado al final.
+
+### Cabeceras de seguridad y CSP
+
+- **Backend (Helmet):** cabeceras de API y CSP estricta (`default-src 'none'`); HSTS solo en producción y por HTTPS (requiere `TRUSTED_PROXY_CIDRS` para reconocer `X-Forwarded-Proto`). Detalle en [backend/README.md](backend/README.md).
+- **Frontend (Caddy):** `frontend/Caddyfile` añade, solo a las respuestas del sitio (no a `/api`), `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options: DENY`, `Permissions-Policy` y una **CSP** sin `unsafe-eval` ni scripts en línea. Orígenes externos permitidos: `fonts.googleapis.com` y `fonts.gstatic.com` (Google Fonts), `cdnjs.cloudflare.com` (Font Awesome), `www.google.com` (iframe del mapa) e imágenes por HTTPS (las que se pegan desde el panel; una imagen con URL `http://` queda bloqueada). `style-src` admite estilos en línea porque la biblioteca `sonner` inyecta un `<style>` al cargar y React usa atributos `style`. `connect-src 'self'` supone que la API se sirve bajo el mismo origen (`/api` por Caddy, como aquí); con una API en otro dominio habría que añadirlo a `connect-src` e `img-src`.
+- **Estado de la validación:** el Caddyfile se validó con `caddy validate` y se ejecutó sirviendo el frontend con el ejecutable oficial de Caddy v2.11.7 (Windows, checksum SHA-512 verificado contra el publicado), sin violaciones de CSP en 24 páginas y escenarios. **Pendiente:** validarlo con la imagen oficial de Docker (`caddy:2-alpine`, comando de la sección de verificación) y en el despliegue real de Railway, donde también hay que confirmar que ningún recurso configurado en el panel usa `http://`.
 
 Mantener los servicios en la misma región. El dominio privado predeterminado del backend se asume `backend.railway.internal`; confirmar el valor real en Networking. No hace falta configurar `railway.json`: Railway detecta cada Dockerfile desde su Root Directory.
 
@@ -82,13 +88,13 @@ Para el primer administrador, configurar temporalmente `ADMIN_INITIAL_PASSWORD` 
 ## 4. Comprobación final
 
 - Frontend: abrir el dominio HTTPS y recargar `/educacion/cursos` y `/admin/login`. El panel está en `/admin/dashboard`; `/panel` no es una ruta de la aplicación.
-- Proxy: abrir `/api/docs` desde el dominio del frontend. Si devuelve 502, revisar el dominio privado, el puerto y los logs del backend.
+- Proxy: abrir `/api/health` desde el dominio del frontend. Si devuelve 502, revisar el dominio privado, el puerto y los logs del backend.
 - API: comprobar `/api/cursos` y `/api/servicios`; una base vacía debe devolver listas vacías reales. La página `/educacion/cursos` consulta `/api/cursos` y muestra cursos publicados; `/educacion/capacitaciones` muestra capacitaciones, con paginación, estados de carga/error/vacío y reintento. Comprobar que los borradores y archivados no aparezcan; tras publicar o editar, recargar la página o pulsar Actualizar catálogo. Los servicios por categoría, sus detalles, la galería activa y las FAQ también consultan la API. Los ajustes de contacto y pie de página utilizan lo configurado en el panel, conservando el contenido actual cuando están vacíos.
 - Panel: comprobar login, expiración de sesión y las operaciones necesarias con una cuenta autorizada.
 - Formularios y chatbot: probar estados de éxito/error y el envío de correo con datos de prueba controlados.
 - MySQL: confirmar que `db:check` pasa y configurar respaldos del volumen antes de recibir datos reales.
 
-El registro administrativo está abierto en `/admin/register` y `POST /api/admin/register`, sin requerir una sesión previa. Tras registrarse, un visitante vuelve a `/admin/login`. `admin:create` sigue disponible como alternativa para crear una cuenta. El panel y las demás operaciones administrativas requieren una sesión válida.
+No hay registro público de administradores. `POST /api/admin/register` exige una sesión de administrador válida y no devuelve token; `/admin/register` redirige a `/admin/login`. El primer administrador de una instalación nueva se crea con `admin:create`. El panel y las demás operaciones administrativas requieren una sesión válida.
 
 El chatbot usa la IP validada por Express. Configurar `TRUSTED_PROXY_CIDRS` en cada servicio como se indica abajo; no usar `*`, `true`, cantidades de saltos ni rangos /0. Las cuotas públicas se comparten en MySQL mediante `rate_limit_buckets`; aplicar la migración de esta versión antes de utilizar sus formularios.
 

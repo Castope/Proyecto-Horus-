@@ -12,7 +12,7 @@ Sitio institucional y panel de Horus Group SRL. Frontend React/TypeScript/Vite; 
 - Cotizaciones con importes calculados en el backend, borradores, seguimiento de estados, correo e impresión para guardar PDF.
 - Newsletter con consentimiento y enlace firmado de baja.
 - Carga administrativa de imágenes PNG/JPEG/WebP, hasta 5 MB.
-- Registro administrativo abierto, login, recuperación/cambio de contraseña, desactivación de cuentas y revocación de sesiones.
+- Login, recuperación/cambio de contraseña, desactivación de cuentas y revocación de sesiones. No hay registro público: el alta de administradores exige una sesión de administrador y el primero se crea con `npm run admin:create`.
 - Chatbot basado en contenido publicado y ajustes públicos conocidos, con IA opcional y cuotas compartidas en MySQL.
 
 Las secciones de cableado, cámaras, soporte, asesoramiento y capacitaciones conservan sus diseños originales con datos editables desde el panel. La galería utiliza fotos activas en sus franjas animadas y filtros. Guardar contenido actualiza una web abierta en otra pestaña del mismo navegador; otros visitantes ven los cambios en su siguiente consulta.
@@ -35,11 +35,11 @@ Configurar `MAIL_USER` y `MAIL_PASS` para correos. En producción, montar un vol
 
 ## Desarrollo
 
-Desde `backend/`: `npm run start:dev`. API en `http://localhost:3000/api`; Swagger en `/api/docs`.
+Desde `backend/`: `npm run start:dev`. API en `http://localhost:3000/api`; Swagger en `/api/docs` solo en desarrollo (en producción está apagado salvo `SWAGGER_ENABLED=true`, con HTTPS y cuenta de administrador). El healthcheck es `/api/health`.
 
 Desde `frontend/`: `npm ci` y `npm run dev`. Vite redirige `/api` al backend. `VITE_API_BASE_URL` permite utilizar otra URL de API.
 
-El panel está en `/admin/dashboard`. Login y registro son pantallas separadas; el visitante vuelve al login tras registrarse. Todos los administradores conservan los permisos del panel.
+El panel está en `/admin/dashboard`. El acceso es por `/admin/login` (`/admin/register` redirige allí). Todos los administradores conservan los permisos del panel.
 
 ## Verificación
 

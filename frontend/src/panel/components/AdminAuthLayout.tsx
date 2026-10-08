@@ -49,7 +49,6 @@ export default function AdminAuthLayout({ children, eyebrow, title, description,
           <Link className="admin-auth__mobile-brand" to="/" aria-label="Ir al inicio de Horus Group"><HorusBrand /></Link>
           <nav className="admin-auth__navigation" aria-label="Acceso administrativo">
             <Link to="/admin/login" aria-current={!registration ? 'page' : undefined}>Iniciar sesión</Link>
-            <Link to="/admin/register" aria-current={registration ? 'page' : undefined}>Registro</Link>
           </nav>
           <div className="admin-auth__form-icon"><PanelIcon name={registration ? 'user-plus' : 'lock'} size={25} /></div>
           <span className="admin-auth__eyebrow admin-auth__eyebrow--dark">{eyebrow}</span>

@@ -11,12 +11,18 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // Alta de administradores: solo la hace una cuenta activa con sesión válida (JwtAuthGuard). No hay registro público.
+  // La respuesta no incluye token: la persona creada inicia sesión por /admin/login con su propia contraseña.
   @Post('register')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Registrar nuevo administrador' })
+  @ApiOperation({ summary: 'Crear un administrador (requiere sesión de administrador)' })
   @ApiResponse({ status: 201, description: 'Administrador creado exitosamente' })
+  @ApiResponse({ status: 401, description: 'Sin sesión válida' })
   async register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+    const { token: _issued, ...created } = await this.authService.register(dto);
+    return created;
   }
 
   @Post('login')

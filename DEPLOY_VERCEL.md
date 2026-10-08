@@ -64,7 +64,7 @@ Si la protección de despliegue de Vercel impide acceder públicamente a la API,
 
 Comprobar:
 
-- `https://TU-BACKEND.vercel.app/api/docs`
+- `https://TU-BACKEND.vercel.app/api/health` (Swagger está apagado en producción salvo `SWAGGER_ENABLED=true`, con HTTPS y cuenta de administrador)
 - `https://TU-BACKEND.vercel.app/api/cursos`
 
 Si MySQL no conecta, la aplicación no podrá arrancar. Revisar logs, host, TLS y restricciones de red del proveedor.

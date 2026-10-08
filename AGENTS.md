@@ -73,7 +73,7 @@ El backend separa las salidas de compilación: `npm start`, `start:dev` y `start
 
 Si la suite del backend agota recursos o tiempos por compilaciones simultáneas, verifica el fallo y usa `node --test --test-concurrency=1 -r ts-node/register test/*.test.ts` desde `backend/`. No cambies expectativas o límites para ocultar un fallo de comportamiento.
 
-La API usa el prefijo `/api` y el puerto 3000 por defecto. Swagger se publica en `/api/docs`. Vite redirige las peticiones locales de `/api` al backend mediante `frontend/vite.config.js`. Para otra API, `VITE_API_BASE_URL` debe incluir `/api`; conserva su validación en `frontend/config/api-config.js`. Estas variables se incorporan al build del frontend.
+La API usa el prefijo `/api` y el puerto 3000 por defecto. Swagger se publica en `/api/docs` solo en desarrollo; en producción está apagado salvo `SWAGGER_ENABLED=true`, que además exige HTTPS y una cuenta de administrador activa (nunca credenciales en la URL). El healthcheck público es `/api/health`. Vite redirige las peticiones locales de `/api` al backend mediante `frontend/vite.config.js`. Para otra API, `VITE_API_BASE_URL` debe incluir `/api`; conserva su validación en `frontend/config/api-config.js`. Estas variables se incorporan al build del frontend.
 
 ### Mantenimiento explícito
 
@@ -83,7 +83,7 @@ Estos comandos se ejecutan desde `backend/` únicamente cuando la tarea cubra la
 | --- | --- |
 | `npm run db:init` | Exclusivamente para una base vacía; crea el esquema inicial |
 | `npm run db:migrate` | Aplica las migraciones pendientes al destino configurado |
-| `npm run admin:create` | Crea una cuenta real; alternativa al registro abierto |
+| `npm run admin:create` | Crea una cuenta real; es el proceso controlado para el primer administrador |
 | `npm run content:restore` | Recupera contenido original en MySQL local de desarrollo, tras build y migraciones |
 | `npm run convenios:import -- --preview` | Requiere build del backend; muestra el inventario sin conectar a MySQL ni escribir archivos |
 | `npm run convenios:import -- --apply --api-base=http://localhost:3000/api` | Importa convenios y logos en MySQL local de desarrollo; ajusta la URL pública al destino real |
@@ -165,7 +165,7 @@ El proyecto utiliza Prisma con `engineType = "client"`, el adaptador MariaDB/MyS
 - Nunca publiques valores de `.env`, tokens, contraseñas, certificados privados o datos personales en código, logs, pruebas o respuestas. Documenta nombres de variables y ejemplos ficticios. Las variables `VITE_*` son públicas; no contienen secretos.
 - Conserva la validación de configuración en `backend/src/deployment.config.ts`, los orígenes CORS exactos y la verificación TLS. Para MySQL sin TLS, `DB_RSA_PUBLIC_KEY` permite fijar una clave pública RSA confiable; nunca activar recuperación indiscriminada de claves. La API comprueba `SELECT 1` antes de escuchar. `TRUSTED_PROXY_CIDRS` enumera proxies explícitos; Caddy reemplaza X-Forwarded-For con la IP validada antes de enviarla a la API.
 - No retires guards ni alteres el acceso a rutas como efecto secundario de otra corrección.
-- Por decisión explícita del proyecto, el registro administrativo está abierto: `/admin/register` y `POST /api/admin/register` permiten crear cuentas sin sesión previa. Login y registro son pantallas separadas; un visitante vuelve al login tras registrarse. Conserva la validación de datos, contraseñas y correos únicos. El panel, `/api/admin/me` y las demás operaciones administrativas mantienen sus guards y el manejo centralizado de HTTP 401.
+- No hay registro público de administradores. `POST /api/admin/register` exige una sesión de administrador válida (JWT, cuenta activa) y no devuelve token; `/admin/register` en el frontend redirige a `/admin/login`. El primer administrador se crea con `npm run admin:create`. No reabras el registro sin una decisión explícita ni expongas la gestión de cuentas en el panel sin pedirlo. Conserva la validación de datos, contraseñas y correos únicos, y el manejo centralizado de HTTP 401.
 - Las sesiones llevan `session_version`. Cambiar contraseña o desactivar una cuenta revoca sesiones. Conserva los permisos existentes de los administradores.
 - `backend/src/uploads/` permite PNG/JPEG/WebP de hasta 5 MB con comprobación de firma. En producción, `UPLOAD_DIR` requiere almacenamiento persistente, compartido si hay varias instancias; no incluyas archivos subidos en Git ni Docker.
 - Inspecciona las versiones instaladas antes de atribuir errores a una API. No mezcles soluciones de versiones distintas.

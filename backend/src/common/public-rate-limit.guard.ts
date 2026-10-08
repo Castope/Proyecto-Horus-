@@ -2,7 +2,7 @@ import { CanActivate, ExecutionContext, HttpException, Injectable } from '@nestj
 import { createHash } from 'node:crypto';
 import { PrismaService } from '../database/prisma.service';
 import type { Request } from 'express';
-const limits:Record<string,number>={'/admin/login':10,'/admin/register':5,'/admin/forgot-password':5,'/admin/reset-password':5,'/contacto':5,'/reclamaciones':5,'/newsletter':5,'/newsletter/unsubscribe':5,'/chatbot/message':20,'/chatbot/contact':5};
+const limits:Record<string,number>={'/admin/login':10,'/admin/register':5,'/admin/forgot-password':5,'/admin/reset-password':5,'/admin/password':5,'/contacto':5,'/reclamaciones':5,'/newsletter':5,'/newsletter/unsubscribe':5,'/chatbot/message':20,'/chatbot/contact':5};
 @Injectable()
 export class PublicRateLimitGuard implements CanActivate {
  constructor(private readonly prisma:PrismaService){}

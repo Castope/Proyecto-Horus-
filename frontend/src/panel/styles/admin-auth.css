@@ -114,6 +114,10 @@
 .admin-auth__password-toggle:hover:not(:disabled) { background: #edf2f7; color: #18334c; }
 .admin-auth__hint { color: var(--auth-muted); font-size: 11px; line-height: 1.6; }
 .admin-auth__error { padding: 12px 14px; color: #972b25; background: #fff1ef; border: 1px solid #efc7c3; border-radius: 10px; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.admin-auth__success { padding: 12px 14px; color: #1d5b3a; background: #eef8f1; border: 1px solid #b9dcc6; border-radius: 10px; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.admin-auth__error:focus, .admin-auth__success:focus { outline: none; }
+.admin-auth__field input[aria-invalid="true"], .admin-recovery-fields input[aria-invalid="true"] { border-color: #b3382f; }
+a.admin-auth__submit { text-decoration: none; }
 .admin-auth__submit {
   display: flex; justify-content: center; align-items: center; gap: 12px; min-height: 52px;
   width: 100%; margin-top: 4px; padding: 13px 16px; color: #fff; background: #193950;

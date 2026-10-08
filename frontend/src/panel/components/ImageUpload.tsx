@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { API_BASE } from '../../apiBase';
 import { useAdminAuth } from '../context';
 import { PanelApiError } from '../services/panelApi';
+import { reportExpiredSession } from '../context/sessionEvents';
 
 type UploadResult = { name: string; state: 'pending' | 'uploading' | 'success' | 'error'; message?: string };
 
@@ -42,7 +43,7 @@ export default function ImageUpload({ onUploaded, multiple = false, disabled = f
             method: 'POST', headers: { Authorization: 'Bearer ' + token }, body, signal: request.signal,
           });
           sessionExpired = response.status === 401;
-          if (sessionExpired) window.dispatchEvent(new Event('horus:session-expired'));
+          if (sessionExpired) reportExpiredSession(token);
           const data = await response.json() as { path?: string; message?: string | string[] };
           if (!response.ok || !data.path) throw new Error(Array.isArray(data.message) ? data.message.join(' · ') : data.message || 'No se pudo subir la imagen.');
           window.clearTimeout(timeout);

@@ -1,12 +1,14 @@
-import { startTransition, useEffect, useState } from 'react';
+import { startTransition, useEffect, useRef, useState } from 'react';
 import type {ChangeEvent, SubmitEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 import { useAdminAuth } from '../context';
 import { loginAdmin } from '../services';
+import { authError } from '../services/authErrors';
 import AdminAuthLayout from '../components/AdminAuthLayout';
 import AdminPasswordField from '../components/AdminPasswordField';
 import PanelIcon from '../components/PanelIcon';
+
+const LOGIN_TIMEOUT_MS = 20_000;
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -14,6 +16,15 @@ export default function AdminLogin() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [mensaje, setMensaje] = useState('');
   const [loading, setLoading] = useState(false);
+  const locked = useRef(false); // candado síncrono: Enter repetido o requestSubmit no crean otra petición mientras hay una pendiente
+  const attempt = useRef<AbortController | null>(null); // único intento vigente; sus respuestas tardías se descartan
+  const alive = useRef(true);
+  const errorBox = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    alive.current = true;
+    return () => { alive.current = false; attempt.current?.abort(); }; // salir de la pantalla cancela el intento: un login tardío no autentica
+  }, []);
 
   useEffect(() => {
     // As a transition, the login stays on screen until the panel is ready instead of flashing a loading page.
@@ -23,6 +34,9 @@ export default function AdminLogin() {
   // Download the panel while the user fills in the form so signing in opens it right away.
   useEffect(() => { void import('./AdminDashboard'); }, []);
 
+  // El mensaje de error recibe el foco al aparecer.
+  useEffect(() => { if (mensaje) errorBox.current?.focus(); }, [mensaje]);
+
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
     setForm(previous => ({ ...previous, [name]: value }));
@@ -31,33 +45,32 @@ export default function AdminLogin() {
 
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (loading) return;
+    if (locked.current) return;
+    locked.current = true;
     setLoading(true);
     setMensaje('');
+    const controller = new AbortController(); attempt.current = controller;
+    let timedOut = false;
+    const timer = window.setTimeout(() => { timedOut = true; controller.abort(); }, LOGIN_TIMEOUT_MS);
     let signedIn = false;
     try {
-      const response = await loginAdmin({ ...form, email: form.email.trim() });
-      if (response.ok && response.token) {
-        // A correct login is not a message: the form stays locked until the panel opens.
-        signedIn = true;
-        login(response.token, response.user);
-      } else {
-        const errorMessage = response.mensaje || response.message || 'Revisa tu correo y contraseña e inténtalo nuevamente.';
-        const detail = Array.isArray(errorMessage) ? errorMessage.join(' ') : errorMessage;
-        setMensaje(detail);
-        toast.error(detail);
-      }
-    } catch {
-      const errorMessage = 'No se pudo conectar con el servidor. Inténtalo nuevamente en unos momentos.';
-      setMensaje(errorMessage);
-      toast.error(errorMessage);
+      const response = await loginAdmin({ ...form, email: form.email.trim() }, controller.signal);
+      if (controller.signal.aborted || attempt.current !== controller || !alive.current) return; // intento antiguo o pantalla abandonada
+      // A correct login is not a message: the form stays locked until the panel opens.
+      signedIn = true;
+      login(response.token, response.user);
+    } catch (error) {
+      if (attempt.current !== controller || !alive.current || (controller.signal.aborted && !timedOut)) return;
+      setMensaje(authError('login', error, timedOut).message);
     } finally {
-      if (!signedIn) setLoading(false);
+      window.clearTimeout(timer);
+      if (attempt.current === controller) { attempt.current = null; if (!signedIn) locked.current = false; } // con sesión iniciada el formulario sigue bloqueado hasta abrir el panel
+      if (!signedIn && alive.current) setLoading(false);
     }
   };
 
   return (
-    <AdminAuthLayout eyebrow="Tu espacio de trabajo" title="Bienvenido de nuevo"
+    <AdminAuthLayout eyebrow="Tu espacio de trabajo" title="Bienvenido de nuevo" current="login"
       description="Ingresa a tu cuenta para continuar con la gestión de Horus Group.">
       <form className="admin-auth__form" onSubmit={handleSubmit} aria-busy={loading}>
         <fieldset className="admin-auth__fields" disabled={loading}>
@@ -65,12 +78,13 @@ export default function AdminLogin() {
           <div className="admin-auth__field">
             <label htmlFor="email">Correo electrónico</label>
             <div className="admin-auth__input"><PanelIcon name="mail" size={18} /><input id="email" name="email" type="email" value={form.email} onChange={handleChange}
-              autoComplete="username" autoCapitalize="none" spellCheck={false} placeholder="nombre@ejemplo.com" required /></div>
+              autoComplete="username" autoCapitalize="none" spellCheck={false} placeholder="nombre@ejemplo.com" required
+              aria-invalid={mensaje ? true : undefined} aria-describedby={mensaje ? 'login-error' : undefined} /></div>
           </div>
           <AdminPasswordField id="password" label="Contraseña" value={form.password}
-            onChange={handleChange} autoComplete="current-password" />
+            onChange={handleChange} autoComplete="current-password" invalid={Boolean(mensaje)} describedBy="login-error" />
         </fieldset>
-        {mensaje && <p className="admin-auth__error" role="alert">{mensaje}</p>}
+        {mensaje && <p id="login-error" ref={errorBox} tabIndex={-1} className="admin-auth__error" role="alert">{mensaje}</p>}
         <button className="admin-auth__submit" type="submit" disabled={loading}>
           {loading && <span className="admin-auth__spinner" aria-hidden="true" />}
           {loading ? 'Ingresando…' : 'Iniciar sesión'}

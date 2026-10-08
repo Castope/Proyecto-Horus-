@@ -1,6 +1,7 @@
 import { notifyContentChange } from '../../contentUpdates';
 import { API_BASE } from '../../apiBase';
 import { resolveContentImages } from '../../contentImages';
+import { reportExpiredSession } from '../context/sessionEvents';
 export class PanelApiError extends Error {
   constructor(message: string, public status: number) { super(message); }
 }
@@ -12,12 +13,12 @@ export async function panelRequest<T>(path: string, token: string | null, method
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
   const data = await response.json().catch(() => null);
-  if (response.status === 401) window.dispatchEvent(new Event('horus:session-expired'));
+  if (response.status === 401) reportExpiredSession(token); // con el token de ESTA petición: una sesión nueva no se cierra por un 401 antiguo
   if (!response.ok || data?.ok === false) {
     const detail = data?.mensaje || data?.message;
     throw new PanelApiError(Array.isArray(detail) ? detail.join(' · ') : detail || 'No se pudo completar la operación (' + response.status + ').', response.status);
   }
-  if (!data) throw new Error('El servidor devolvió una respuesta inválida.');
+  if (!data) throw new PanelApiError('El servidor devolvió una respuesta inválida.', response.status);
   if(method!=='GET')notifyContentChange(path.split(/[/?]/)[0]);
   return resolveContentImages(data) as T;
 }

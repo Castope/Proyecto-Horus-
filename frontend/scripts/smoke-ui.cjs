@@ -128,7 +128,7 @@ async function main(){
  const typeLogin=(id,value)=>evaluate('(()=>{const el=document.getElementById('+JSON.stringify(id)+');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value").set.call(el,'+JSON.stringify(value)+');el.dispatchEvent(new Event("input",{bubbles:true}))})()');
  await typeLogin('email','admin@example.com');await typeLogin('password','incorrecta');await sleep(100);await evaluate('document.querySelector(".admin-auth__form").requestSubmit()');
  await wait('!!document.querySelector(".admin-auth__error")');
- assert.equal(await evaluate('document.querySelector(".admin-auth__error").textContent'),'Credenciales inválidas.');
+ assert.equal(await evaluate('document.querySelector(".admin-auth__error").textContent'),'Revisa tu correo y contraseña e inténtalo nuevamente.'); // Mensaje genérico propio: el texto del servidor no se muestra.
  assert.equal(await evaluate('getComputedStyle(document.querySelector(".admin-auth__error")).color'),'rgb(151, 43, 37)','El error se muestra en rojo.');
  await wait('document.querySelector(".admin-auth__submit").disabled===false');
  await typeLogin('password','Clave-correcta-1');

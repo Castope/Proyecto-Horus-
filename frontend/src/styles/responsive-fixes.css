@@ -24,26 +24,6 @@ img, video, iframe { max-width: 100%; }
   .ns-belief-num { display: none; }
 }
 
-@media (max-width: 768px) {
-  .lr-layout { grid-template-columns: 1fr !important; }
-  .lr-sidebar { display: none; }
-  .lr-steps { gap: 4px; }
-  .lr-step span { font-size: .72rem; }
-  .lr-step-line { flex: 1; }
-  .lr-grid { grid-template-columns: 1fr !important; }
-  .lr-hero-stats { flex-wrap: wrap; gap: 12px; }
-  .lr-stat-sep { display: none; }
-}
-
-@media (max-width: 480px) {
-  .lr-hero h1 { font-size: 2rem; }
-  .lr-form-wrap { padding: 0 !important; }
-  .lr-paso-header { flex-direction: column; gap: 12px; }
-  .lr-nav { flex-direction: column-reverse; gap: 10px; }
-  .lr-nav .lr-btn { width: 100%; justify-content: center; }
-  .lr-resumen-grid { grid-template-columns: 1fr !important; }
-}
-
 
 @media (max-width: 768px) {
   .ix-services-grid { grid-template-columns: 1fr !important; }

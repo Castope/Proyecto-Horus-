@@ -126,19 +126,6 @@
   color: var(--night) !important;
 }
 
-.lr-step.active .lr-step-num {
-  background: var(--grad-gold) !important;
-  color: var(--night) !important;
-}
-.lr-btn-primary {
-  background: var(--grad-gold) !important;
-  color: var(--night) !important;
-  font-weight: 700 !important;
-}
-.lr-btn-primary:hover {
-  filter: brightness(1.08) !important;
-  transform: translateY(-2px) !important;
-}
 
 ::-webkit-scrollbar-thumb { background: var(--gold-dk) !important; }
 ::-webkit-scrollbar-thumb:hover { background: var(--gold) !important; }

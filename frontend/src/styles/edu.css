@@ -57,6 +57,8 @@
 .edu-notify fieldset { display: grid; gap: .55rem; margin: 0; padding: 0; border: 0; min-width: 0; }
 .edu-notify label { color: var(--horus-ink); font-size: .85rem; font-weight: 600; }
 .edu-notify input[type="email"] { width: 100%; min-height: 46px; padding: .65rem .85rem; border: 1px solid #9fb0c2; border-radius: var(--horus-radius-sm); background: #fff; color: var(--horus-ink); font: inherit; }
+.edu-notify input[aria-invalid="true"] { border-color: #b42318; }
+.edu-notify-ok:focus, .edu-notify-error:focus { outline: none; }
 .edu-notify input:focus-visible { outline: 3px solid var(--horus-gold); outline-offset: 2px; }
 .edu-notify-consent { display: flex; align-items: flex-start; gap: .6rem; font-weight: 500 !important; line-height: 1.5; }
 .edu-notify-consent input { flex-shrink: 0; width: 1.1rem; height: 1.1rem; margin-top: .15rem; accent-color: var(--horus-navy); }

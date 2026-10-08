@@ -5,6 +5,7 @@ import './chatbot.css';
 import GuidedMenu from './GuidedMenu';
 import ChatIcon from './ChatIcon';
 import RobotMascot from './RobotMascot';
+import { writeErrorMessage } from '../../publicErrors';
 import { contactSummary, followUpQuestions } from './chatContext';
 
 const greeting: ChatTurn = {
@@ -108,7 +109,8 @@ export default function Chatbot() {
       setSuccess('Solicitud #' + response.id + ' registrada. El equipo de Horus podrá contactarte.');
       setContact(initialContact); setContactOpen(false);
     } catch (err) {
-      setError(abort.signal.aborted ? 'No pudimos confirmar el registro. Consulta con el equipo antes de reenviar.' : err instanceof Error ? err.message : 'No se pudo conectar con el servidor.');
+      // Escritura: si el resultado es incierto (tiempo agotado, red caída, 200 ilegible) se advierte antes de reenviar; nunca se reintenta solo.
+      setError(writeErrorMessage(err, abort.signal.aborted));
     } finally { window.clearTimeout(timeout); locked.current = false; setBusy(false); }
   };
 

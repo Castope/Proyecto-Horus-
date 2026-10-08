@@ -39,3 +39,32 @@ export function classifyPublicError(error: unknown, timedOut = false): PublicErr
 }
 
 export const publicErrorMessage = (error: unknown, timedOut = false): string => PUBLIC_ERROR_TEXTS[classifyPublicError(error, timedOut)]
+
+// ---- Envíos (POST) ----
+// Un timeout, una caída de red o una respuesta ilegible no demuestran que el servidor no guardó la solicitud:
+// ahí el mensaje advierte de consultar antes de reenviar. Nunca se reintenta automáticamente.
+export const WRITE_UNCERTAIN_TEXT = 'No pudimos confirmar si tu solicitud fue registrada. Consulta con el equipo antes de enviarla nuevamente.'
+export const WRITE_ERROR_TEXTS: Record<PublicErrorKind, string> = {
+  network: 'No pudimos conectarnos con el servidor. Comprueba tu conexión e inténtalo nuevamente.',
+  timeout: WRITE_UNCERTAIN_TEXT,
+  notFound: 'No encontramos el recurso solicitado. Revisa el enlace e inténtalo nuevamente.',
+  badRequest: 'Revisa los datos ingresados e inténtalo nuevamente.',
+  forbidden: 'No pudimos aceptar tu solicitud. Inténtalo más tarde o contacta con el equipo.',
+  tooMany: 'Has realizado demasiadas solicitudes. Espera un momento e inténtalo nuevamente.',
+  server: 'Ocurrió un problema en el servidor. Inténtalo más tarde.',
+  unknown: 'No pudimos completar la solicitud. Inténtalo nuevamente.',
+}
+
+// `uncertain`: el servidor pudo haber procesado la solicitud aunque el visitante no reciba confirmación.
+export function classifyWriteError(error: unknown, timedOut = false): { kind: PublicErrorKind; uncertain: boolean } {
+  const kind = classifyPublicError(error, timedOut)
+  const status = (error as { status?: unknown } | null)?.status
+  const unreadable = typeof status === 'number' && status >= 200 && status < 300 // 200 con cuerpo ilegible: pudo guardarse
+  const uncertain = kind === 'timeout' || unreadable || status === 502 || (kind === 'network' && !timedOut)
+  return { kind, uncertain }
+}
+
+export function writeErrorMessage(error: unknown, timedOut = false): string {
+  const { kind, uncertain } = classifyWriteError(error, timedOut)
+  return uncertain ? WRITE_UNCERTAIN_TEXT : WRITE_ERROR_TEXTS[kind]
+}

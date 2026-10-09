@@ -10,8 +10,9 @@ const TOKEN2 = 'e30.' + Buffer.from(JSON.stringify({ id: 1 })).toString('base64u
 const TOTAL = 230; // 3 páginas de 100 al exportar
 
 // ---------- API simulada ----------
-const sim = { postMode: 'ok', postDelay: 0, failPage: 0, growAt: 0, pageDelay: 0, expired: 0, hangPage: 0, revokeA: 0 };
-let messages, attention, posts, listRequests, nextId, attempts;
+const sim = { postMode: 'ok', postDelay: 0, failPage: 0, growAt: 0, pageDelay: 0, expired: 0, hangPage: 0, revokeA: 0, deleteMode: 'ok' };
+const QUOTED = new Set([9]); // consulta con cotización vinculada (el id 7 tiene seguimiento)
+let messages, attention, posts, listRequests, nextId, attempts, deletes;
 const estadoOf = id => id % 5 === 0 ? 'archivado' : id % 3 === 0 ? 'atendido' : id % 2 === 0 ? 'en_proceso' : 'nuevo';
 const build = id => ({ id, nombre: id === 3 ? '=cmd|x' : 'Persona ' + id, email: 'p' + id + '@example.test', telefono: '987654321',
   asunto: id === 4 ? '+1' : id === 6 ? '-1' : id === 8 ? '@x' : (id % 7 === 0 ? '[Chatbot] ' : '') + 'Asunto ' + id + (id % 10 === 0 ? ' Especial' : ''),
@@ -19,7 +20,7 @@ const build = id => ({ id, nombre: id === 3 ? '=cmd|x' : 'Persona ' + id, email:
 const reset = () => {
   messages = Array.from({ length: TOTAL }, (_, i) => build(TOTAL - i)); nextId = TOTAL + 1;
   attention = { 7: { estado: 'archivado', responsable: '', notas: 'NOTA PRIVADA', respuesta: 'RESPUESTA INTERNA', revision: 3, historial: [] } };
-  posts = []; listRequests = []; attempts = 0; Object.assign(sim, { postMode: 'ok', postDelay: 0, failPage: 0, growAt: 0, pageDelay: 0, expired: 0, hangPage: 0, revokeA: 0 });
+  posts = []; listRequests = []; attempts = 0; deletes = []; Object.assign(sim, { postMode: 'ok', postDelay: 0, failPage: 0, growAt: 0, pageDelay: 0, expired: 0, hangPage: 0, revokeA: 0, deleteMode: 'ok' });
 };
 reset();
 const seg = id => attention[id] || { estado: messages.find(m => m.id === id)?.estado || 'nuevo', responsable: '', notas: '', respuesta: '', revision: 1, historial: [] };
@@ -32,7 +33,7 @@ const server = http.createServer(async (req, res) => {
     if (route === '/__empty') { res.writeHead(200, { 'Content-Type': 'text/plain' }); return res.end('ok'); }
     if (route === '/__clear') { reset(); return json({ ok: true }); }
     if (route === '/__set') { for (const [k, v] of url.searchParams) sim[k] = isNaN(Number(v)) ? v : Number(v); return json({ ok: true }); }
-    if (route === '/__state') return json({ posts, listRequests, attention, attempts, created: messages.filter(x => x.id > TOTAL).length });
+    if (route === '/__state') return json({ posts, listRequests, attention, attempts, deletes, total: messages.length, created: messages.filter(x => x.id > TOTAL).length });
     if (route.startsWith('/api/')) {
       if (route === '/api/settings') return json({ ok: true, settings: {} });
       if (route.startsWith('/api/admin/')) {
@@ -64,6 +65,17 @@ const server = http.createServer(async (req, res) => {
           const answer = json({ ok: true, messages: rows.slice((page - 1) * limit, page * limit), pagination: { total: rows.length, page, limit, pages: Math.ceil(rows.length / limit) }, metrics });
           if (sim.growAt && page === sim.growAt - 1 && limit === 100) { messages.unshift(build(nextId++)); sim.growAt = 0; } // alguien registra una consulta durante la descarga
           return answer;
+        }
+        if ((m = sub.match(/^messages\/(\d+)$/)) && req.method === 'DELETE') {
+          const id = +m[1]; deletes.push({ id }); const index = messages.findIndex(x => x.id === id);
+          if (index < 0) return json({ message: 'Mensaje no encontrado.' }, 404);
+          if (attention[id] || QUOTED.has(id)) return json({ message: 'El mensaje tiene cotizaciones vinculadas. Conserva su registro.' }, 409); // el backend usa este texto para ambas causas
+          if (sim.deleteMode === 'error500') return json({ message: 'Internal server error ER_SECRET' }, 500);
+          messages.splice(index, 1);
+          if (sim.deleteMode === 'dropDeleted') return req.socket.destroy(); // borrada, pero la respuesta nunca llega
+          if (sim.deleteMode === 'slowDeleted') await sleep(1500); // borrada, pero responde cuando el navegador ya canceló
+          if (sim.deleteMode === 'slowOk') await sleep(600);
+          return json({ ok: true, mensaje: 'Mensaje eliminado correctamente.' });
         }
         if ((m = sub.match(/^messages\/(\d+)$/))) { const one = messages.find(x => x.id === +m[1]); return one ? json({ ok: true, message: one }) : json({ message: 'No encontrado' }, 404); }
         if ((m = sub.match(/^seguimiento\/messages\/(\d+)$/))) {
@@ -150,7 +162,7 @@ async function main() {
   const exportNow = async () => { await clickBtn('.hw-inbox ~ footer, section.hp-card', 'Exportar resultados'); };
   const pressKey = async (key, code, vk, extra = {}) => { await page.send('Input.dispatchKeyEvent', { type: 'keyDown', key, code, windowsVirtualKeyCode: vk, ...extra }); await page.send('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode: vk }); await sleep(120); };
 
-  console.log('\n== CENTRO DE ATENCIÓN D6.1 — REGISTRO MANUAL Y EXPORTACIÓN');
+  console.log('\n== CENTRO DE ATENCIÓN D6.1–D6.2 — REGISTRO MANUAL, EXPORTACIÓN, VISTA TABLA Y ELIMINACIÓN');
   { // 1 y 2. Apertura desde la bandeja; cancelación con formulario limpio
     await inbox(); await clickBtn('.hp-heading', 'Registro manual'); await page.wait('document.querySelector("' + D + ' form")', 'diálogo');
     const urlAfterOpen = await page.evaluate('location.pathname + location.search');
@@ -358,11 +370,171 @@ async function main() {
     ck((await downloads()).length === 0 && /No se descargó ningún archivo/.test(t) && !(await text()).includes('Se exportaron'), '31. si el token cambia durante la exportación se aborta sin entregar un archivo', t);
     await other.close(); }
 
+  // ---------- D6.2: vista Tabla integrada y eliminación protegida
+  const viewTabs = '.hw-tabs[aria-label="Vista del listado"]';
+  const switchView = name => page.evaluate('(() => { const b = [...document.querySelectorAll(' + JSON.stringify(viewTabs + ' button') + ')].find(x => x.textContent.trim() === ' + JSON.stringify(name) + '); b.click(); return 1 })()');
+  const viewState = () => page.evaluate('({ table: !!document.querySelector(".hw-inbox-table"), cards: document.querySelectorAll(".hw-inbox-list > button").length, rows: document.querySelectorAll(".hw-inbox-table tbody tr").length, isTable: !!document.querySelector(".hw-inbox.is-table"), pressed: [...document.querySelectorAll(' + JSON.stringify(viewTabs + ' button') + ')].map(b => b.textContent.trim() + ":" + b.getAttribute("aria-pressed")).join() })');
+  const subjects = () => page.evaluate('[...document.querySelectorAll(".hw-inbox-table tbody tr td strong, .hw-inbox-list > button .hw-inbox-subject")].map(x => x.innerText)');
+  const detailId = () => page.evaluate('document.querySelector(".hw-detail-heading small")?.innerText || ""');
+  const openRow = index => page.evaluate('document.querySelectorAll(".hw-inbox-table tbody tr button")[' + index + '].click(); 1');
+  const selectEstado = value => page.evaluate('(() => { const set = ' + SETTER + '; set(document.querySelector(\'select[aria-label="Estado de atención"]\'), ' + JSON.stringify(value) + '); return 1 })()');
+  const searchFor = async value => fill('input[aria-label="Buscar consultas"]', value);
+  const metricArchivados = () => page.evaluate('Number([...document.querySelectorAll(".hw-insights button")].find(b => b.innerText.includes("Archivados")).querySelector("strong").innerText)');
+  const waitText = (value, what) => page.wait('document.body.innerText.includes(' + JSON.stringify(value) + ')', what);
+  const openDelete = async () => { await clickBtn('.hw-inbox-detail', 'Eliminar consulta'); await page.wait('document.querySelector("' + D + ' [data-autofocus]")', 'diálogo de eliminación'); };
+  const delResult = () => page.wait('document.querySelector("' + D + ' [data-delete-result]")', 'resultado de la eliminación');
+  const delText = () => page.evaluate('document.querySelector("' + D + ' [data-delete-result]")?.innerText || ""');
+  const dialogOpen2 = () => page.evaluate('!!document.querySelector("' + D + '")');
+  const activeInfo = () => page.evaluate('(document.activeElement?.tagName || "") + ":" + (document.activeElement?.textContent || "").trim().slice(0, 40) + ":" + (document.activeElement?.dataset?.deleteResult || "")');
+
+  { // 32. Conmutador Bandeja ↔ Tabla (ratón y teclado)
+    await inbox(); let v = await viewState();
+    ck(!v.table && v.cards === 20 && !v.isTable && v.pressed === 'Bandeja:true,Tabla:false', '32. por defecto se muestra la Bandeja', v);
+    await switchView('Tabla'); await page.wait('document.querySelector(".hw-inbox-table")', 'tabla'); v = await viewState();
+    ck(v.table && v.rows === 20 && v.cards === 0 && v.isTable && v.pressed === 'Bandeja:false,Tabla:true', '32. «Tabla» muestra las mismas 20 consultas en una tabla y marca la vista activa (aria-pressed)', v);
+    const heads = await page.evaluate('[...document.querySelectorAll(".hw-inbox-table thead th[scope=col]")].map(th => th.textContent.trim()).filter(Boolean).join()');
+    ck(heads === 'Consulta,Estado,Origen,Fecha,Acción' && await page.evaluate('!!document.querySelector(".hw-inbox-table caption")'), '32. la tabla tiene encabezados semánticos (th scope=col) y título accesible', heads);
+    await page.evaluate('document.querySelectorAll(' + JSON.stringify(viewTabs + ' button') + ')[0].focus(); 1'); await pressKey('Enter', 'Enter', 13, { text: '\r' }); v = await viewState();
+    ck(!v.table && v.cards === 20, '32. teclado: Enter sobre «Bandeja» cambia de vista', v);
+    await page.evaluate('document.querySelectorAll(' + JSON.stringify(viewTabs + ' button') + ')[1].focus(); 1'); await pressKey(' ', 'Space', 32, { text: ' ' }); v = await viewState();
+    ck(v.table && await page.evaluate('document.activeElement?.textContent.trim() === "Tabla"'), '32. teclado: Espacio sobre «Tabla» cambia de vista y conserva el foco en el conmutador', v); }
+
+  { // 33. Filtros y paginación compartidos
+    await inbox(); await switchView('Tabla'); await page.wait('document.querySelector(".hw-inbox-table")', 'tabla');
+    await searchFor('Especial'); await waitText('23 consultas coinciden', 'búsqueda');
+    let v = await viewState(); ck(v.rows === 20, '33. la búsqueda se aplica a la tabla (20 de 23 en la primera página)', v);
+    await clickBtn('.hp-pagination', 'Siguiente'); await page.wait('document.querySelectorAll(".hw-inbox-table tbody tr").length === 3', 'página 2');
+    const tablePage2 = await subjects(); await switchView('Bandeja'); await page.wait('document.querySelectorAll(".hw-inbox-list > button").length === 3', 'bandeja página 2');
+    const cardsPage2 = await subjects();
+    ck(JSON.stringify(tablePage2) === JSON.stringify(cardsPage2) && (await text()).includes('Página 2') && (await page.evaluate('document.querySelector(\'input[aria-label="Buscar consultas"]\').value')) === 'Especial', '33. al alternar vista se conservan búsqueda, página y los mismos registros', { tablePage2, cardsPage2 });
+    await selectEstado('nuevo'); await page.wait('/(^|\\D)0 consultas coinciden/.test(document.body.innerText)', 'estado sin coincidencias');
+    await searchFor(''); await waitText('62 consultas coinciden', 'estado nuevo sin búsqueda'); await switchView('Tabla'); await page.wait('document.querySelector(".hw-inbox-table")', 'tabla con filtro');
+    const states = await page.evaluate('[...document.querySelectorAll(".hw-inbox-table tbody .hp-badge")].map(b => b.innerText)');
+    ck(states.length === 20 && states.every(x => x.toLowerCase() === 'nuevo'), '33. el filtro de estado también filtra la tabla', states.slice(0, 3)); }
+
+  { // 34. Selección por fila, detalle con ?id= y Atrás/Adelante
+    await inbox('/admin/messages?listado=tabla'); await page.wait('document.querySelector(".hw-inbox-table")', 'tabla inicial (?listado=tabla)');
+    await openRow(1); await page.wait('document.querySelector(".hw-detail-heading")', 'detalle'); const first = await page.evaluate('location.search');
+    ck(/id=229/.test(first) && (await detailId()) === 'Consulta #229' && await page.evaluate('!!document.querySelector(".hw-inbox-detail fieldset textarea") && !!document.querySelector(".hw-inbox-detail a[href*=\\"contacto=229\\"]")'), '34. seleccionar una fila abre el detalle existente (mismo AttentionEditor y acciones) con ?id=229', first);
+    await openRow(2); await waitText('Consulta #228', 'otra fila'); await page.evaluate('history.back(); 1'); await waitText('Consulta #229', 'Atrás');
+    const back = await detailId(); await page.evaluate('history.forward(); 1'); await waitText('Consulta #228', 'Adelante');
+    ck(back === 'Consulta #229' && (await detailId()) === 'Consulta #228' && await page.evaluate('!!document.querySelector(".hw-inbox-table")'), '34. Atrás y Adelante recorren las filas seleccionadas sin salir de la tabla', back); }
+
+  { // 35. Protección de borradores al alternar la vista y al cambiar de consulta
+    await inbox('/admin/messages?id=5'); await page.wait('document.querySelector(".hw-inbox-detail fieldset textarea")', 'editor');
+    await fill('.hw-inbox-detail fieldset textarea', 'Borrador D6.2');
+    await switchView('Tabla'); await page.wait('document.querySelector(".hw-inbox-table")', 'tabla'); await sleep(200);
+    const kept = await page.evaluate('({ notes: document.querySelector(".hw-inbox-detail fieldset textarea").value, unsaved: !!document.querySelector("dialog.hp-unsaved-dialog[open]"), path: location.pathname + location.search })');
+    ck(kept.notes === 'Borrador D6.2' && !kept.unsaved && kept.path === '/admin/messages?id=5' && !(await state()).posts.some(p => p.method === 'PUT'), '35. alternar Bandeja/Tabla conserva el borrador del seguimiento sin avisos ni escrituras', kept);
+    await switchView('Bandeja'); await page.wait('document.querySelectorAll(".hw-inbox-list > button").length > 0', 'bandeja'); await sleep(150);
+    ck((await page.evaluate('document.querySelector(".hw-inbox-detail fieldset textarea").value')) === 'Borrador D6.2', '35. y al volver a la Bandeja el borrador sigue intacto');
+    await switchView('Tabla'); await page.wait('document.querySelector(".hw-inbox-table")', 'tabla'); await openRow(0); await page.wait('document.querySelector("dialog.hp-unsaved-dialog[open]")', 'aviso de cambios');
+    await clickBtn('dialog.hp-unsaved-dialog[open]', 'Seguir editando'); await sleep(150);
+    ck((await page.evaluate('location.search')) === '?id=5' && (await page.evaluate('document.querySelector(".hw-inbox-detail fieldset textarea").value')) === 'Borrador D6.2', '35. elegir otra fila con un borrador pendiente pide confirmar y «Seguir editando» no pierde nada'); }
+
+  { // 36. Eliminación confirmada (vista Tabla, con filtros)
+    await inbox('/admin/messages?listado=tabla'); await searchFor('Especial'); await waitText('23 consultas coinciden', 'búsqueda');
+    const archivadosBefore = await metricArchivados();
+    await page.evaluate('[...document.querySelectorAll(".hw-inbox-table tbody tr")].find(r => r.innerText.includes("Asunto 220")).querySelector("button").click(); 1'); await waitText('Consulta #220', 'detalle 220'); await page.wait('document.querySelector(".hw-inbox-detail fieldset textarea")', 'editor');
+    await fill('.hw-inbox-detail fieldset textarea', 'Borrador de la consulta que se elimina');
+    await openDelete(); const t = await text();
+    ck(/seguimiento o cotizaciones vinculadas/.test(t) && /archívala/.test(t) && /Eliminar quita la consulta de forma definitiva/.test(t) && !(await page.evaluate('[...document.querySelectorAll("' + D + ' button")].some(b => b.textContent.includes("Archivar en su lugar"))')), '36. el diálogo explica que puede estar restringida, prioriza archivar y no ofrece archivar lo ya archivado', t.slice(0, 200));
+    ck(/ya tiene el estado «archivado»/i.test(t) && /Es solo una pista/.test(t), '36. con actividad conocida muestra una pista preventiva sin presentarla como prueba');
+    ck(await page.evaluate('document.activeElement?.textContent.trim() === "Cancelar"'), '36. el foco inicial está en la opción segura «Cancelar»', await activeInfo());
+    await pressKey('Tab', 'Tab', 9); ck(await page.evaluate('document.activeElement?.textContent.includes("Eliminar definitivamente")'), '36. Tab avanza a «Eliminar definitivamente»', await activeInfo());
+    await pressKey('Tab', 'Tab', 9, { modifiers: 8 }); ck(await page.evaluate('document.activeElement?.textContent.trim() === "Cancelar"'), '36. Shift+Tab vuelve a «Cancelar»');
+    await clickBtn(D, 'Eliminar definitivamente'); await waitText('Consulta eliminada', 'eliminación');
+    const s = await state();
+    ck(s.deletes.length === 1 && s.deletes[0].id === 220 && s.total === TOTAL - 1, '36. DELETE confirmado: una sola solicitud, solo esa consulta', s.deletes);
+    const after = await page.evaluate('({ path: location.pathname + location.search, search: document.querySelector(\'input[aria-label="Buscar consultas"]\').value, hasRow: [...document.querySelectorAll(".hw-inbox-table tbody tr")].some(r => r.innerText.includes("Asunto 220")), rows: document.querySelectorAll(".hw-inbox-table tbody tr").length, unsaved: !!document.querySelector("dialog.hp-unsaved-dialog[open]"), dialog: !!document.querySelector("dialog.hp-dialog[open]"), detail: !!document.querySelector(".hw-detail-heading") })');
+    await waitText('22 consultas coinciden', 'listado actualizado');
+    ck(after.path === '/admin/messages?listado=tabla' && after.search === 'Especial' && !after.hasRow && !after.unsaved && !after.dialog && !after.detail && !s.posts.some(p => p.method === 'PUT'), '36. tras eliminar: se limpia la selección y ?id=, se conservan filtros y vista, y el borrador de la consulta eliminada no bloquea la navegación', after);
+    ck((await metricArchivados()) === archivadosBefore - 1, '36. las métricas se actualizan', { archivadosBefore, now: await metricArchivados() }); }
+
+  { // 37. Cancelación del diálogo (botón y Escape)
+    await inbox('/admin/messages?id=221'); await waitText('Consulta #221', 'detalle');
+    await openDelete(); await clickBtn(D, 'Cancelar'); await sleep(200);
+    ck(!(await dialogOpen2()) && (await state()).deletes.length === 0 && await page.evaluate('document.activeElement?.textContent.includes("Eliminar consulta")'), '37. «Cancelar» cierra sin enviar DELETE y devuelve el foco a «Eliminar consulta…»', await activeInfo());
+    await openDelete(); await pressKey('Escape', 'Escape', 27); await sleep(250);
+    ck(!(await page.evaluate('!!document.querySelector("' + D + '")')) && (await state()).deletes.length === 0, '37. Escape también cierra sin eliminar'); }
+
+  { // 38. Doble DELETE
+    await inbox('/admin/messages?id=222'); await waitText('Consulta #222', 'detalle'); await set({ deleteMode: 'slowOk' }); await openDelete();
+    await page.evaluate('(() => { const b = [...document.querySelectorAll("' + D + ' button")].find(x => x.textContent.includes("Eliminar definitivamente")); b.click(); b.click(); return 1 })()');
+    await waitText('Consulta eliminada', 'eliminación lenta'); await sleep(300);
+    ck((await state()).deletes.length === 1, '38. dos clics seguidos producen un solo DELETE', (await state()).deletes); }
+
+  { // 39. 409: seguimiento y cotización vinculados
+    for (const [id, cause] of [[7, 'seguimiento'], [9, 'cotización']]) {
+      await inbox('/admin/messages?id=' + id); await waitText('Consulta #' + id, 'detalle'); await openDelete();
+      await clickBtn(D, 'Eliminar definitivamente'); await delResult(); const s = await state(), t = await delText();
+      ck(/no permite eliminar/.test(t) && /seguimiento o cotizaciones vinculadas/.test(t) && !/Conserva su registro/.test(t) && s.total === TOTAL && await dialogOpen2() && (await activeInfo()).endsWith(':blocked'), '39. 409 con ' + cause + ': mensaje claro, nada eliminado, el diálogo sigue abierto y el aviso recibe el foco', { t, total: s.total, focus: await activeInfo() }); }
+    await clickBtn(D, 'Archivar en su lugar'); await page.wait('document.body.innerText.includes("Consulta de Persona 9")', 'archivo');
+    ck((await state()).posts.some(p => p.method === 'PUT' && p.route === 'seguimiento/messages/9' && p.data.estado === 'archivado') && (await state()).total === TOTAL, '39. «Archivar en su lugar» usa el flujo normal de seguimiento (PUT con revisión) y no elimina nada'); }
+
+  { // 39b. 409 con un borrador de seguimiento SIN guardar: el borrador, la selección y ?id= sobreviven y no se repite el DELETE
+    // El diálogo es modal y no pide guardar nada antes de eliminar (no hay bloqueo de navegación en juego: no se navega); el editor queda montado debajo.
+    const DRAFT = 'Borrador 409 — línea 1\nlínea 2 «ñ» <b>no es HTML</b>';
+    const behind = () => page.evaluate('({ draft: document.querySelector(".hw-inbox-detail fieldset textarea").value, path: location.pathname + location.search, heading: document.querySelector(".hw-detail-heading small")?.innerText, unsaved: !!document.querySelector("dialog.hp-unsaved-dialog[open]") })');
+    await inbox('/admin/messages?id=7'); await waitText('Consulta #7', 'detalle'); await page.wait('document.querySelector(".hw-inbox-detail fieldset textarea")', 'editor');
+    await fill('.hw-inbox-detail fieldset textarea', DRAFT);
+    ck((await behind()).draft === DRAFT, '39b. (preparación) el borrador sin guardar está escrito en el editor');
+    await openDelete(); await clickBtn(D, 'Eliminar definitivamente'); await delResult(); await sleep(700); // margen para detectar un segundo DELETE tardío
+    let s = await state(), b = await behind();
+    ck(/no permite eliminar/.test(await delText()) && s.total === TOTAL && s.deletes.length === 1 && s.deletes[0].id === 7, '39b. 409: la consulta sigue existiendo y se envió un único DELETE (sin repetición tardía)', { total: s.total, deletes: s.deletes });
+    ck(b.draft === DRAFT && b.path === '/admin/messages?id=7' && b.heading === 'Consulta #7' && !b.unsaved, '39b. con el diálogo abierto, el borrador es EXACTAMENTE el anterior y no cambian la selección ni ?id=', b);
+    await clickBtn(D, 'Cancelar'); await sleep(300); s = await state(); b = await behind();
+    ck(!(await dialogOpen2()) && b.draft === DRAFT && b.path === '/admin/messages?id=7' && b.heading === 'Consulta #7' && s.deletes.length === 1 && !s.posts.some(p => p.method === 'PUT'), '39b. tras cerrar el diálogo el borrador sigue intacto, ?id=7 también, y no hubo más DELETE ni ninguna escritura de seguimiento', { b, deletes: s.deletes.length }); }
+
+  { // 40. Resultado incierto de la eliminación (tiempos acortados)
+    await inbox('/admin/messages?id=215', 1280, true); await waitText('Consulta #215', 'detalle'); await set({ deleteMode: 'slowDeleted' }); await openDelete();
+    await clickBtn(D, 'Eliminar definitivamente'); await delResult(); let t = await delText(), s = await state();
+    ck(/No pudimos confirmar si la consulta se eliminó/.test(t) && !/no se eliminó\./.test(t.replace('No pudimos confirmar si la consulta se eliminó', '')) && (await page.evaluate('!!document.querySelector("' + D + '")')) && s.total === TOTAL - 1, '40. timeout: se avisa que el resultado es incierto (el servidor sí la borró) sin afirmar que falló', t);
+    await sleep(1500); await clickBtn(D, 'Comprobar si sigue existiendo'); await waitText('ya no existía', 'comprobación');
+    ck(!(await page.evaluate('!!document.querySelector("' + D + '")')) && !(await page.evaluate('location.search')).includes('id='), '40. «Comprobar» detecta (404) que ya no existe, cierra y limpia la selección');
+    await inbox('/admin/messages?id=216', 1280, true); await waitText('Consulta #216', 'detalle'); await set({ deleteMode: 'error500' }); await openDelete();
+    await clickBtn(D, 'Eliminar definitivamente'); await delResult(); t = await delText();
+    ck(/No pudimos confirmar/.test(t) && !/Internal server|ER_SECRET/.test(t), '40. un 5xx también es incierto y sin texto técnico', t);
+    await clickBtn(D, 'Comprobar si sigue existiendo'); await page.wait('document.querySelector("' + D + ' [data-delete-result=still]")', 'sigue existiendo');
+    await set({ deleteMode: 'ok' }); await clickBtn(D, 'Intentar eliminar de nuevo'); await waitText('Consulta eliminada', 'segundo intento');
+    const retried = await state();
+    ck(retried.deletes.length === 2 && retried.deletes.every(d => d.id === 216) && retried.total === TOTAL - 1 && !(await dialogOpen2()), '40. el reintento fue manual y explícito: el 5xx (sin borrar) y un único segundo DELETE; la consulta ya no existe y el diálogo se cerró', retried.deletes);
+    await inbox('/admin/messages?id=217', 1280, true); await waitText('Consulta #217', 'detalle'); await set({ deleteMode: 'dropDeleted' }); await openDelete();
+    await clickBtn(D, 'Eliminar definitivamente'); await page.wait('document.querySelector("' + D + ' [data-delete-result]") || document.body.innerText.includes("ya no existía") || document.body.innerText.includes("Consulta eliminada")', 'resultado tras el corte');
+    await sleep(500); // deja llegar cualquier reintento del navegador antes de evaluar
+    s = await state(); const stillOpen = await dialogOpen2(), body = await text();
+    // El flujo real depende del transporte: si Edge reenvía el DELETE, el segundo recibe 404 y se informa «ya no existía»; si no, queda el resultado incierto.
+    // Ambos caminos se comprueban con aserciones propias (nunca vacías) y se registra cuál ocurrió.
+    console.log('  (info) DELETE recibidos tras cortar la conexión: ' + s.deletes.length + ' — camino: ' + (stillOpen ? 'resultado incierto (diálogo abierto)' : 'reintento del navegador con 404 («ya no existía»)'));
+    if (stillOpen) {
+      t = await delText();
+      ck(/No pudimos confirmar si la consulta se eliminó/.test(t) && !/no se pudo eliminar|falló/i.test(t) && !body.includes('Consulta eliminada:'), '40. corte tras borrar (sin reintento visible): el diálogo sigue abierto con resultado incierto, sin éxito ni fallo definitivos', t);
+      await clickBtn(D, 'Comprobar si sigue existiendo'); await waitText('ya no existía', 'comprobación tras el corte');
+    } else {
+      ck(body.includes('La consulta ya no existía') && !body.includes('Consulta eliminada:') && !/no se pudo eliminar|falló/i.test(body) && !(await page.evaluate('location.search')).includes('id='), '40. corte tras borrar (el navegador reintentó y obtuvo 404): se informa «ya no existía», sin anunciar un éxito propio ni un fallo, y se limpia ?id=', body.slice(0, 160));
+    }
+    await page.wait('!document.body.innerText.includes("Asunto 217")', 'lista sin la consulta 217'); s = await state();
+    ck(s.total === TOTAL - 1 && s.deletes.length >= 1 && s.deletes.every(d => d.id === 217) && !(await dialogOpen2()), '40. estado final: la consulta 217 no existe en el servidor, la lista no la muestra y todos los DELETE fueron de esa consulta', { total: s.total, deletes: s.deletes }); }
+
+  { // 41. Compatibilidad: ResourceManager y enlaces heredados
+    await session('/admin/dashboard?section=mensajes&vista=tabla'); await page.wait('document.querySelector(".hp-table tbody tr")', 'tabla antigua');
+    ck(await page.evaluate('!document.querySelector(".hw-inbox") && !document.querySelector(' + JSON.stringify(viewTabs) + ') && !![...document.querySelectorAll("button")].find(b => (b.getAttribute("aria-label") || "").startsWith("Eliminar "))'), '41. vista=tabla sigue siendo la tabla anterior (ResourceManager) con su Eliminar, sin el conmutador nuevo');
+    await inbox(); ck(await page.evaluate('!!document.querySelector("a[href=\\"/admin/dashboard?section=mensajes&vista=tabla\\"]")'), '41. la bandeja conserva el enlace heredado a «Vista de registros»');
+    await session('/admin/messages?crear=1'); await page.wait('document.querySelector("' + D + ' form")', 'registro manual'); await clickBtn(D, 'Cancelar'); await sleep(200);
+    ck(!(await page.evaluate('location.search')).includes('crear') && await page.evaluate('!!document.querySelector(' + JSON.stringify(viewTabs) + ')'), '41. crear=1 sigue abriendo el registro manual (D6.1) junto al conmutador'); }
+
+  { // 42. D6.1 desde la vista Tabla: registro manual y exportación
+    await inbox('/admin/messages?listado=tabla'); await captureDownloads(); await clickBtn('.hp-heading', 'Registro manual'); await page.wait('document.querySelector("' + D + ' form")', 'diálogo'); await fillForm();
+    await page.evaluate("document.querySelector('" + D + " form').requestSubmit(); 1"); await waitText('Consulta registrada', 'registro');
+    await page.wait('document.querySelector(".hw-inbox-table tbody tr td strong")?.innerText === "Asunto manual"', 'fila nueva en la tabla');
+    ck(true, '42. el registro manual aparece al inicio de la tabla');
+    await exportNow(); await page.wait('window.__dl.length === 1', 'descarga'); ck(csvLines((await downloads())[0].text).length === TOTAL + 2, '42. la exportación completa funciona desde la vista Tabla (' + (TOTAL + 1) + ' consultas)'); }
+
   const PUBLIC_ASSET_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com', 'cdnjs.cloudflare.com'];
   const leaks = blocked.filter(b => { try { return b.method !== 'GET' || !PUBLIC_ASSET_HOSTS.includes(new URL(b.url).hostname); } catch { return true; } });
   ck(leaks.length === 0, 'ninguna petición externa inesperada (' + blocked.length + ' recursos públicos bloqueados antes de enviarse)', leaks.slice(0, 3));
   ck(jsErrors.length === 0, 'sin excepciones de JavaScript', jsErrors.slice(0, 3));
-  console.log(fails ? '\nHAY ' + fails + ' FALLA(S)' : '\nCentro de atención D6.1: OK.');
+  console.log(fails ? '\nHAY ' + fails + ' FALLA(S)' : '\nCentro de atención D6.1–D6.2: OK.');
   cleanup();
   process.exit(fails ? 1 : 0);
 }

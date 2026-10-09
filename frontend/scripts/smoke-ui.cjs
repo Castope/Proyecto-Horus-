@@ -1,5 +1,5 @@
 // UI smoke test with isolated HTTP fixtures, using Edge and its DevTools protocol.
-const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict'),{spawn}=require('node:child_process');
+const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict'),{spawn,spawnSync}=require('node:child_process');
 const root=path.resolve(__dirname,'../dist'),browser=process.env.SMOKE_BROWSER||'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const fixtureCourse={id:1,titulo:'Curso de prueba',slug:'curso-de-prueba',tipo:'curso',modalidad:'virtual',duracion:'20 horas',descripcion:'Descripción de prueba',temario:'Temario de prueba',fecha_inicio:'2099-01-01',estado:'publicado'};
 const fixtureCap={...fixtureCourse,id:2,titulo:'Capacitación de prueba',slug:'capacitacion-de-prueba',tipo:'capacitacion'};
@@ -55,6 +55,19 @@ const server=http.createServer(async(req,res)=>{
  }catch{res.statusCode=500;res.end('Fixture failure')}
 });
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+// Peticiones a otros orígenes: se rechazan ANTES de salir a Internet (como en el resto de smokes). Las pantallas piden fuentes, iconos y un mapa embebido que
+// ninguna aserción necesita. Si salían, un origen lento dejaba la página sin montar (las hojas de estilo bloquean los scripts) y la espera de carga fallaba.
+const externalBlocked=[];
+function interceptExternal(msg,origin,send){
+ if(msg.method!=='Fetch.requestPaused')return false;
+ const {requestId,request}=msg.params;let local=false;
+ try{const x=new URL(request.url);local=x.origin===origin||x.protocol==='data:'||x.protocol==='blob:'}catch{local=false}
+ if(local)send('Fetch.continueRequest',{requestId}).catch(()=>{});
+ else{externalBlocked.push({method:request.method,url:request.url.slice(0,100)});send('Fetch.failRequest',{requestId,errorReason:'BlockedByClient'}).catch(()=>{})}
+ return true;
+}
+// En Windows child.kill() solo cierra el proceso raíz de Edge: se cierra el árbol completo de ESTA prueba.
+const killTree=child=>{try{if(child?.pid){if(process.platform==='win32')spawnSync('taskkill',['/PID',String(child.pid),'/T','/F'],{windowsHide:true});else child.kill()}}catch{}};
 async function main(){
  if(!fs.existsSync(browser))throw new Error('Configura SMOKE_BROWSER con una instalación de Edge/Chromium.');
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin='http://127.0.0.1:'+server.address().port;
@@ -65,14 +78,14 @@ async function main(){
  let target;for(let i=0;i<100&&!target;i++){await sleep(100);try{target=await fetch('http://127.0.0.1:'+port+'/json/new?about:blank',{method:'PUT'}).then(r=>r.json())}catch{}}
  if(!target?.webSocketDebuggerUrl)throw new Error('No se pudo iniciar Edge para la revisión.');
  socket=new WebSocket(target.webSocketDebuggerUrl);await new Promise((r,j)=>{socket.onopen=r;socket.onerror=j});
- socket.onmessage=event=>{const msg=JSON.parse(event.data);if(msg.id){const p=pending.get(msg.id);pending.delete(msg.id);if(msg.error)p?.reject(new Error(msg.error.message));else p?.resolve(msg.result)}};
+ socket.onmessage=event=>{const msg=JSON.parse(event.data);if(interceptExternal(msg,origin,send))return;if(msg.id){const p=pending.get(msg.id);pending.delete(msg.id);if(msg.error)p?.reject(new Error(msg.error.message));else p?.resolve(msg.result)}};
  const send=(method,params={})=>new Promise((resolve,reject)=>{const id=++seq;pending.set(id,{resolve,reject});socket.send(JSON.stringify({id,method,params}))});
  closeBrowser=()=>send('Browser.close');
  const evaluate=async expression=>{const r=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw new Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result.value};
  const wait=async expression=>{for(let i=0;i<100;i++){if(await evaluate(expression))return;await sleep(100)}throw new Error('No se cumplió: '+expression)};
  const navigate=async route=>{await send('Page.navigate',{url:origin+route});await wait('document.readyState==="complete"');await sleep(300)};
  const click=label=>evaluate('Array.from(document.querySelectorAll("button,a")).find(x=>x.textContent.trim()==='+JSON.stringify(label)+')?.click()');
- await send('Page.enable');await send('Runtime.enable');
+ await send('Page.enable');await send('Runtime.enable');await send('Fetch.enable',{patterns:[{urlPattern:'*'}]});
  await send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
  await navigate('/educacion/cursos');await wait('document.body.innerText.includes("Curso de prueba")');assert.equal(await evaluate('document.body.innerText.includes("Capacitación de prueba")'),false);
  const courseCard='[...document.querySelectorAll("article.edu-card")].find(a=>a.textContent.includes("Curso de prueba"))';
@@ -164,12 +177,13 @@ async function main(){
  await evaluate('localStorage.setItem("horus-admin-token","isolated-ui-test-token")');
  await navigate('/tecnologias/cableado-estructurado');await wait('document.querySelectorAll("[role=tab]").length===4');
  // A second real tab saves the panel form. The open public tab receives the browser storage event.
- const adminTarget=await fetch('http://127.0.0.1:'+port+'/json/new?'+encodeURIComponent(origin+'/admin/dashboard?section=servicios'),{method:'PUT'}).then(r=>r.json());
+ const adminTarget=await fetch('http://127.0.0.1:'+port+'/json/new?about:blank',{method:'PUT'}).then(r=>r.json());
  const adminSocket=new WebSocket(adminTarget.webSocketDebuggerUrl);await new Promise((r,j)=>{adminSocket.onopen=r;adminSocket.onerror=j});
- let adminSeq=0;const adminPending=new Map();adminSocket.onmessage=e=>{const m=JSON.parse(e.data);if(m.id){const pending=adminPending.get(m.id);adminPending.delete(m.id);m.error?pending?.reject(new Error(m.error.message)):pending?.resolve(m.result)}};
+ let adminSeq=0;const adminPending=new Map();adminSocket.onmessage=e=>{const m=JSON.parse(e.data);if(interceptExternal(m,origin,adminSend))return;if(m.id){const pending=adminPending.get(m.id);adminPending.delete(m.id);m.error?pending?.reject(new Error(m.error.message)):pending?.resolve(m.result)}};
  const adminSend=(method,params={})=>new Promise((resolve,reject)=>{const id=++adminSeq;adminPending.set(id,{resolve,reject});adminSocket.send(JSON.stringify({id,method,params}))});
  const adminEval=async expression=>{const result=await adminSend('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(result.exceptionDetails)throw new Error((result.exceptionDetails.exception?.description||result.exceptionDetails.text)+' :: '+expression.slice(0,240));return result.result.value};
  const adminWait=async expression=>{for(let i=0;i<100;i++){if(await adminEval(expression))return;await sleep(100)}const detail=await adminEval('document.querySelector(".hp-error")?.textContent||""').catch(()=>'');throw new Error('Panel: '+expression+(detail?' :: '+detail:''))};
+ await adminSend('Page.enable');await adminSend('Fetch.enable',{patterns:[{urlPattern:'*'}]});await adminSend('Page.navigate',{url:origin+'/admin/dashboard?section=servicios'});
  try{
   await adminWait('document.querySelectorAll(".hw-resource").length===8');
   await adminEval('document.querySelector(".hw-resource footer button").click()');await adminWait('!!document.getElementById("field-nombre_corto")');
@@ -447,5 +461,9 @@ async function main(){
  await send('Network.enable');await send('Network.setCacheDisabled',{cacheDisabled:true});chunkError=true;await navigate('/admin/dashboard?section=cotizaciones');await wait('document.body.innerText.includes("No pudimos abrir esta página")');chunkError=false;await click('Recargar página');await wait('document.body.innerText.includes("Cotizaciones")');
  console.log('UI: carga de pantallas y recuperación de error comprobados.');
  console.log('UI: catálogo, detalle, consulta, FAQ/reintento, galería/foco, convenio, menú móvil, cotización, error de correo, seguimiento y sesión transitoria: OK.');
- }finally{try{if(closeBrowser)await Promise.race([closeBrowser(),sleep(1000)])}catch{}try{socket?.close()}catch{}child?.kill();await new Promise(r=>server.close(r));await sleep(500);if(path.dirname(profile)!==tmp||!path.basename(profile).startsWith('horus-ui-'))throw new Error('Perfil fuera del directorio temporal');for(let attempt=0;attempt<8;attempt++){try{fs.rmSync(profile,{recursive:true,force:true});break}catch{if(attempt===7)console.log('El perfil temporal del navegador sigue en uso.');else await sleep(250)}}}}
+ const allowedHosts=['fonts.googleapis.com','fonts.gstatic.com','cdnjs.cloudflare.com','www.google.com'];
+ const leaks=externalBlocked.filter(b=>{try{return b.method!=='GET'||!allowedHosts.includes(new URL(b.url).hostname)}catch{return true}});
+ assert.equal(leaks.length,0,'Peticiones externas inesperadas: '+JSON.stringify(leaks.slice(0,3)));
+ console.log('UI: '+externalBlocked.length+' peticiones públicas externas (fuentes, iconos, mapa) bloqueadas antes de enviarse; ninguna petición externa inesperada.');
+ }finally{try{if(closeBrowser)await Promise.race([closeBrowser(),sleep(1000)])}catch{}try{socket?.close()}catch{}killTree(child);await new Promise(r=>server.close(r));await sleep(500);if(path.dirname(profile)!==tmp||!path.basename(profile).startsWith('horus-ui-'))throw new Error('Perfil fuera del directorio temporal');for(let attempt=0;attempt<8;attempt++){try{fs.rmSync(profile,{recursive:true,force:true});break}catch{if(attempt===7)console.log('El perfil temporal del navegador sigue en uso.');else await sleep(250)}}}}
 main().catch(e=>{console.error(e.message);process.exitCode=1;server.close()});

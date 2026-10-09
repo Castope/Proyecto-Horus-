@@ -17,10 +17,12 @@
     "test:list-records": "node --experimental-strip-types --test tests/list-records.test.mjs",
     "test:attention-merge": "node --experimental-strip-types --test tests/attention-merge.test.mjs",
     "test:mail-outcome": "node --experimental-strip-types --test tests/mail-outcome.test.mjs",
+    "test:message-export": "node --experimental-strip-types --test tests/message-export.test.mjs",
     "smoke:messages-table": "npm run build && node scripts/smoke-messages-table.cjs",
     "smoke:message-detail": "npm run build && node scripts/smoke-message-detail.cjs",
     "smoke:attention-conflicts": "npm run build && node scripts/smoke-attention-conflicts.cjs",
-    "smoke:mail-attempts": "npm run build && node scripts/smoke-mail-attempts.cjs"
+    "smoke:mail-attempts": "npm run build && node scripts/smoke-mail-attempts.cjs",
+    "smoke:message-center": "npm run build && node scripts/smoke-message-center.cjs"
   },
   "dependencies": {
     "react": "^19.2.5",

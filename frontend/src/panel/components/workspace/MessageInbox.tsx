@@ -1,13 +1,19 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAdminAuth } from '../../context';
 import { useConfirmLeave } from '../../unsaved/unsavedContext';
+import { useLatest } from '../../hooks/useLatest';
 import { PanelApiError, panelRequest, errorMessage } from '../../services/panelApi';
+import { buildCsv, recordsOf } from '../../services/listRecords';
+import { ExportError, EXPORT_PAGE_SIZE, MESSAGE_EXPORT_COLUMNS, fetchAllPages, toExportRows } from '../../services/messageExport';
 import { label, type Row } from '../../types/workspace';
-import { useCollection, dateLabel } from './useCollection';
+import { useCollection, dateLabel, type CollectionResponse } from './useCollection';
 import { useMessageDetail } from './useMessageDetail';
 import AttentionEditor from '../AttentionEditor';
+import MessageCreateDialog from './MessageCreateDialog';
 import PanelIcon from '../PanelIcon';
+
+const EXPORT_PAGE_TIMEOUT_MS = 15_000;
 
 export default function MessageInbox() {
   const { token } = useAdminAuth();
@@ -32,6 +38,45 @@ export default function MessageInbox() {
   const confirmLeave = useConfirmLeave(); // los cambios sin guardar del seguimiento nunca se pierden en silencio
   const [editorEpoch, setEditorEpoch] = useState(0); // fuerza una carga nueva del seguimiento (revisión al día) tras cambiar el estado
   const fromChat = (row: Row) => String(row.asunto).startsWith('[Chatbot]');
+  // Registro manual. Se abre con el botón o con la URL heredada ?crear=1; el diálogo es modal, así que el detalle y el borrador de seguimiento
+  // quedan montados debajo, intactos. Al cerrarlo solo se retira `crear` de la URL (sin añadir una entrada de historial).
+  const [creatingLocal, setCreatingLocal] = useState(false);
+  const creating = creatingLocal || params.get('crear') === '1';
+  const closeCreate = () => {
+    setCreatingLocal(false);
+    if (params.has('crear')) { const next = new URLSearchParams(params); next.delete('crear'); setParams(next, { replace: true }); }
+  };
+  const created = (message: Row | undefined) => {
+    closeCreate(); setRevision(value => value + 1); // el listado se recarga; la selección (?id=) y el editor no se tocan
+    setNotice('Consulta registrada' + (message?.nombre ? ' de ' + String(message.nombre) : '') + '. Aparece al inicio de la bandeja (si los filtros lo permiten).');
+  };
+  // Exportación de los resultados filtrados: páginas en serie con el endpoint paginado; nada se descarga si alguna página falla o los datos cambian.
+  const latestToken = useLatest(token);
+  const exportController = useRef<AbortController | null>(null);
+  const [exporting, setExporting] = useState(false), [exportNote, setExportNote] = useState(''), [exportError, setExportError] = useState('');
+  useEffect(() => () => exportController.current?.abort(), []);
+  const exportResults = async () => {
+    if (exporting || !token) return;
+    const startToken = token, controller = new AbortController(); exportController.current = controller;
+    const filters = { search: search.trim(), status, channel }; // foto de los filtros al pulsar: cambiarlos después no mezcla resultados
+    setExporting(true); setExportError(''); setExportNote('Preparando la exportación…');
+    try {
+      const rows = await fetchAllPages<Row>(async page => {
+        if (latestToken.current !== startToken) throw new ExportError('aborted', 'La sesión cambió durante la exportación. No se descargó ningún archivo.');
+        const query = new URLSearchParams({ page: String(page), limit: String(EXPORT_PAGE_SIZE), ...(filters.search ? { search: filters.search } : {}), ...(filters.status ? { estado: filters.status } : {}), ...(filters.channel ? { channel: filters.channel } : {}) });
+        const data = await panelRequest<CollectionResponse>('messages?' + query, startToken, 'GET', undefined, AbortSignal.any([controller.signal, AbortSignal.timeout(EXPORT_PAGE_TIMEOUT_MS)]));
+        return { rows: recordsOf<Row>('messages', data), total: data.pagination?.total ?? NaN, pages: data.pagination?.pages ?? NaN };
+      }, { signal: controller.signal, onProgress: (done, pages) => setExportNote('Exportando… página ' + done + ' de ' + pages) });
+      if (controller.signal.aborted) throw new ExportError('aborted', 'Exportación cancelada. No se descargó ningún archivo.');
+      const csv = buildCsv([...MESSAGE_EXPORT_COLUMNS], toExportRows(rows)); // misma protección D1 contra fórmulas (=, +, -, @)
+      const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'consultas-' + new Date().toLocaleDateString('en-CA') + '.csv'; anchor.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setExportNote('Se exportaron ' + rows.length + ' consultas.');
+    } catch (caught) {
+      setExportNote(''); setExportError(caught instanceof ExportError ? caught.message : 'No se pudo completar la exportación. No se descargó ningún archivo; vuelve a intentarlo.');
+    } finally { if (exportController.current === controller) exportController.current = null; setExporting(false); }
+  };
   // Página fuera de rango (se eliminó el último registro de la página o una búsqueda redujo las páginas): se vuelve a la última que existe.
   if (!loading && !error && page > 1 && page > Math.max(1, pages)) setPage(Math.max(1, pages));
   const outOfList = !!selected && !loading && !error && !rows.some(row => row.id === selected.id);
@@ -70,13 +115,17 @@ export default function MessageInbox() {
   const phone = selected ? String(selected.telefono || '').replace(/[^+\d]/g, '') : '';
   return <>
     <div className="hp-heading"><div><p className="hp-kicker">ATENCIÓN AL CLIENTE</p><h1>Centro de consultas</h1><p>Lee, clasifica y continúa la atención de cada persona.</p></div><div className="hp-actions">
-      <Link className="hp-btn" to="/admin/dashboard?section=mensajes&crear=1"><PanelIcon name="plus" />Registro manual</Link>
+      <button className="hp-btn" onClick={() => setCreatingLocal(true)} disabled={busy}><PanelIcon name="plus" />Registro manual</button>
       <button className="hp-btn" onClick={() => confirmLeave(() => setRevision(value => value + 1))} disabled={loading || busy}><PanelIcon name="refresh" />Actualizar</button></div></div>
     <div className="hw-insights">{metrics.map(([state, title]) => <button key={state} onClick={() => updateParams('estado', state)} aria-pressed={status === state}><span className={'hp-badge hp-state-' + state}>{title}</span><strong>{loading ? '…' : error ? '—' : counts[state]||0}</strong><span>Ver consultas <PanelIcon name="arrow" size={14} /></span></button>)}</div>
     {notice && <p className="hp-notice" role="status">{notice}</p>}
     {(error || actionError) && <p className="hp-error" role="alert">{error || actionError}</p>}
     <section className="hp-card">
-      <div className="hp-card-heading"><div><h2>Bandeja de atención</h2><p>{loading ? 'Cargando…' : error ? 'Datos no disponibles' : total + ' consultas coinciden con tus filtros'}</p></div><Link className="hp-text-btn" to="/admin/dashboard?section=mensajes&vista=tabla">Vista de registros</Link></div>
+      <div className="hp-card-heading"><div><h2>Bandeja de atención</h2><p>{loading ? 'Cargando…' : error ? 'Datos no disponibles' : total + ' consultas coinciden con tus filtros'}</p></div><div className="hp-actions">
+        {exporting && <button className="hp-btn" onClick={() => exportController.current?.abort()}>Cancelar exportación</button>}
+        <button className="hp-btn" onClick={() => void exportResults()} disabled={exporting || loading || !!error || !total}><PanelIcon name="download" />{exporting ? 'Exportando…' : 'Exportar resultados'}</button>
+        <Link className="hp-text-btn" to="/admin/dashboard?section=mensajes&vista=tabla">Vista de registros</Link></div></div>
+      {exportNote && <p className="hp-notice" role="status">{exportNote}</p>}{exportError && <p className="hp-error" role="alert">{exportError}</p>}
       <div className="hp-toolbar"><div className="hp-search"><PanelIcon name="search" /><input aria-label="Buscar consultas" placeholder="Nombre, correo, asunto o mensaje…" value={search} onChange={e => { const value = e.target.value; confirmLeave(() => { setPage(1); setSearch(value); }); }} /></div>
         <select aria-label="Estado de atención" value={status} onChange={e => updateParams('estado', e.target.value)}><option value="">Todos los estados</option>{metrics.map(([state, title]) => <option value={state} key={state}>{title}</option>)}</select>
         <select aria-label="Origen de consulta" value={channel} onChange={e => { const value = e.target.value; confirmLeave(() => { setPage(1); setChannel(value); }); }}><option value="">Todos los orígenes</option><option value="chatbot">Chatbot</option><option value="other">Web / manual</option></select></div>
@@ -103,5 +152,6 @@ export default function MessageInbox() {
           : <div className="hp-empty"><PanelIcon name="mail" size={38} /><h3>Una consulta, toda la información</h3><p>Selecciona una persona para leer su mensaje y continuar la atención.</p></div>}</div>
       </div>
     <footer className="hp-pagination"><button className="hp-btn" disabled={loading||page===1} onClick={()=>confirmLeave(()=>setPage(v=>v-1))}>Anterior</button><span>Página {page}</span><button className="hp-btn" disabled={loading||!!error||page>=pages} onClick={()=>confirmLeave(()=>setPage(v=>v+1))}>Siguiente</button></footer></section>
+    {creating && <MessageCreateDialog onClose={closeCreate} onCreated={created} onUncertain={() => setRevision(value => value + 1)} />}
   </>;
 }

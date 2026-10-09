@@ -10,8 +10,10 @@ const TOKEN = 'e30.' + Buffer.from(JSON.stringify({ id: 1 })).toString('base64ur
 // ---------- API simulada ----------
 const sim = { putMode: 'ok', getMode: 'ok', nextGetDelay: 0 };
 const writes = [], gets = [];
+const heldPuts = new Map();
+const releasePuts = () => { sim.holdPut = 0; for (const release of heldPuts.values()) release(); heldPuts.clear(); };
 let messages = [], reclamaciones = [], attention = {};
-const fresh = (resource, id) => ({ estado: 'nuevo', responsable: '', notas: '', respuesta: '', revision: 1, historial: [] });
+const fresh = (resource, id) => ({ estado: resource === 'messages' ? messages.find(m => m.id === id)?.estado || 'nuevo' : 'nuevo', responsable: '', notas: '', respuesta: '', revision: 1, historial: [] });
 const reset = () => {
   messages = [1, 2, 3, 4, 5].map(id => ({ id, nombre: 'Persona ' + id, email: 'p' + id + '@example.test', telefono: '987654321', asunto: 'Asunto ' + id, mensaje: 'Mensaje ' + id, estado: 'nuevo', createdAt: '2026-01-0' + id + 'T10:00:00.000Z' }));
   reclamaciones = [1, 2, 3].map(id => ({ id, numero_reclamo: 'HG-00' + id, nombres: 'Nombre' + id, apellidos: 'Apellido' + id, tipo_doc: 'DNI', num_doc: '1234567' + id, email: 'r' + id + '@example.test', telefono: '987654321', direccion: 'Calle ' + id, tipo_registro: 'reclamo', area: 'Cursos', fecha_incidente: '2026-01-01', descripcion_bien: 'Bien ' + id, detalle_reclamo: 'Detalle ' + id, acepta_comunicaciones: true, createdAt: '2026-01-0' + id + 'T10:00:00.000Z' }));
@@ -20,6 +22,7 @@ const reset = () => {
 reset();
 const keyOf = (resource, id) => resource + ':' + id;
 const current = (resource, id) => attention[keyOf(resource, id)] || fresh(resource, id);
+const effectiveMessages = () => messages.map(m => ({ ...m, estado: current('messages',m.id).estado }));
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://localhost'), route = url.pathname;
@@ -27,7 +30,8 @@ const server = http.createServer(async (req, res) => {
     const body = async () => { let raw = ''; for await (const chunk of req) raw += chunk; try { return JSON.parse(raw); } catch { return {}; } };
     const token = (req.headers.authorization || '').replace('Bearer ', '');
     if (route === '/__empty') { res.writeHead(200, { 'Content-Type': 'text/plain' }); return res.end('ok'); }
-    if (route === '/__clear') { reset(); writes.length = 0; gets.length = 0; Object.assign(sim, { putMode: 'ok', getMode: 'ok', nextGetDelay: 0 }); expired = false; return json({ ok: true }); }
+    if (route === '/__clear') { releasePuts(); reset(); writes.length = 0; gets.length = 0; Object.assign(sim, { putMode: 'ok', getMode: 'ok', nextGetDelay: 0 }); expired = false; return json({ ok: true }); }
+    if (route === '/__release') { releasePuts(); return json({ ok: true }); }
     if (route === '/__set') { for (const [k, v] of url.searchParams) sim[k] = isNaN(Number(v)) ? v : Number(v); if (url.searchParams.get('expire')) expired = true; return json({ ok: true }); }
     if (route === '/__remote') { // el administrador B guarda cambios: sube la revisión y aplica solo los campos indicados
       const resource = url.searchParams.get('resource') || 'messages', id = Number(url.searchParams.get('id')); const cur = current(resource, id);
@@ -35,7 +39,7 @@ const server = http.createServer(async (req, res) => {
       attention[keyOf(resource, id)] = { ...cur, ...changes, revision: cur.revision + 1, historial: [...cur.historial, { accion: 'Cambio de otro administrador', usuario: 2, fecha: new Date().toISOString() }] };
       if (resource === 'messages' && changes.estado) messages.find(m => m.id === id).estado = changes.estado === 'archivado' ? 'atendido' : changes.estado;
       return json({ ok: true, revision: attention[keyOf(resource, id)].revision }); }
-    if (route === '/__state') return json({ writes, gets, attention });
+    if (route === '/__state') return json({ writes, gets, attention, contacts: messages, heldPuts: heldPuts.size });
     if (route.startsWith('/api/')) {
       if (route === '/api/settings') return json({ ok: true, settings: {} });
       if (route === '/api/admin/me') return token === TOKEN && !expired ? json({ ok: true, user: { id: 1, nombre: 'Ana Administradora', email: 'ana@example.test' } }) : json({ message: 'Unauthorized' }, 401);
@@ -52,18 +56,27 @@ const server = http.createServer(async (req, res) => {
           if (m[4] === 'correo') { writes.push({ method: 'POST', route: sub, data }); return data.revision !== cur.revision ? json({ message: 'La respuesta cambió. Recarga el caso antes de enviarla.' }, 409) : json({ ok: true, mensaje: 'Respuesta enviada por correo.' }); }
           if (req.method === 'PUT') {
             writes.push({ method: 'PUT', route: sub, data, applied: false }); const entry = writes[writes.length - 1];
-            if (sim.putMode === 'fail') return json({ message: 'Internal server error ER_SECRET' }, 500);
-            if (data.revision !== cur.revision) return json({ message: 'El seguimiento cambió en otra sesión. Recarga el caso.' }, 409);
+            // Retiene la respuesta después del commit simulado: salir no deshace una escritura enviada.
+            const reply = async (value, status = 200) => { if (sim.holdPut) await new Promise(resolve => heldPuts.set(entry, resolve)); json(value, status); };
+            if (sim.putMode === 'fail') return reply({ message: 'Internal server error ER_SECRET' }, 500);
+            if (data.revision !== cur.revision) return reply({ message: 'El seguimiento cambió en otra sesión. Recarga el caso.' }, 409);
             attention[keyOf(resource, id)] = { ...cur, estado: data.estado, responsable: data.responsable, notas: data.notas, respuesta: data.respuesta, revision: cur.revision + 1, historial: [...cur.historial, { accion: 'Seguimiento actualizado: ' + data.estado, usuario: 1, fecha: new Date().toISOString() }] };
             if (resource === 'messages') messages.find(x => x.id === id).estado = data.estado === 'archivado' ? 'atendido' : data.estado; entry.applied = true;
-            return json({ ok: true, item: attention[keyOf(resource, id)] }); }
+            return reply({ ok: true, item: attention[keyOf(resource, id)] }); }
           return json({ ok: true, mensaje: 'Notificación enviada.' });
         }
         if (sub === 'messages') {
           const page = Number(url.searchParams.get('page') || 1), limit = Number(url.searchParams.get('limit') || 20);
-          return json({ ok: true, messages: messages.slice((page - 1) * limit, page * limit), pagination: { total: messages.length, page, limit, pages: Math.ceil(messages.length / limit) }, metrics: { nuevo: messages.filter(x => x.estado === 'nuevo').length, en_proceso: messages.filter(x => x.estado === 'en_proceso').length, atendido: messages.filter(x => x.estado === 'atendido').length } });
+          const all = effectiveMessages(), estado = url.searchParams.get('estado'), search = (url.searchParams.get('search') || '').toLowerCase();
+          const rows = all.filter(m => (!estado || m.estado === estado) && (!search || [m.nombre,m.asunto,m.email,m.mensaje].some(v=>v.toLowerCase().includes(search))));
+          const metrics = Object.fromEntries(['nuevo','en_proceso','atendido','archivado'].map(s=>[s,all.filter(m=>m.estado===s).length]));
+          return json({ ok: true, messages: rows.slice((page - 1) * limit, page * limit), pagination: { total: rows.length, page, limit, pages: Math.ceil(rows.length / limit) }, metrics });
         }
-        if ((m = sub.match(/^messages\/(\d+)$/))) return json({ ok: true, message: messages.find(x => x.id === +m[1]) });
+        if ((m = sub.match(/^messages\/(\d+)$/))) return json({ ok: true, message: effectiveMessages().find(x => x.id === +m[1]) });
+        if (sub === 'stats') {
+          const all = effectiveMessages(), count = s => all.filter(m=>m.estado===s).length;
+          return json({ok:true,stats:{mensajes:{total:all.length,nuevos:count('nuevo'),enProceso:count('en_proceso'),atendidos:count('atendido'),archivados:count('archivado')},reclamaciones:{total:reclamaciones.length},contenido:{total:0},catalogo:{}},actividadReciente:{mensajes:all,reclamaciones:[]}});
+        }
         if (sub === 'reclamaciones') return json({ ok: true, reclamaciones, pagination: { total: reclamaciones.length, page: 1, limit: 10, pages: 1 }, metrics: { reclamo: reclamaciones.length, queja: 0 } });
         return json({ ok: true, items: [], messages: [], pagination: { page: 1, total: 0, pages: 1 }, metrics: {} });
       }
@@ -99,6 +112,7 @@ async function main() {
   const probe = http.createServer(); await new Promise(r => probe.listen(0, '127.0.0.1', r)); const port = probe.address().port; await new Promise(r => probe.close(r));
   const profile = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'horus-conflict-'));
   const child = spawn(edge, ['--headless=new', '--disable-gpu', '--no-first-run', '--remote-debugging-port=' + port, '--user-data-dir=' + profile, 'about:blank'], { windowsHide: true, stdio: 'ignore' });
+  const cleanup = require('./smoke-cleanup.cjs')(child,profile,server,killBrowser);
   let version; for (let i = 0; i < 100 && !version; i++) { await sleep(100); try { version = await fetch('http://127.0.0.1:' + port + '/json/version').then(r => r.json()); } catch { /* arrancando */ } }
   const bc = connect(version.webSocketDebuggerUrl); await bc.ready;
   const jsErrors = [], blocked = [], pages = []; let fails = 0;
@@ -145,6 +159,7 @@ async function main() {
   const TECH = /ER_SECRET|Internal server error|cambió en otra sesión/;
   const waitBanner = (p, kind, what) => p.wait('document.querySelector("' + R.messages + ' .hp-conflict-banner.is-' + kind + '")', what);
 
+  if (!process.argv.includes('--editor-race-only')) {
   console.log('\n== CONCURRENCIA DEL SEGUIMIENTO (D3)');
   await clean();
   { // 1. Campos distintos: fusión segura; nada ajeno se pisa
@@ -286,12 +301,71 @@ async function main() {
     const m = await p.evaluate("(() => { const box = document.querySelector('.hp-conflict-field'); const r = box.getBoundingClientRect(); const cols = [...box.querySelectorAll('.hp-conflict-versions > div')].map(d => d.getBoundingClientRect()); const buttons = [...box.querySelectorAll('button')].map(b => b.getBoundingClientRect()); return { over: document.documentElement.scrollWidth > innerWidth, inside: r.left >= 0 && r.right <= innerWidth + 1, buttons: buttons.every(b => b.left >= 0 && b.right <= innerWidth + 1 && b.width > 40), stacked: cols[1].top > cols[0].top, sideBySide: cols[1].left > cols[0].left }; })()");
     ck(!m.over && m.inside && m.buttons && (width <= 640 ? m.stacked : m.sideBySide), width + ' px: el aviso de conflicto cabe en pantalla, sin desbordamiento (' + (width <= 640 ? 'versiones apiladas' : 'versiones en columnas') + ') y con botones alcanzables', m); await p.close(); }
 
+  console.log('\n== D4: ESTADOS EFECTIVOS Y ARCHIVO');
+  {
+    await clean(); await remote('messages',1,{estado:'atendido'});
+    const p = await session('/admin/messages?id=1&estado=atendido'); await editorReady(p,R.messages);
+    await typeNotes(p,R.messages,'Nota D4 conservada'); await p.type(R.messages+' fieldset select',0,'archivado'); await save(p,R.messages);
+    await p.wait('document.querySelector(".hw-detail-heading .hp-badge")?.textContent === "Archivado" && document.querySelector("[data-testid=outside-list]")','archivo fuera del filtro');
+    const s = await state();
+    ck(s.contacts.find(m=>m.id===1).estado==='atendido' && s.attention['messages:1'].estado==='archivado','D4: fixture conserva separados Contacto atendido y seguimiento archivado');
+    ck((await view(p,R.messages)).notas==='Nota D4 conservada' && (await p.evaluate('document.querySelector(".hw-inbox-detail h2")?.textContent'))==='Asunto 1','D4: archivar no desmonta detalle por ?id ni pierde notas al salir del filtro');
+    ck((await p.evaluate('[...document.querySelectorAll(".hw-insights button strong")].map(e=>e.textContent).join(",")'))==='4,0,0,1','D4: métricas globales separan atendidos y archivados'); await p.close();
+  }
+  {
+    await clean(); await remote('messages',1,{estado:'atendido'}); const p=await openMessage(1);
+    await remote('messages',1,{estado:'archivado',notas:'Nota remota D4'});
+    await p.clickText('.hw-inbox-detail .hp-btn','Iniciar atención');
+    await p.wait('document.querySelector("[role=alert]")?.innerText.includes("Otro administrador cambió el estado")','archivo concurrente detectado');
+    await p.wait('document.querySelector("'+R.messages+' fieldset select")?.value === "archivado"','editor sincronizado');
+    ck((await putsOf('messages',1)).length===0,'D4: atendido -> archivado concurrente no se equipara ni escribe');
+    await p.clickText('.hw-inbox-detail .hp-btn','Reabrir: En proceso');
+    await p.wait('document.querySelector(".hw-detail-heading .hp-badge")?.textContent === "En proceso"','reapertura explícita');
+    const s=await state(); ck(s.attention['messages:1'].estado==='en_proceso' && s.attention['messages:1'].notas==='Nota remota D4','D4: reapertura explícita conserva datos remotos'); await p.close();
+  }
+  const TABLE='/admin/dashboard?section=mensajes&vista=tabla';
+  {
+    await clean(); await remote('messages',1,{estado:'archivado'});
+    const p=await session(TABLE+'&estado=archivado',375);
+    await p.wait('document.querySelectorAll(".hp-table tbody tr").length === 1','tabla filtrada por archivado');
+    ck((await p.evaluate('document.querySelector(".hp-table .hp-badge")?.textContent'))==='Archivado','D4: tabla antigua muestra y filtra archivado');
+    await p.clickText('button[aria-label="Editar Asunto 1"]','Editar Asunto 1');
+    await p.wait('document.querySelector("dialog.hp-dialog[open] form select")?.value === "archivado"','formulario archivado');
+    await p.evaluate('document.querySelector("dialog.hp-dialog[open] form").requestSubmit(); 1');
+    await p.wait('document.body.innerText.includes("No había cambios de estado")','guardar sin cambios');
+    ck((await putsOf('messages',1)).length===0 && (await state()).attention['messages:1'].estado==='archivado','D4: guardar sin cambios no escribe ni desarchiva'); await p.close();
+  }
+  {
+    await clean(); await remote('messages',1,{estado:'atendido'}); const p=await session(TABLE);
+    await p.wait(`document.querySelector('button[aria-label="Editar Asunto 1"]')`,'tabla');
+    await p.clickText('button[aria-label="Editar Asunto 1"]','Editar Asunto 1');
+    await p.wait('document.querySelector("dialog.hp-dialog[open] form select")?.value === "atendido"','estado base de tabla');
+    await p.type('dialog.hp-dialog[open] form select',0,'en_proceso');
+    await remote('messages',1,{estado:'archivado',notas:'Nota remota de tabla'});
+    await p.evaluate('document.querySelector("dialog.hp-dialog[open] form").requestSubmit(); 1');
+    await p.wait('document.querySelector("dialog.hp-dialog[open] .hp-conflict-field")','conflicto explícito de tabla');
+    ck((await p.evaluate('document.querySelector("dialog.hp-dialog[open] form select").value'))==='en_proceso' && (await state()).attention['messages:1'].estado==='archivado','D4: 409 en tabla conserva borrador y no sustituye archivo remoto');
+    await p.clickText('dialog.hp-dialog[open] > button.hp-btn','Cancelar');
+    await p.wait('document.querySelector("dialog.hp-unsaved-dialog[open]")','borrador de tabla protegido');
+    await p.evaluate('document.querySelector("dialog.hp-unsaved-dialog[open] button").click(); 1');
+    await choose(p,'Estado','Conservar mi versión');
+    await p.evaluate('document.querySelector("dialog.hp-dialog[open] form").requestSubmit(); 1');
+    await p.wait('document.body.innerText.includes("Cambios guardados correctamente.")','reapertura decidida desde tabla');
+    const s=await state(); ck(s.attention['messages:1'].estado==='en_proceso' && s.attention['messages:1'].notas==='Nota remota de tabla','D4: tabla reutiliza fusión D3 y reabre solo tras elección explícita'); await p.close();
+  }
+  {
+    await clean(); await remote('messages',1,{estado:'archivado'}); const p=await session('/admin/dashboard');
+    await p.wait(`document.querySelector('a[href="/admin/messages?estado=archivado"]')`,'contador de archivados en dashboard');
+    ck((await p.evaluate(`document.querySelector('a[href="/admin/messages?estado=archivado"]').innerText`)).includes('1 consultas archivadas') && (await p.evaluate('document.querySelector(".hp-activity .hp-badge")?.textContent'))==='Archivado','D4: dashboard y actividad reciente muestran archivo coherente'); await p.close();
+  }
+  }
+  await require('./smoke-editor-race.cjs')({ clean, set, state, session, choose, ck, sleep, KEY, TOKEN, release: () => fetch(origin + '/__release') });
   const PUBLIC_ASSET_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com', 'cdnjs.cloudflare.com'];
   const leaks = blocked.filter(b => { try { return b.method !== 'GET' || !PUBLIC_ASSET_HOSTS.includes(new URL(b.url).hostname); } catch { return true; } });
   ck(leaks.length === 0, 'ninguna petición externa inesperada (' + blocked.length + ' recursos públicos de fuentes/iconos bloqueados antes de enviarse)', leaks.slice(0, 3));
   ck(jsErrors.length === 0, 'sin excepciones de JavaScript', jsErrors.slice(0, 3));
   console.log(fails ? '\nHAY ' + fails + ' FALLA(S)' : '\nConflictos de seguimiento: OK.');
-  killBrowser(child); server.close(); try { fs.rmSync(profile, { recursive: true, force: true }); } catch { /* perfil temporal en uso */ }
+  cleanup();
   process.exit(fails ? 1 : 0);
 }
 main().catch(error => { console.error(error); process.exit(1); });

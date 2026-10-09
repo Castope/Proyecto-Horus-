@@ -95,6 +95,7 @@ async function main() {
   const probe = http.createServer(); await new Promise(r => probe.listen(0, '127.0.0.1', r)); const port = probe.address().port; await new Promise(r => probe.close(r));
   const profile = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'horus-auth-'));
   const child = spawn(browser, ['--headless=new', '--disable-gpu', '--no-first-run', '--remote-debugging-port=' + port, '--user-data-dir=' + profile, 'about:blank'], { windowsHide: true, stdio: 'ignore' });
+  const cleanup = require('./smoke-cleanup.cjs')(child,profile,server,killBrowser);
   let version; for (let i = 0; i < 100 && !version; i++) { await sleep(100); try { version = await fetch('http://127.0.0.1:' + port + '/json/version').then(r => r.json()); } catch { /* arrancando */ } }
   const bc = connect(version.webSocketDebuggerUrl); await bc.ready;
   const jsErrors = []; const pages = []; let fails = 0;
@@ -104,7 +105,17 @@ async function main() {
     const { targetId } = await bc.send('Target.createTarget', { url: 'about:blank' });
     const target = (await fetch('http://127.0.0.1:' + port + '/json/list').then(r => r.json())).find(t => t.id === targetId);
     const p = connect(target.webSocketDebuggerUrl); await p.ready; await p.send('Runtime.enable'); await p.send('Page.enable');
-    p.socket.addEventListener('message', e => { const m = JSON.parse(e.data); if (m.method === 'Runtime.exceptionThrown') jsErrors.push((m.params.exceptionDetails.exception?.description || m.params.exceptionDetails.text).slice(0, 160)); });
+    p.socket.addEventListener('message', e => {
+      const m = JSON.parse(e.data);
+      if (m.method === 'Runtime.exceptionThrown') jsErrors.push((m.params.exceptionDetails.exception?.description || m.params.exceptionDetails.text).slice(0, 160));
+      if (m.method === 'Fetch.requestPaused') {
+        const {requestId,request}=m.params;
+        let allowed=false;
+        try { const u=new URL(request.url); allowed=u.origin===origin || u.protocol==='data:' || u.protocol==='blob:'; } catch { /* bloquear */ }
+        p.send(allowed?'Fetch.continueRequest':'Fetch.failRequest',{requestId,...(allowed?{}:{errorReason:'BlockedByClient'})}).catch(()=>{});
+      }
+    });
+    await p.send('Fetch.enable',{patterns:[{urlPattern:'*'}]});
     await p.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width <= 768 });
     await p.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
     if (init) await p.send('Page.addScriptToEvaluateOnNewDocument', { source: init });
@@ -129,6 +140,8 @@ async function main() {
   const alertOf = p => p.evaluate("(() => { const a = document.querySelector('[role=alert]'); return a ? { text: a.innerText.replace(/\\s+/g, ' ').trim(), focused: document.activeElement === a } : null })()");
 
   // ===== 1. Login =====
+  const onlyOld401 = process.argv.includes('--old-401');
+  if (!onlyOld401) {
   console.log('\n== LOGIN');
   await clean();
   { const p = await open(); await p.go('/admin/login'); const navCurrent = await p.evaluate("document.querySelector('.admin-auth__navigation a').getAttribute('aria-current')");
@@ -175,12 +188,16 @@ async function main() {
     ck((await a.path()) === '/admin/dashboard' && (await storage(a)) === 'token-B' && (await a.evaluate("document.body.innerText.includes('Beto')")), 'un token de otra pestaña que el backend rechaza no sustituye la sesión validada: se restablece el último token válido');
     await a.close(); await b.close(); }
 
+  }
   // ===== 3. 401 =====
   console.log('\n== 401 DE SESIONES ANTIGUAS Y ACTUALES');
   await clean();
-  { const a = await open(); await signIn(a, 'ana'); await ctl('expire', 'token-A'); await ctl('messagesDelay', '1500');
+  { const a = await open(); await signIn(a, 'ana'); await ctl('messagesDelay', '1500');
     await a.evaluate("[...document.querySelectorAll('button')].find(x => x.textContent.trim() === 'Mensajes').click(); 1");
     for (let i = 0; i < 50 && !(await state()).messages.includes('token-A'); i++) await sleep(100); // la petición con el token A ya está en vuelo
+    if (!(await state()).messages.includes('token-A')) throw new Error('El fixture no inició la petición antigua con A.');
+    // Caduca DESPUÉS de iniciarse el GET: antes, /admin/me podía cerrar A durante la navegación y el caso nunca existía.
+    await ctl('expire', 'token-A');
     const b = await open(); await b.go('/__empty', 100); await b.evaluate('localStorage.setItem(' + JSON.stringify(KEY) + ", 'token-B'); 1");
     await a.wait("document.body.innerText.includes('Beto')", 'sesión B activa en la pestaña A'); await sleep(2800);
     const s = await state();
@@ -189,6 +206,7 @@ async function main() {
     await a.close(); await b.close(); }
 
   await clean();
+  if (!onlyOld401) {
   { const a = await open(); await signIn(a, 'beto'); await ctl('expire', 'token-B');
     await a.evaluate("[...document.querySelectorAll('button')].find(x => x.textContent.trim() === 'Mensajes').click(); 1");
     await a.wait("location.pathname === '/admin/login'", 'cierre por 401 de la sesión vigente'); ck((await storage(a)) === null, '401 de la sesión actual sí cierra la sesión y limpia el almacenamiento'); await a.close(); }
@@ -312,9 +330,10 @@ async function main() {
       const m2 = await p.evaluate("({ over: document.documentElement.scrollWidth > innerWidth, link: (el => el && el.getBoundingClientRect().right <= innerWidth + 1)(document.querySelector('a.admin-auth__submit')) })"); if (m2.over || !m2.link) bad.push('reset (enlace inválido) ' + JSON.stringify(m2)); await p.close(); }
     ck(bad.length === 0, width + ' px: login, restablecimiento y mensajes sin desbordamiento', bad); }
 
+  }
   ck(jsErrors.length === 0, 'sin excepciones de JavaScript en toda la prueba', jsErrors.slice(0, 3));
   console.log(fails ? '\nHAY ' + fails + ' FALLA(S)' : '\nAutenticación administrativa: OK.');
-  killBrowser(child); server.close(); try { fs.rmSync(profile, { recursive: true, force: true }); } catch { /* perfil temporal en uso */ }
+  cleanup();
   process.exit(fails ? 1 : 0);
 }
 main().catch(error => { console.error(error); process.exit(1); });

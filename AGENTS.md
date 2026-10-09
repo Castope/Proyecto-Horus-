@@ -124,6 +124,7 @@ No ejecutes inicialización, migraciones, importaciones ni creación de usuarios
 ### Atención, suscripciones y chatbot
 
 - `backend/src/attention/` guarda seguimiento de consultas y reclamaciones con estado, responsable, notas, respuesta, historial y `revision`. Un cambio obsoleto responde 409. Las reclamaciones y los mensajes con seguimiento/cotizaciones se conservan.
+- En Mensajes, el estado administrativo proviene del seguimiento identificado por `messages` y `registro_id`; sin seguimiento conserva `Contacto.estado`. `attention/message-state.ts` comparte las consultas de listado, filtros previos a paginación, detalle y estadísticas. Las métricas de mensajes son globales, distinguen archivados de atendidos y conservan el total con archivados. El PUT heredado admite tres estados y se serializa con el primer seguimiento bloqueando la fila de Contacto. Consulta [backend/D4-ESTADOS.md](backend/D4-ESTADOS.md).
 - Las cotizaciones conservan cálculos monetarios, transiciones de estado, historial y control de concurrencia mediante `revision`.
 - Newsletter exige consentimiento explícito en HTTP y proporciona baja mediante token firmado. La baja desactiva; las suscripciones conservan su unicidad por correo y el interés existente al reactivarse si no se proporciona otro.
 - El chatbot consulta contenido publicado y no inventa disponibilidad, precios ni datos de contacto. Conserva los límites de entrada, el control de frecuencia y el consentimiento para registrar contactos.

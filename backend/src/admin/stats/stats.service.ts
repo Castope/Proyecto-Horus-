@@ -1,6 +1,7 @@
 import { CatalogoService } from '../../catalogo/catalogo.service';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { messageTotals, recentMessages } from '../../attention/message-state';
 
 @Injectable()
 export class StatsService {
@@ -11,10 +12,7 @@ export class StatsService {
 
   async getDashboardStats() {
     const [
-      totalMensajes,
-      mensajesNuevos,
-      mensajesEnProceso,
-      mensajesAtendidos,
+      mensajes,
       totalReclamaciones,
       totalReclamos,
       totalQuejas,
@@ -25,10 +23,7 @@ export class StatsService {
       ultimosMensajes,
       ultimasReclamaciones,
     ] = await Promise.all([
-      this.prisma.contacto.count(),
-      this.prisma.contacto.count({ where: { estado: 'nuevo' } }),
-      this.prisma.contacto.count({ where: { estado: 'en_proceso' } }),
-      this.prisma.contacto.count({ where: { estado: 'atendido' } }),
+      messageTotals(this.prisma),
       this.prisma.reclamacion.count(),
       this.prisma.reclamacion.count({ where: { tipo_registro: 'reclamo' } }),
       this.prisma.reclamacion.count({ where: { tipo_registro: 'queja' } }),
@@ -36,11 +31,7 @@ export class StatsService {
       this.prisma.adminItem.count({ where: { estado: 'activo' } }),
       this.prisma.adminItem.count({ where: { estado: 'inactivo' } }),
       this.prisma.adminUser.count(),
-      this.prisma.contacto.findMany({
-        take: 5,
-        orderBy: [{ createdAt: 'desc' }],
-        select: { id: true, nombre: true, email: true, asunto: true, estado: true, createdAt: true },
-      }),
+      recentMessages(this.prisma),
       this.prisma.reclamacion.findMany({
         take: 5,
         orderBy: [{ createdAt: 'desc' }],
@@ -53,10 +44,11 @@ export class StatsService {
       stats: {
         catalogo: await this.catalogoService.stats(),
         mensajes: {
-          total: totalMensajes,
-          nuevos: mensajesNuevos,
-          enProceso: mensajesEnProceso,
-          atendidos: mensajesAtendidos,
+          total: mensajes.total,
+          nuevos: mensajes.nuevo,
+          enProceso: mensajes.en_proceso,
+          atendidos: mensajes.atendido,
+          archivados: mensajes.archivado,
         },
         reclamaciones: {
           total: totalReclamaciones,

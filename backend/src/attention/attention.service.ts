@@ -5,6 +5,7 @@ import { PrismaService } from '../database/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { isUniqueViolation } from '../database/serialization';
 import { AttentionDto } from './attention.dto';
+import { administrativeState, lockMessage } from './message-state';
 @Injectable()
 export class AttentionService {
  constructor(private readonly prisma:PrismaService,private readonly mail:MailService,private readonly config:ConfigService){}
@@ -16,12 +17,14 @@ export class AttentionService {
  async get(recurso:string,id:number){
  const record=await this.record(recurso,id);
  const item=await this.prisma.attentionRecord.findUnique({where:{recurso_registro_id:{recurso,registro_id:id}}});
- return{ok:true,item:item||{estado:record.estado,responsable:'',notas:'',respuesta:'',revision:1,historial:[]}};
+ const estado=administrativeState(record.estado,item);
+ return{ok:true,item:item?{...item,estado}:{estado,responsable:'',notas:'',respuesta:'',revision:1,historial:[]}};
  }
  async save(recurso:string,id:number,dto:AttentionDto,user:number){
  await this.record(recurso,id);
  if(dto.estado==='atendido'&&recurso==='reclamaciones'&&!dto.respuesta.trim())throw new BadRequestException('Registra la respuesta antes de marcar el caso como atendido.');
  try{return await this.prisma.$transaction(async tx=>{
+ if(recurso==='messages'&&!(await lockMessage(tx,id)).length)throw new NotFoundException('Consulta no encontrada.');
  const where={recurso_registro_id:{recurso,registro_id:id}};
  const old=await tx.attentionRecord.findUnique({where});
  if(old&&old.revision!==dto.revision||!old&&dto.revision!==1)throw new ConflictException('El seguimiento cambió en otra sesión. Recarga el caso.');

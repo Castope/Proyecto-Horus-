@@ -82,7 +82,7 @@ export async function createAdminMessage(token: string, payload: Omit<AdminMessa
   return response.json() as Promise<{ ok: boolean; message?: AdminMessage; mensaje?: string }>;
 }
 
-export async function updateAdminMessage(token: string, id: number, estado: AdminMessage['estado']) {
+export async function updateAdminMessage(token: string, id: number, estado: Exclude<AdminMessage['estado'], 'archivado'>) {
   const response = await fetch(`${API_BASE}/messages/${id}`, {
     method: 'PUT',
     headers: getAuthHeaders(token),

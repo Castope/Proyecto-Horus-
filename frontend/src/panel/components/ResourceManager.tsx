@@ -13,10 +13,12 @@ import OriginalContentImport from './OriginalContentImport';
 import PanelDialog from './PanelDialog';
 import { buildCsv, recordsOf } from '../services/listRecords';
 import { useUnsavedChanges } from './../unsaved/unsavedContext';
+import AttentionEditor from './AttentionEditor';
 
 type ListResponse = { items?: Row[]; messages?: Row[]; pagination?: { total: number; pages: number } };
 // A scope limits the list to one section of the Education or Services menu and keeps new records inside it.
 type Props = { resource: Resource; autoCreate?: boolean; scope?: PanelScope };
+type Editor = { session: number; row?: Row; view?: boolean };
 export default function ResourceManager({ resource: r, autoCreate, scope }: Props) {
   const singular = scope?.singular ?? r.singular;
   const { token } = useAdminAuth();
@@ -33,7 +35,27 @@ export default function ResourceManager({ resource: r, autoCreate, scope }: Prop
   const [status, setStatus] = useState(r.states.includes(params.get('estado') || '') ? params.get('estado')! : '');
   const [notice, setNotice] = useState('');
   const [reload, setReload] = useState(0);
-  const [editor, setEditor] = useState<{ row?: Row; view?: boolean } | null>(autoCreate ? {} : null);
+  const [editor, setEditor] = useState<Editor | null>(autoCreate ? { session: 0 } : null);
+  const editorSequence = useRef(0), attentionLock = useRef(false), mounted = useRef(false);
+  const [attentionBusy, setAttentionBusy] = useState(false);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  // Cada apertura tiene identidad propia, incluso al volver a editar el mismo ID.
+  const replaceEditor = (next: Omit<Editor, 'session'> | null) => {
+    const session = ++editorSequence.current;
+    attentionLock.current = false; setAttentionBusy(false);
+    setEditor(next ? { ...next, session } : null);
+  };
+  const attentionPending = (session: number, pending: boolean) => {
+    if (!mounted.current || session !== editorSequence.current) return;
+    attentionLock.current = pending; setAttentionBusy(pending);
+  };
+  const attentionSaved = (session: number, changed?: boolean) => {
+    if (!mounted.current) return;
+    setReload(n => n + 1); // refrescar datos no sustituye el formulario de otra edición
+    if (session !== editorSequence.current) return;
+    replaceEditor(null);
+    setNotice(changed ? 'Cambios guardados correctamente.' : 'No había cambios de estado que guardar.');
+  };
   const defaults = (row?: Row) => Object.fromEntries(r.fields.map(field => {
     let value = row?.[field.key];
     if (field.key === 'activo') value = row ? row.activo ? 'activo' : 'inactivo' : 'activo';
@@ -49,7 +71,11 @@ export default function ResourceManager({ resource: r, autoCreate, scope }: Prop
   const [baseline, setBaseline] = useState(() => autoCreate ? JSON.stringify(defaults()) : '');
   const dirty = !!editor && !editor.view && JSON.stringify(form) !== baseline;
   const confirmLeave = useUnsavedChanges(dirty, 'edición de ' + singular);
-  const closeEditor = () => confirmLeave(() => setEditor(null));
+  const closeEditor = () => {
+    if (actionLock.current || attentionLock.current) return;
+    const session = editorSequence.current;
+    confirmLeave(() => { if (!attentionLock.current && session === editorSequence.current) replaceEditor(null); });
+  };
   // While creating, the slug follows the title until the administrator edits it by hand.
   const [slugEdited, setSlugEdited] = useState(false);
   // Only the fields that make sense for this section are part of the form (see fieldsFor); the rest keep their stored value.
@@ -87,7 +113,7 @@ export default function ResourceManager({ resource: r, autoCreate, scope }: Prop
     return () => controller.abort();
   }, [token, r, page, query, status, reload, scope, setLoading, setError]);
 
-  const openNew = () => { const initial = defaults(); setSlugEdited(false); setForm(initial); setBaseline(JSON.stringify(initial)); setFormError(''); setEditor({}); };
+  const openNew = () => { if (actionLock.current || attentionLock.current) return; const initial = defaults(); setSlugEdited(false); setForm(initial); setBaseline(JSON.stringify(initial)); setFormError(''); replaceEditor({}); };
   // Page (8 per page) where a record lands with the list order, so a new record is never left on a hidden page.
   const locate = async (id: number) => {
     try {
@@ -99,29 +125,30 @@ export default function ResourceManager({ resource: r, autoCreate, scope }: Prop
     } catch { return 1; }
   };
   const openRow = async (row: Row, view = false) => {
-    if (!token || actionLock.current) return;
+    if (!token || actionLock.current || attentionLock.current) return;
     actionLock.current = true; setBusy(true); setError('');
     try {
       // Gallery only exposes a public detail route, so admin uses its list data.
       const data = r.endpoint === 'galeria' ? { item: row } :
         await panelRequest<{ item?: Row; message?: Row }>(r.endpoint + '/' + row.id, token);
+      if (!mounted.current) return;
       const current = data.item || data.message;
       if (!current) throw new Error('No se encontró el registro.');
       { const next = { ...defaults(current), estado: String(current.estado || 'nuevo') }; setForm(next); setBaseline(JSON.stringify(next)); }
-      setEditor({ row: current, view }); setFormError('');
-    } catch (err) { setError(errorMessage(err)); }
-    finally { actionLock.current = false; setBusy(false); }
+      replaceEditor({ row: current, view }); setFormError('');
+    } catch (err) { if (mounted.current) setError(errorMessage(err)); }
+    finally { actionLock.current = false; if (mounted.current) setBusy(false); }
   };
-  const duplicate = async (row: Row) => {
+  const duplicate = async (row: Row, copiedAt: number) => {
     if (!token || actionLock.current) return;
     actionLock.current = true; setBusy(true); setError('');
     try {
       const data = await panelRequest<{ item: Row }>(r.endpoint + '/' + row.id, token);
       const copied = defaults(data.item);
       copied[r.title] = String(data.item[r.title]).slice(0, r.endpoint === 'preguntas-frecuentes' ? 285 : 145) + ' (copia)';
-      if ('slug' in copied) copied.slug = copied.slug.slice(0, 140).replace(/-+$/, '') + '-copia-' + Date.now();
+      if ('slug' in copied) copied.slug = copied.slug.slice(0, 140).replace(/-+$/, '') + '-copia-' + copiedAt;
       copied.estado = 'borrador';
-      setSlugEdited(true); setForm(copied); setBaseline(JSON.stringify(copied)); setFormError(''); setPreview(true); setEditor({});
+      setSlugEdited(true); setForm(copied); setBaseline(JSON.stringify(copied)); setFormError(''); setPreview(true); setEditor({ session: ++editorSequence.current });
     } catch (err) { setError(errorMessage(err)); }
     finally { actionLock.current = false; setBusy(false); }
   };
@@ -130,7 +157,7 @@ export default function ResourceManager({ resource: r, autoCreate, scope }: Prop
     if (!token || actionLock.current) return;
     actionLock.current = true; setBusy(true); setFormError('');
     try {
-      let payload: Record<string, unknown> = {};
+      const payload: Record<string, unknown> = {};
       let created: Row | undefined;
       const limpiar: string[] = [];
       const visible = [...main, ...advanced];
@@ -163,16 +190,9 @@ export default function ResourceManager({ resource: r, autoCreate, scope }: Prop
       }
       // Category / course type fixed by the section: set on creation, never touched when editing.
       if (!editor?.row) for (const key of fixedFieldKeys(scope)) if (!(key in payload) && form[key]) payload[key] = form[key];
-      if (r.endpoint === 'messages' && editor?.row) payload = { estado: form.estado };
-      if(r.endpoint==='messages' && editor?.row){
-        const path='seguimiento/messages/'+editor.row.id;
-        const {item}=await panelRequest<{item:{revision:number;responsable:string;notas:string;respuesta:string}}>(path,token);
-        await panelRequest(path,token,'PUT',{estado:form.estado,revision:item.revision,responsable:item.responsable,notas:item.notas,respuesta:item.respuesta});
-      }else{
-        const saved = await panelRequest<{ item?: Row }>(r.endpoint + (editor?.row ? '/' + editor.row.id : ''), token, editor?.row ? 'PUT' : 'POST', payload);
-        if (!editor?.row && r.catalog) created = saved.item;
-      }
-      setEditor(null);
+      const saved = await panelRequest<{ item?: Row }>(r.endpoint + (editor?.row ? '/' + editor.row.id : ''), token, editor?.row ? 'PUT' : 'POST', payload);
+      if (!editor?.row && r.catalog) created = saved.item;
+      replaceEditor(null);
       if (created) {
         // Clear filters and open the page that holds the new record.
         const landing = await locate(created.id);
@@ -243,7 +263,7 @@ export default function ResourceManager({ resource: r, autoCreate, scope }: Prop
       </form>
       {error ? <div className="hp-empty" role="alert"><PanelIcon name="help" size={32} /><h3>No pudimos cargar los registros</h3><p>{error}</p><button className="hp-btn" onClick={() => setReload(n => n + 1)}>Reintentar</button></div> :
         loading ? <div className="hp-empty" role="status"><span className="hp-loading" /><p>Cargando registros…</p></div> :
-        rows.length ? (view === 'cards' ? <ResourceCards resource={r} rows={rows} busy={busy} onOpen={(row, view) => void openRow(row, view)} onDuplicate={row => void duplicate(row)} onRemove={row => { setFormError(''); setPendingDelete(row); }} /> : <div className="hp-table-wrap"><table className="hp-table"><thead><tr><th>{r.endpoint === 'messages' ? 'Consulta' : 'Contenido'}</th><th>Categoría / tipo</th><th>Estado</th><th>Actualización</th><th className="hp-align-right">Acciones</th></tr></thead>
+        rows.length ? (view === 'cards' ? <ResourceCards resource={r} rows={rows} busy={busy} onOpen={(row, view) => void openRow(row, view)} onDuplicate={(row, copiedAt) => void duplicate(row, copiedAt)} onRemove={row => { setFormError(''); setPendingDelete(row); }} /> : <div className="hp-table-wrap"><table className="hp-table"><thead><tr><th>{r.endpoint === 'messages' ? 'Consulta' : 'Contenido'}</th><th>Categoría / tipo</th><th>Estado</th><th>Actualización</th><th className="hp-align-right">Acciones</th></tr></thead>
           <tbody>{rows.map(row => <tr key={row.id}><td><div className="hp-record"><span className={'hp-record-icon hp-tone-' + r.icon}><PanelIcon name={r.icon} /></span><div><strong>{String(row[r.title])}</strong><small>{String(row.nombre || row.slug || 'Registro #' + row.id)}</small></div></div></td>
             <td>{label(row.categoria || row.tipo || (r.endpoint === 'messages' ? 'Contacto web / manual' : 'General'))}</td>
             <td><span className={'hp-badge hp-state-' + rowState(row)}>{label(rowState(row))}</span></td>
@@ -254,9 +274,14 @@ export default function ResourceManager({ resource: r, autoCreate, scope }: Prop
           <div className="hp-empty"><span className="hp-empty-icon"><PanelIcon name={r.icon} size={30} /></span><h3>{query || status ? 'No encontramos coincidencias' : 'Tu próximo proyecto empieza aquí'}</h3><p>{query || status ? 'Prueba con otra búsqueda o cambia el filtro.' : 'Crea tu primer registro. Su información quedará guardada en el sistema.'}</p><button className="hp-btn hp-btn-primary" onClick={openNew}>Crear {singular}<PanelIcon name="plus" /></button></div>}
       <footer className="hp-pagination"><span>{error ? 'Sin conexión con los datos' : total + ' registros encontrados'} · {pageSize} por página</span><div><button className="hp-btn" disabled={loading || !!error || page <= 1} onClick={() => setPage(p => p - 1)}>Anterior</button><span>{page} / {Math.max(1, pages)}</span><button className="hp-btn" disabled={loading || !!error || page >= pages} onClick={() => setPage(p => p + 1)}>Siguiente</button></div></footer></>}
     </section>
-    {editor && <PanelDialog title={(editor.view ? 'Detalle de ' : editor.row ? 'Editar ' : 'Crear ') + singular} busy={busy} onClose={closeEditor} className={groups ? 'hp-dialog-sticky' : ''}>
-      {editor.view ? <>{visual && <ResourcePreview resource={r} values={editor.row!} />}<dl className="hp-details">{[...main, ...advanced].map(field => <div key={field.key}><dt>{field.label}</dt><dd>{label(editor.row?.[field.key]) || 'Sin especificar'}</dd></div>)}</dl><div className="hp-dialog-footer"><button className="hp-btn hp-btn-primary" onClick={() => setEditor({ ...editor, view: false })}>Editar registro<PanelIcon name="edit" /></button></div></> :
-      <form onSubmit={save}>
+    {editor && <PanelDialog title={(editor.view ? 'Detalle de ' : editor.row ? 'Editar ' : 'Crear ') + singular} busy={busy || attentionBusy} onClose={closeEditor} className={groups ? 'hp-dialog-sticky' : ''}>
+      {r.endpoint === 'messages' && editor.view && editor.row && <p>Estado de atención: <span className={'hp-badge hp-state-' + editor.row.estado}>{label(editor.row.estado)}</span></p>}
+      {editor.view ? <>{visual && <ResourcePreview resource={r} values={editor.row!} />}<dl className="hp-details">{[...main, ...advanced].map(field => <div key={field.key}><dt>{field.label}</dt><dd>{label(editor.row?.[field.key]) || 'Sin especificar'}</dd></div>)}</dl><div className="hp-dialog-footer"><button className="hp-btn hp-btn-primary" onClick={() => replaceEditor({ ...editor, view: false })}>Editar registro<PanelIcon name="edit" /></button></div></> :
+      r.endpoint === 'messages' && editor.row ? <>
+        <fieldset className="hp-form-grid" disabled><legend className="hp-sr">Consulta original</legend>{main.map(renderField)}</fieldset>
+        <AttentionEditor key={editor.session} resource="messages" id={editor.row.id} stateOnly onPendingChange={pending => attentionPending(editor.session, pending)} onSaved={(_item, changed) => attentionSaved(editor.session, changed)} />
+        <button type="button" className="hp-btn" disabled={attentionBusy} onClick={closeEditor}>Cancelar</button>
+      </> : <form onSubmit={save}>
         {visual && <div className="hw-editor-tools"><strong>{editor.row ? 'Edición de contenido' : 'Prepara una nueva publicación'}</strong><button type="button" className="hp-btn" onClick={() => setPreview(value => !value)} aria-expanded={preview}><PanelIcon name="eye" size={16} />{preview ? 'Ocultar vista previa' : 'Vista previa'}</button></div>}
         {visual && preview && <ResourcePreview resource={r} values={form} />}
         <fieldset className={'hp-form-grid' + (groups ? ' hp-form-sections' : '')} disabled={busy}><legend className="hp-sr">Datos del registro</legend>
@@ -265,7 +290,6 @@ export default function ResourceManager({ resource: r, autoCreate, scope }: Prop
           {group.rows.map((row, index) => <div className={'hp-form-row' + (row.length > 1 ? ' is-pair' : '')} key={index}>{row.map(renderField)}</div>)}
         </section>) : main.map(renderField)}
         {advanced.length > 0 && <details className="hp-advanced hp-full"><summary>Opciones avanzadas</summary><div className="hp-form-row hp-advanced-body">{advanced.map(renderField)}</div></details>}
-        {r.endpoint === 'messages' && editor.row && <label className="hp-full">Estado de atención<select value={form.estado} onChange={e => setForm(prev => ({ ...prev, estado: e.target.value }))}>{r.states.map(s => <option key={s} value={s}>{label(s)}</option>)}</select></label>}
       </fieldset>
         <div className="hp-dialog-footer">{formError && <p className="hp-error hp-footer-error" role="alert">{formError}</p>}<button type="button" className="hp-btn" disabled={busy} onClick={closeEditor}>Cancelar</button><button className="hp-btn hp-btn-primary" disabled={busy}>{busy ? 'Guardando…' : 'Guardar cambios'}<PanelIcon name="check" /></button></div></form>}
     </PanelDialog>}

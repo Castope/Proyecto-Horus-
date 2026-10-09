@@ -4,7 +4,7 @@ export type Resource = { label: string; singular: string; endpoint: string; icon
 type CatalogCount = { total: number; publicados: number; borradores: number; archivados: number };
 export type DashboardStats = {
   stats: {
-    mensajes: { total: number; nuevos: number; enProceso: number; atendidos: number };
+    mensajes: { total: number; nuevos: number; enProceso: number; atendidos: number; archivados: number };
     reclamaciones: { total: number };
     contenido: { total: number };
     catalogo: Record<string, CatalogCount & { por_tipo?: Record<string, CatalogCount> }>;
@@ -54,7 +54,7 @@ export const resources: Record<string, Resource> = {
       { key: 'orden', label: 'Orden', type: 'number', min: 0 },
       { key: 'activo', label: 'Visibilidad', type: 'select', options: ['activo', 'inactivo'], required: true }] },
   mensajes: { label: 'Bandeja de mensajes', singular: 'mensaje', endpoint: 'messages', icon: 'mail', title: 'asunto',
-    description: 'Consulta las solicitudes recibidas y actualiza su atención.', states: ['nuevo', 'en_proceso', 'atendido'],
+    description: 'Consulta las solicitudes recibidas y actualiza su atención.', states: ['nuevo', 'en_proceso', 'atendido', 'archivado'],
     fields: [{ key: 'nombre', label: 'Nombre', required: true, min: 2, max: 100 },
       { key: 'email', label: 'Correo electrónico', type: 'email', required: true },
       { key: 'telefono', label: 'Teléfono', min: 6, max: 30 },

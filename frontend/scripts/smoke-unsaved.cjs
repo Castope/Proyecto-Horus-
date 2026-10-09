@@ -114,6 +114,7 @@ async function main() {
   const probe = http.createServer(); await new Promise(r => probe.listen(0, '127.0.0.1', r)); const port = probe.address().port; await new Promise(r => probe.close(r));
   const profile = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'horus-unsaved-'));
   const child = spawn(browser, ['--headless=new', '--disable-gpu', '--no-first-run', '--remote-debugging-port=' + port, '--user-data-dir=' + profile, 'about:blank'], { windowsHide: true, stdio: 'ignore' });
+  const cleanup = require('./smoke-cleanup.cjs')(child,profile,server,killBrowser);
   let version; for (let i = 0; i < 100 && !version; i++) { await sleep(100); try { version = await fetch('http://127.0.0.1:' + port + '/json/version').then(r => r.json()); } catch { /* arrancando */ } }
   const bc = connect(version.webSocketDebuggerUrl); await bc.ready;
   const jsErrors = [], blocked = []; const pages = []; let fails = 0;
@@ -444,7 +445,7 @@ async function main() {
   ck(leaks.length === 0, 'ninguna petición externa inesperada (' + blocked.length + ' recursos estáticos públicos de fuentes/iconos bloqueados antes de enviarse)', leaks.slice(0, 4));
   ck(jsErrors.length === 0, 'sin excepciones de JavaScript en toda la prueba', jsErrors.slice(0, 3));
   console.log(fails ? '\nHAY ' + fails + ' FALLA(S)' : '\nCambios sin guardar del panel: OK.');
-  killBrowser(child); server.close(); try { fs.rmSync(profile, { recursive: true, force: true }); } catch { /* perfil temporal en uso */ }
+  cleanup();
   void s; process.exit(fails ? 1 : 0);
 }
 main().catch(error => { console.error(error); process.exit(1); });

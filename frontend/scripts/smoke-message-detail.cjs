@@ -15,6 +15,7 @@ let messages = [];
 const reset = () => { messages = Array.from({ length: 45 }, (_, i) => { const id = 45 - i; return { id, nombre: 'Persona ' + id, email: 'p' + id + '@example.test', telefono: '987654' + String(id).padStart(3, '0'), asunto: 'Asunto ' + id, mensaje: 'Mensaje ' + id, estado: id % 3 === 0 ? 'en_proceso' : 'nuevo', createdAt: '2026-01-' + String((id % 28) + 1).padStart(2, '0') + 'T10:00:00.000Z' }; }); };
 reset();
 const attention = {};
+const effectiveMessages = () => messages.map(m => ({...m,estado:attention[m.id]?.estado || m.estado}));
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://localhost'), route = url.pathname;
@@ -40,22 +41,22 @@ const server = http.createServer(async (req, res) => {
           if (sim.putDelay && sub.startsWith('seguimiento/')) await sleep(sim.putDelay);
           if ((m = sub.match(/^seguimiento\/messages\/(\d+)$/)) && req.method === 'PUT') {
             const cur = attention[m[1]] || { estado: 'nuevo', responsable: '', notas: '', respuesta: '', revision: 1, historial: [] };
-            attention[m[1]] = { ...cur, ...data, revision: cur.revision + 1 }; const row = messages.find(x => x.id === +m[1]); if (row) row.estado = data.estado;
+            attention[m[1]] = { ...cur, ...data, revision: cur.revision + 1 }; const row = messages.find(x => x.id === +m[1]); if (row) row.estado = data.estado === 'archivado' ? 'atendido' : data.estado;
             return json({ ok: true, item: attention[m[1]] }); }
           return json({ ok: true, item: { id: 99, ...data } });
         }
         if (sub === 'messages') {
           if (sim.listMode === 'error') return json({ message: 'Internal server error ER_SECRET' }, 500);
           const page = Number(url.searchParams.get('page') || 1), limit = Number(url.searchParams.get('limit') || 20), search = (url.searchParams.get('search') || '').toLowerCase(), estado = url.searchParams.get('estado') || '';
-          const rows = messages.filter(x => (!search || [x.nombre, x.email, x.asunto, x.mensaje].some(v => v.toLowerCase().includes(search))) && (!estado || x.estado === estado));
-          return json({ ok: true, messages: rows.slice((page - 1) * limit, page * limit), pagination: { total: rows.length, page, limit, pages: Math.ceil(rows.length / limit) }, metrics: { nuevo: messages.filter(x => x.estado === 'nuevo').length, en_proceso: messages.filter(x => x.estado === 'en_proceso').length, atendido: 0 } });
+          const rows = effectiveMessages().filter(x => (!search || [x.nombre, x.email, x.asunto, x.mensaje].some(v => v.toLowerCase().includes(search))) && (!estado || x.estado === estado));
+          return json({ ok: true, messages: rows.slice((page - 1) * limit, page * limit), pagination: { total: rows.length, page, limit, pages: Math.ceil(rows.length / limit) }, metrics: Object.fromEntries(['nuevo','en_proceso','atendido','archivado'].map(s=>[s,effectiveMessages().filter(m=>m.estado===s).length])) });
         }
         if ((m = sub.match(/^messages\/(\d+)$/))) {
           const id = +m[1]; detailGets.push(id);
           if (sim.detailDelay[id]) await sleep(sim.detailDelay[id]);
           if (sim.detailMode === 'hang') return; // sin respuesta: el cliente agota el tiempo
           if (sim.detailMode === '500') return json({ message: 'Internal server error ER_SECRET' }, 500);
-          const row = messages.find(x => x.id === id); return row ? json({ ok: true, message: row }) : json({ ok: false, mensaje: 'Mensaje no encontrado.' }, 404);
+          const row = effectiveMessages().find(x => x.id === id); return row ? json({ ok: true, message: row }) : json({ ok: false, mensaje: 'Mensaje no encontrado.' }, 404);
         }
         if ((m = sub.match(/^seguimiento\/messages\/(\d+)$/))) return json({ ok: true, item: attention[m[1]] || { estado: messages.find(x => x.id === +m[1])?.estado || 'nuevo', responsable: '', notas: '', respuesta: '', revision: 1, historial: [] } });
         return json({ ok: true, items: [], pagination: { page: 1, total: 0, pages: 1 }, metrics: {} });
@@ -91,6 +92,7 @@ async function main() {
   const probe = http.createServer(); await new Promise(r => probe.listen(0, '127.0.0.1', r)); const port = probe.address().port; await new Promise(r => probe.close(r));
   const profile = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'horus-detail-'));
   const child = spawn(edge, ['--headless=new', '--disable-gpu', '--no-first-run', '--remote-debugging-port=' + port, '--user-data-dir=' + profile, 'about:blank'], { windowsHide: true, stdio: 'ignore' });
+  const cleanup = require('./smoke-cleanup.cjs')(child,profile,server,killBrowser);
   let version; for (let i = 0; i < 100 && !version; i++) { await sleep(100); try { version = await fetch('http://127.0.0.1:' + port + '/json/version').then(r => r.json()); } catch { /* arrancando */ } }
   const bc = connect(version.webSocketDebuggerUrl); await bc.ready;
   const jsErrors = [], blocked = [], pages = []; let fails = 0;
@@ -246,7 +248,7 @@ async function main() {
   ck(leaks.length === 0, 'ninguna petición externa inesperada (' + blocked.length + ' recursos públicos de fuentes/iconos bloqueados antes de enviarse)', leaks.slice(0, 3));
   ck(jsErrors.length === 0, 'sin excepciones de JavaScript', jsErrors.slice(0, 3));
   console.log(fails ? '\nHAY ' + fails + ' FALLA(S)' : '\nDetalle de Mensajes: OK.');
-  killBrowser(child); server.close(); try { fs.rmSync(profile, { recursive: true, force: true }); } catch { /* perfil temporal en uso */ }
+  cleanup();
   process.exit(fails ? 1 : 0);
 }
 main().catch(error => { console.error(error); process.exit(1); });

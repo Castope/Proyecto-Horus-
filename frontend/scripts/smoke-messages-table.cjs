@@ -18,6 +18,7 @@ Object.assign(messages.find(m => m.id === 21), { telefono: '+51 987 654 321' });
 Object.assign(messages.find(m => m.id === 20), { nombre: '-cmd|calc' });
 const cursos = [1, 2, 3].map(id => ({ id, titulo: 'Curso ' + id, slug: 'curso-' + id, tipo: 'curso', modalidad: 'virtual', duracion: '10 horas', descripcion: 'Descripción ' + id, estado: 'publicado', categoria: 'curso', fecha_inicio: '2099-01-01', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' }));
 const attention = {};
+const effectiveMessages = () => messages.map(m => ({...m,estado:attention[m.id]?.estado || m.estado}));
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://localhost'), route = url.pathname;
@@ -38,10 +39,10 @@ const server = http.createServer(async (req, res) => {
           if (sim.mode === 'error') return json({ message: 'Internal server error ER_SECRET' }, 503);
           if (sim.mode === 'broken') return json({ ok: true, items: [], pagination: { total: 0, page: 1, limit: 8, pages: 0 } }); // formato inesperado: paginado pero sin "messages"
           const page = Number(url.searchParams.get('page') || 1), limit = Number(url.searchParams.get('limit') || 20), search = (url.searchParams.get('search') || '').toLowerCase(), estado = url.searchParams.get('estado') || '';
-          const rows = sim.mode === 'empty' ? [] : messages.filter(x => (!search || [x.nombre, x.email, x.asunto, x.mensaje].some(v => v.toLowerCase().includes(search))) && (!estado || x.estado === estado));
-          return json({ ok: true, messages: rows.slice((page - 1) * limit, page * limit), pagination: { total: rows.length, page, limit, pages: Math.ceil(rows.length / limit) }, metrics: { nuevo: 20, en_proceso: 5, atendido: 0 } });
+          const rows = sim.mode === 'empty' ? [] : effectiveMessages().filter(x => (!search || [x.nombre, x.email, x.asunto, x.mensaje].some(v => v.toLowerCase().includes(search))) && (!estado || x.estado === estado));
+          return json({ ok: true, messages: rows.slice((page - 1) * limit, page * limit), pagination: { total: rows.length, page, limit, pages: Math.ceil(rows.length / limit) }, metrics: Object.fromEntries(['nuevo','en_proceso','atendido','archivado'].map(s=>[s,effectiveMessages().filter(m=>m.estado===s).length])) });
         }
-        if ((m = sub.match(/^messages\/(\d+)$/))) return json({ ok: true, message: messages.find(x => x.id === +m[1]) });
+        if ((m = sub.match(/^messages\/(\d+)$/))) return json({ ok: true, message: effectiveMessages().find(x => x.id === +m[1]) });
         if ((m = sub.match(/^seguimiento\/messages\/(\d+)$/))) return json({ ok: true, item: attention[m[1]] || { estado: messages.find(x => x.id === +m[1])?.estado || 'nuevo', responsable: '', notas: 'nota previa', respuesta: '', revision: 1, historial: [] } });
         if (sub === 'cursos') return json({ ok: true, items: cursos, pagination: { total: cursos.length, pages: 1 } });
         if ((m = sub.match(/^cursos\/(\d+)$/))) return json({ ok: true, item: cursos.find(x => x.id === +m[1]) });
@@ -85,6 +86,7 @@ async function main() {
   const probe = http.createServer(); await new Promise(r => probe.listen(0, '127.0.0.1', r)); const port = probe.address().port; await new Promise(r => probe.close(r));
   const profile = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'horus-msgtable-'));
   const child = spawn(edge, ['--headless=new', '--disable-gpu', '--no-first-run', '--remote-debugging-port=' + port, '--user-data-dir=' + profile, 'about:blank'], { windowsHide: true, stdio: 'ignore' });
+  const cleanup = require('./smoke-cleanup.cjs')(child,profile,server,killBrowser);
   let version; for (let i = 0; i < 100 && !version; i++) { await sleep(100); try { version = await fetch('http://127.0.0.1:' + port + '/json/version').then(r => r.json()); } catch { /* arrancando */ } }
   const bc = connect(version.webSocketDebuggerUrl); await bc.ready;
   const jsErrors = [], blocked = [], pages = []; let fails = 0;
@@ -205,7 +207,7 @@ async function main() {
   ck(leaks.length === 0, 'ninguna petición externa inesperada (' + blocked.length + ' recursos públicos de fuentes/iconos bloqueados antes de enviarse)', leaks.slice(0, 3));
   ck(jsErrors.length === 0, 'sin excepciones de JavaScript', jsErrors.slice(0, 3));
   console.log(fails ? '\nHAY ' + fails + ' FALLA(S)' : '\nTabla de Mensajes: OK.');
-  killBrowser(child); server.close(); try { fs.rmSync(profile, { recursive: true, force: true }); } catch { /* perfil temporal en uso */ }
+  cleanup();
   void browser; void visible; process.exit(fails ? 1 : 0);
 }
 main().catch(error => { console.error(error); process.exit(1); });

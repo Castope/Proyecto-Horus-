@@ -48,7 +48,7 @@ export default function MessageInbox() {
       const {item}=await panelRequest<{item:{estado:string;revision:number;responsable:string;notas:string;respuesta:string}}>(path,token);
       // El PUT reemplaza los cuatro campos con los valores que el servidor tiene AHORA (responsable, notas y respuesta no se tocan) y solo se acepta con su
       // revisión. Antes se comprueba que el estado siga siendo el que la persona veía: si otro administrador lo cambió, no se sobrescribe a ciegas.
-      const current = item.estado === 'archivado' ? 'atendido' : item.estado;
+      const current = item.estado;
       if (current !== selected.estado) {
         detail.patch({ estado: current }); setEditorEpoch(value => value + 1); setRevision(value => value + 1);
         setActionError('Otro administrador cambió el estado de esta consulta a «' + label(current) + '». No se aplicó tu cambio; revisa el seguimiento y vuelve a elegir.');
@@ -65,7 +65,7 @@ export default function MessageInbox() {
     }
     finally { lock.current = false; setBusy(false); }
   };
-  const metrics = [['nuevo', 'Por atender'], ['en_proceso', 'En proceso'], ['atendido', 'Atendidos']];
+  const metrics = [['nuevo', 'Por atender'], ['en_proceso', 'En proceso'], ['atendido', 'Atendidos'], ['archivado', 'Archivados']];
   const email = selected && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(selected.email)) ? String(selected.email) : '';
   const phone = selected ? String(selected.telefono || '').replace(/[^+\d]/g, '') : '';
   return <>
@@ -95,7 +95,7 @@ export default function MessageInbox() {
           <div className="hp-actions">{email && <a className="hp-btn" href={'mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent('Re: ' + selected.asunto)}><PanelIcon name="mail" />Abrir correo</a>}{phone.length >= 6 && <a className="hp-btn" href={'tel:' + phone}>Llamar</a>}</div>
           <Link className="hp-btn" to={'/admin/dashboard?section=cotizaciones&contacto='+selected.id}>Preparar cotización</Link><p className="hw-caption">El correo se abre en tu aplicación. El estado de la consulta se actualiza por separado.</p>
           <AttentionEditor key={selected.id} syncKey={editorEpoch} resource="messages" id={selected.id} onSaved={(item)=>{detail.patch({ estado: item.estado });setNotice('Seguimiento guardado.');setRevision(v=>v+1)}} /><div className="hw-next-action"><strong>Siguiente paso</strong><p>Actualiza el estado según la atención realizada.</p><div className="hp-actions">
-            {metrics.filter(([state]) => state !== selected.estado).map(([state]) => <button className={'hp-btn' + (state === 'atendido' ? ' hp-btn-primary' : '')} key={state} disabled={busy} onClick={() => void changeState(state)}>{busy ? 'Guardando…' : state === 'nuevo' ? 'Volver a pendiente' : state === 'en_proceso' ? 'Iniciar atención' : 'Marcar atendido'}</button>)}
+            {metrics.filter(([state]) => state !== selected.estado).map(([state]) => <button className={'hp-btn' + (state === 'atendido' ? ' hp-btn-primary' : '')} key={state} disabled={busy} onClick={() => void changeState(state)}>{busy ? 'Guardando…' : selected.estado === 'archivado' ? 'Reabrir: ' + label(state) : state === 'archivado' ? 'Archivar consulta' : state === 'nuevo' ? 'Volver a pendiente' : state === 'en_proceso' ? 'Iniciar atención' : 'Marcar atendido'}</button>)}
           </div></div>
         </> : detail.status === 'loading' ? <div className="hp-empty" role="status"><p>Cargando consulta…</p></div>
           : detail.status === 'missing' ? <div className="hp-empty" role="alert"><PanelIcon name="mail" size={38} /><h3>Esta consulta ya no está disponible</h3><p>Puede haberse eliminado. Elige otra consulta de la lista.</p><button className="hp-btn" onClick={() => updateParams('id', '')}>Cerrar detalle</button></div>

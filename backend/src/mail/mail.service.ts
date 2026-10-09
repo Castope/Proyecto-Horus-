@@ -8,9 +8,28 @@ export type MailProvider = 'resend' | 'gmail';
 // accepted: el proveedor aceptó el mensaje (no implica entrega en la bandeja del destinatario).
 // uncertain: no sabemos si el proveedor lo aceptó (timeout, red, respuesta ilegible): reenviar podría duplicarlo.
 // failed: rechazado o no enviado.
-export type MailOutcome = { status: 'accepted' | 'failed' | 'uncertain'; reason?: string };
+// providerId: identificador que devuelve el proveedor (Resend: id del correo; SMTP: Message-ID). No es un secreto ni identifica a la persona.
+export type MailOutcome = { status: 'accepted' | 'failed' | 'uncertain'; reason?: string; providerId?: string };
+
+// Clasifica un error de nodemailer/SMTP. Regla: solo es `failed` cuando hay prueba de que el mensaje NO llegó a aceptarse (la conexión ni se
+// estableció, la autenticación o el sobre fueron rechazados, o el servidor respondió con un rechazo explícito). Una caída o un tiempo de espera
+// sin respuesta del servidor pueden ocurrir después de transmitir los datos: se tratan como `uncertain` y no se reintentan solos.
+// Los códigos proceden de nodemailer (lib/smtp-connection); lo desconocido cae en `uncertain`.
+export function classifyGmailError(error: unknown): MailOutcome {
+  const { code, command, responseCode, syscall, message } = (error ?? {}) as { code?: string; command?: string; responseCode?: number; syscall?: string; message?: string };
+  const text = String(message ?? '');
+  if (typeof responseCode === 'number' && responseCode >= 400 && command !== 'CONN') return { status: 'failed', reason: 'el servidor SMTP rechazó el mensaje (' + responseCode + ')' };
+  if (code === 'EAUTH') return { status: 'failed', reason: 'autenticación SMTP rechazada' };
+  if (code === 'EENVELOPE' || code === 'EMESSAGE') return { status: 'failed', reason: 'remitente, destinatario o mensaje rechazados por SMTP' };
+  if (code === 'EDNS' || syscall === 'connect' || text === 'Connection timeout' || text === 'Greeting never received') return { status: 'failed', reason: 'no se pudo establecer la conexión SMTP' };
+  if (code === 'ETLS' && command === 'STARTTLS') return { status: 'failed', reason: 'no se pudo iniciar TLS con el servidor SMTP' };
+  if (code === 'EPROTOCOL' && ['LHLO', 'HELO', 'EHLO'].includes(command ?? '')) return { status: 'failed', reason: 'negociación SMTP incompleta antes de enviar' };
+  return { status: 'uncertain', reason: 'conexión SMTP interrumpida: no se puede confirmar si el mensaje se aceptó' };
+}
 
 export const MAIL_PROVIDERS: MailProvider[] = ['resend', 'gmail'];
+export type ReclamoDatos = { email: string; nombres: string; apellidos: string; tipo_registro: string; numero_reclamo: string; area: string; detalle_reclamo: string };
+export type ContactoDatos = { nombre: string; email: string; telefono?: string; asunto: string; mensaje: string };
 const RESEND_URL = 'https://api.resend.com/emails';
 const RESEND_TIMEOUT_MS = 10_000; // igual que el socketTimeout de Gmail
 
@@ -73,8 +92,11 @@ export class MailService {
     const user = this.configService.get<string>('MAIL_USER'), pass = this.configService.get<string>('MAIL_PASS');
     if (!user || !pass) return { status: 'failed', reason: 'configuración incompleta: faltan MAIL_USER o MAIL_PASS' };
     this.gmail ??= nodemailer.createTransport({ service: 'gmail', connectionTimeout: 5000, greetingTimeout: 5000, socketTimeout: 10000, auth: { user, pass } });
-    try { await this.gmail.sendMail(options); return { status: 'accepted' }; }
-    catch { return { status: 'failed', reason: 'SMTP rechazó o no pudo enviar; revisa la configuración SMTP' }; }
+    try {
+      const info = await this.gmail.sendMail(options) as { messageId?: unknown };
+      const providerId = typeof info?.messageId === 'string' && info.messageId.length <= 200 ? info.messageId : undefined;
+      return providerId ? { status: 'accepted', providerId } : { status: 'accepted' };
+    } catch (error) { return classifyGmailError(error); }
   }
 
   private async deliverResend(options: nodemailer.SendMailOptions): Promise<MailOutcome> {
@@ -98,7 +120,7 @@ export class MailService {
       const response = await fetch(RESEND_URL, { method: 'POST', headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: abort.signal });
       if (response.ok) {
         const data = await response.json().catch(() => null) as { id?: unknown } | null;
-        return typeof data?.id === 'string' && data.id ? { status: 'accepted' } : { status: 'uncertain', reason: 'respuesta ilegible de Resend' };
+        return typeof data?.id === 'string' && data.id ? { status: 'accepted', providerId: data.id.slice(0, 100) } : { status: 'uncertain', reason: 'respuesta ilegible de Resend' };
       }
       return this.resendFailure(response.status, await response.json().catch(() => null));
     } catch (error) {
@@ -113,19 +135,13 @@ export class MailService {
     if (status === 403) return { status: 'failed', reason: /domain|verif/.test(message) ? 'dominio de RESEND_FROM no verificado' : /testing|own email/.test(message) ? 'modo de prueba: solo puede enviar al correo del titular de la cuenta' : 'clave sin permiso o remitente no autorizado' };
     if (status === 400 || status === 422) return { status: 'failed', reason: /from/.test(message) ? 'remitente (RESEND_FROM) inválido' : 'Resend rechazó los datos del mensaje' };
     if (status === 429) return { status: 'failed', reason: 'límite de envío de Resend alcanzado' };
-    if (status === 408 || status === 502 || status === 504) return { status: 'uncertain', reason: 'Resend respondió ' + status };
+    // Un 408 o cualquier 5xx no demuestra que Resend no llegara a encolar el mensaje: resultado incierto (sin reintento automático).
+    if (status === 408 || status >= 500) return { status: 'uncertain', reason: 'Resend respondió ' + status };
     return { status: 'failed', reason: 'Resend respondió ' + status };
   }
 
-  async sendReclamoConstancia(datos: {
-    email: string;
-    nombres: string;
-    apellidos: string;
-    tipo_registro: string;
-    numero_reclamo: string;
-    area: string;
-    detalle_reclamo: string;
-  }): Promise<boolean> {
+  // Los mensajes se construyen aparte para poder enviar cada uno por separado y conocer su resultado individual.
+  private reclamoMessage(datos: ReclamoDatos): nodemailer.SendMailOptions {
     const sender = this.sender(), notify = this.notifyTo();
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
@@ -149,26 +165,27 @@ export class MailService {
       </div>
     `;
 
-    return this.sendMail({
+    return {
       from: `"Horus Group - Reclamaciones" <${sender}>`,
       to: datos.email,
       bcc: notify,
       subject: `Constancia de Registro de ${datos.tipo_registro.toUpperCase()} - ${datos.numero_reclamo}`,
       html: htmlContent,
-    });
+    };
   }
 
-  async sendContactoNotificacion(datos: {
-    nombre: string;
-    email: string;
-    telefono?: string;
-    asunto: string;
-    mensaje: string;
-  }): Promise<boolean> {
-    const sender = this.sender(), notify = this.notifyTo();
+  async sendReclamoConstancia(datos: ReclamoDatos): Promise<boolean> {
+    return this.sendMail(this.reclamoMessage(datos));
+  }
+  // Constancia de reclamación con resultado estructurado (conserva la copia oculta interna: forma parte de la constancia).
+  deliverReclamoConstancia(datos: ReclamoDatos): Promise<MailOutcome> {
+    return this.deliver(this.reclamoMessage(datos));
+  }
 
-    // Correo para el administrador
-    const adminSent = await this.sendMail({
+  // Aviso interno para el equipo de Horus.
+  private contactoAvisoMessage(datos: ContactoDatos): nodemailer.SendMailOptions {
+    const sender = this.sender(), notify = this.notifyTo();
+    return {
       from: `"Web Horus Group" <${sender}>`,
       to: notify,
       subject: `Nuevo mensaje web: ${datos.asunto}`,
@@ -186,10 +203,13 @@ export class MailService {
           <small style="color: #999;">Horus Group SRL · Notificación del sistema</small>
         </div>
       `,
-    });
+    };
+  }
 
-    // Correo de confirmación para el usuario remitente
-    const userSent = await this.sendMail({
+  // Confirmación para la persona que escribió.
+  private contactoConfirmacionMessage(datos: ContactoDatos): nodemailer.SendMailOptions {
+    const sender = this.sender();
+    return {
       from: `"Horus Group SRL" <${sender}>`,
       to: datos.email,
       subject: 'Recibimos tu mensaje - Horus Group SRL',
@@ -205,7 +225,15 @@ export class MailService {
           <small style="color: #999;">Horus Group SRL · RUC 20608552174</small>
         </div>
       `,
-    });
+    };
+  }
+
+  async sendContactoNotificacion(datos: ContactoDatos): Promise<boolean> {
+    const adminSent = await this.sendMail(this.contactoAvisoMessage(datos));
+    const userSent = await this.sendMail(this.contactoConfirmacionMessage(datos));
     return adminSent && userSent;
   }
+  // Cada correo con su propio resultado. El reenvío manual solo usa la confirmación al visitante (nunca repite el aviso interno).
+  deliverContactoAviso(datos: ContactoDatos): Promise<MailOutcome> { return this.deliver(this.contactoAvisoMessage(datos)); }
+  deliverContactoConfirmacion(datos: ContactoDatos): Promise<MailOutcome> { return this.deliver(this.contactoConfirmacionMessage(datos)); }
 }

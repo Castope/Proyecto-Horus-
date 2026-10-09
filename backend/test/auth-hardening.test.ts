@@ -141,8 +141,10 @@ test('a failing mail provider never changes the answer, leaks details or leaves 
 
 test('background mail is bounded, drained on shutdown and awaited on serverless hosts', () => withOrigin(async () => {
   const pendingSends: Array<() => void> = [];
-  const r = recovery([account()], () => new Promise<boolean>(resolve => { pendingSends.push(() => resolve(true)); }));
-  for (let i = 0; i < AccountsService.MAX_PENDING_MAIL + 5; i++) assert.deepEqual(await r.service.forgot('persona@example.test'), GENERIC);
+  // Cuentas distintas: el límite por cuenta (3 / 15 min) no debe ocultar el tope global de envíos simultáneos que se prueba aquí.
+  const rows = Array.from({ length: AccountsService.MAX_PENDING_MAIL + 5 }, (_unused, i) => account({ id: i + 1, email: 'persona' + i + '@example.test' }));
+  const r = recovery(rows, () => new Promise<boolean>(resolve => { pendingSends.push(() => resolve(true)); }));
+  for (const row of rows) assert.deepEqual(await r.service.forgot(row.email), GENERIC);
   assert.equal(r.sent.length, AccountsService.MAX_PENDING_MAIL, 'nunca hay más envíos simultáneos que el máximo');
   assert.ok(r.logged.some(line => /Demasiados envíos/.test(line)));
   let drained = false; const closing = r.service.onModuleDestroy().then(() => { drained = true; });

@@ -107,7 +107,7 @@ test('D4: recurso + ID separa reclamación y mensaje; respaldo virtual no escrib
     const follow = new AttentionService(prisma, {} as MailService, {} as ConfigService);
     assert.equal((await follow.get('messages',1)).item.estado,'atendido');
     assert.equal((await follow.get('reclamaciones',1)).item.estado,'archivado');
-    assert.deepEqual((await follow.get('reclamaciones',2)).item,{estado:'nuevo',responsable:'',notas:'',respuesta:'',revision:1,historial:[]});
+    assert.deepEqual((await follow.get('reclamaciones',2)).item,{estado:'nuevo',responsable:'',notas:'',respuesta:'',revision:1,historial:[],envios:{respuesta:null,constancia:null}}); // `envios` (D5) es un campo aditivo derivado del historial
     await assert.rejects(()=>follow.get('reclamaciones',999),(e:{getStatus():number})=>e.getStatus()===404);
   } finally { f.db.close(); }
 });

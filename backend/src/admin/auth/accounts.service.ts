@@ -8,6 +8,7 @@ import { MailService } from '../../mail/mail.service';
 import { corsOrigins } from '../../deployment.config';
 import { ChangePasswordDto, ResetPasswordDto } from './dto/account.dto';
 import { BCRYPT_COST } from './password-security';
+import { RecoveryThrottle } from './recovery-throttle';
 @Injectable()
 export class AccountsService implements OnModuleDestroy {
  private readonly logger=new Logger(AccountsService.name);
@@ -17,9 +18,13 @@ export class AccountsService implements OnModuleDestroy {
  static readonly DRAIN_TIMEOUT_MS=10000;
  constructor(private readonly prisma:PrismaService,private readonly jwt:JwtService,private readonly config:ConfigService,private readonly mail:MailService){}
  private resetSecret(password:string){return createHmac('sha256',this.config.getOrThrow<string>('JWT_SECRET')).update('reset:'+password).digest('hex');}
+ private readonly throttle=new RecoveryThrottle();
  async forgot(email:string){
  const user=await this.prisma.adminUser.findUnique({where:{email}});
- if(user?.activo){const origin=corsOrigins(process.env)[0];if(origin){
+ // Se cuenta toda solicitud (cuenta existente o no) y la respuesta no cambia: al superar el límite solo se omite el envío.
+ const allowed=this.throttle.allow(email);
+ if(user?.activo&&!allowed)this.logger.warn('Límite de recuperación por cuenta alcanzado: se omite el envío.');
+ if(user?.activo&&allowed){const origin=corsOrigins(process.env)[0];if(origin){
  const token=this.jwt.sign({id:user.id},{secret:this.resetSecret(user.password),expiresIn:'30m',audience:'horus-password-reset'});
  const url=new URL('/admin/reset-password',origin);url.searchParams.set('token',token);
  await this.deliverResetMail({from:this.config.get<string>('MAIL_USER'),to:user.email,subject:'Restablecer contraseña de Horus',text:'Solicitaste cambiar tu contraseña. El enlace vence en 30 minutos y solo puede utilizarse una vez. Si no fuiste tú, ignora este mensaje.\n\n'+url.href});

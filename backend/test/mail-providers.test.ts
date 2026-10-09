@@ -137,7 +137,7 @@ test('resend errors are classified, never retried and never leak secrets or prov
   const table: [number, string, 'failed' | 'uncertain', RegExp][] = [
     [401, 'API key is invalid', 'failed', /RESEND_API_KEY inválida/], [403, 'The domain is not verified', 'failed', /dominio .* no verificado/],
     [403, 'You can only send testing emails to your own email address', 'failed', /modo de prueba/], [422, 'Invalid `from` field', 'failed', /remitente/],
-    [429, 'Too many requests', 'failed', /límite/], [500, leak, 'failed', /500/], [503, leak, 'failed', /503/], [504, leak, 'uncertain', /504/], [502, leak, 'uncertain', /502/],
+    [429, 'Too many requests', 'failed', /límite/], [500, leak, 'uncertain', /500/], [503, leak, 'uncertain', /503/], [408, leak, 'uncertain', /408/], [504, leak, 'uncertain', /504/], [502, leak, 'uncertain', /502/],
   ];
   for (const [status, message, kind, reason] of table) {
     const h = harness(RESEND, () => new Response(JSON.stringify({ name: 'x', message: message + ' ' + leak }), { status }));

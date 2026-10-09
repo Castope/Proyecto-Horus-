@@ -1,5 +1,5 @@
 import { Transform, Type } from 'class-transformer';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsIn, IsInt, IsNumber, IsString, Length, Matches, Max, Min, ValidateNested, ValidateIf } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsIn, IsInt, IsNumber, IsOptional, IsString, Length, Matches, Max, Min, ValidateNested, ValidateIf } from 'class-validator';
 const trim = ({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value;
 export class ConceptoDto {
   @Transform(trim) @IsString() @Length(2, 500) descripcion: string;
@@ -25,7 +25,8 @@ export class CotizacionDto {
 export class EditCotizacionDto extends CotizacionDto {
   @IsInt() @Min(1) revision: number;
 }
-export class SendCotizacionDto { @IsInt() @Min(1) revision: number; }
+// confirmar_reenvio: confirmación expresa para volver a enviar una cotización ya aceptada, incierta o con un envío sin resultado.
+export class SendCotizacionDto { @IsInt() @Min(1) revision: number; @IsOptional() @IsBoolean() confirmar_reenvio?: boolean; }
 export class EstadoCotizacionDto {
   @IsIn(['enviada', 'aceptada', 'rechazada', 'anulada']) estado: string;
   @IsInt() @Min(1) revision: number;

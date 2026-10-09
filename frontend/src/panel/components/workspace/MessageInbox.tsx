@@ -39,6 +39,10 @@ export default function MessageInbox() {
   // ocupa siempre el mismo lugar del árbol, así que alternar la vista no lo desmonta. Es estado local: cambiar la URL con un borrador abierto avisaría sin necesidad.
   const [view, setView] = useState<'bandeja' | 'tabla'>(() => params.get('listado') === 'tabla' ? 'tabla' : 'bandeja');
   const [deleting, setDeleting] = useState(false);
+  // Guardado del seguimiento en vuelo, o con resultado incierto (lo notifica AttentionEditor). Mientras el PUT está pendiente no se cambia de consulta, de
+  // filtro de estado ni de vista (desmontarían o abandonarían el editor sin conocer la respuesta). La navegación externa (menú, Atrás/Adelante) no se puede
+  // impedir desde aquí: pasa por el aviso de cambios sin guardar, que sigue permitiendo salir.
+  const [savePending, setSavePending] = useState(false), [saveUncertain, setSaveUncertain] = useState(false);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState('');
   const [notice, setNotice] = useState('');
@@ -96,7 +100,7 @@ export default function MessageInbox() {
   // Página fuera de rango (se eliminó el último registro de la página o una búsqueda redujo las páginas): se vuelve a la última que existe.
   if (!loading && !error && page > 1 && page > Math.max(1, pages)) setPage(Math.max(1, pages));
   const outOfList = !!selected && !loading && !error && !rows.some(row => row.id === selected.id);
-  const updateParams = (key: string, value: string) => confirmLeave(() => {
+  const updateParams = (key: string, value: string) => savePending && (key === 'id' || key === 'estado') ? undefined : confirmLeave(() => {
     const next = new URLSearchParams(params); if (value) next.set(key, value); else next.delete(key);
     if (key === 'estado') { next.delete('id'); setPage(1); } setParams(next);
   });
@@ -133,18 +137,19 @@ export default function MessageInbox() {
     <div className="hp-heading"><div><p className="hp-kicker">ATENCIÓN AL CLIENTE</p><h1>Centro de consultas</h1><p>Lee, clasifica y continúa la atención de cada persona.</p></div><div className="hp-actions">
       <button className="hp-btn" onClick={() => setCreatingLocal(true)} disabled={busy}><PanelIcon name="plus" />Registro manual</button>
       <button className="hp-btn" onClick={() => confirmLeave(() => setRevision(value => value + 1))} disabled={loading || busy}><PanelIcon name="refresh" />Actualizar</button></div></div>
-    <div className="hw-insights">{metrics.map(([state, title]) => <button key={state} onClick={() => updateParams('estado', state)} aria-pressed={status === state}><span className={'hp-badge hp-state-' + state}>{title}</span><strong>{loading ? '…' : error ? '—' : counts[state]||0}</strong><span>Ver consultas <PanelIcon name="arrow" size={14} /></span></button>)}</div>
+    <div className="hw-insights">{metrics.map(([state, title]) => <button key={state} onClick={() => updateParams('estado', state)} aria-pressed={status === state} disabled={savePending}><span className={'hp-badge hp-state-' + state}>{title}</span><strong>{loading ? '…' : error ? '—' : counts[state]||0}</strong><span>Ver consultas <PanelIcon name="arrow" size={14} /></span></button>)}</div>
     {notice && <p className="hp-notice" role="status">{notice}</p>}
     {(error || actionError) && <p className="hp-error" role="alert">{error || actionError}</p>}
+    {savePending && <p className="hw-caption" role="status">Guardando el seguimiento: no se puede cambiar de consulta, de estado del filtro ni de vista hasta recibir la respuesta.</p>}
     <section className="hp-card">
       <div className="hp-card-heading"><div><h2>Bandeja de atención</h2><p>{loading ? 'Cargando…' : error ? 'Datos no disponibles' : total + ' consultas coinciden con tus filtros'}</p></div><div className="hp-actions">
-        <div className="hw-tabs" role="group" aria-label="Vista del listado"><button aria-pressed={view === 'bandeja'} onClick={() => setView('bandeja')}>Bandeja</button><button aria-pressed={view === 'tabla'} onClick={() => setView('tabla')}>Tabla</button></div>
+        <div className="hw-tabs" role="group" aria-label="Vista del listado"><button aria-pressed={view === 'bandeja'} disabled={savePending} onClick={() => setView('bandeja')}>Bandeja</button><button aria-pressed={view === 'tabla'} disabled={savePending} onClick={() => setView('tabla')}>Tabla</button></div>
         {exporting && <button className="hp-btn" onClick={() => exportController.current?.abort()}>Cancelar exportación</button>}
         <button className="hp-btn" onClick={() => void exportResults()} disabled={exporting || loading || !!error || !total}><PanelIcon name="download" />{exporting ? 'Exportando…' : 'Exportar resultados'}</button>
         <Link className="hp-text-btn" to="/admin/dashboard?section=mensajes&vista=tabla">Vista de registros</Link></div></div>
       {exportNote && <p className="hp-notice" role="status">{exportNote}</p>}{exportError && <p className="hp-error" role="alert">{exportError}</p>}
       <div className="hp-toolbar"><div className="hp-search"><PanelIcon name="search" /><input aria-label="Buscar consultas" placeholder="Nombre, correo, asunto o mensaje…" value={search} onChange={e => { const value = e.target.value; confirmLeave(() => { setPage(1); setSearch(value); }); }} /></div>
-        <select aria-label="Estado de atención" value={status} onChange={e => updateParams('estado', e.target.value)}><option value="">Todos los estados</option>{metrics.map(([state, title]) => <option value={state} key={state}>{title}</option>)}</select>
+        <select aria-label="Estado de atención" disabled={savePending} value={status} onChange={e => updateParams('estado', e.target.value)}><option value="">Todos los estados</option>{metrics.map(([state, title]) => <option value={state} key={state}>{title}</option>)}</select>
         <select aria-label="Origen de consulta" value={channel} onChange={e => { const value = e.target.value; confirmLeave(() => { setPage(1); setChannel(value); }); }}><option value="">Todos los orígenes</option><option value="chatbot">Chatbot</option><option value="other">Web / manual</option></select></div>
       {/* El listado y el detalle son independientes: cargar, fallar o vaciarse el listado NO desmonta el detalle abierto ni lo que se esté escribiendo. */}
       <div className={'hw-inbox' + (view === 'tabla' ? ' is-table' : '')} aria-busy={loading}>
@@ -152,8 +157,8 @@ export default function MessageInbox() {
           <thead><tr><th scope="col">Consulta</th><th scope="col">Estado</th><th scope="col" className="hw-col-wide">Origen</th><th scope="col">Fecha</th><th scope="col"><span className="hp-sr">Acción</span></th></tr></thead>
           <tbody>{rows.map(row => <tr key={row.id} className={selectedId === row.id ? 'is-selected' : ''}><td><strong>{String(row.asunto)}</strong><small>{String(row.nombre)}</small></td>
             <td><span className={'hp-badge hp-state-' + row.estado}>{label(row.estado)}</span></td><td className="hw-col-wide">{fromChat(row) ? 'Chatbot' : 'Web / manual'}</td><td>{dateLabel(row.createdAt)}</td>
-            <td><button className="hp-btn" onClick={() => updateParams('id', String(row.id))} disabled={busy} aria-pressed={selectedId === row.id} aria-label={(selectedId === row.id ? 'Consulta abierta: ' : 'Abrir consulta: ') + String(row.asunto) + ', ' + String(row.nombre)}>{selectedId === row.id ? 'Abierta' : 'Abrir'}</button></td></tr>)}</tbody></table></div>
-        : rows.length ? rows.map(row => <button key={row.id} className={selectedId === row.id ? 'is-selected' : ''} onClick={() => updateParams('id', String(row.id))} disabled={busy} aria-pressed={selectedId === row.id}>
+            <td><button className="hp-btn" onClick={() => updateParams('id', String(row.id))} disabled={busy || savePending} aria-pressed={selectedId === row.id} aria-label={(selectedId === row.id ? 'Consulta abierta: ' : 'Abrir consulta: ') + String(row.asunto) + ', ' + String(row.nombre)}>{selectedId === row.id ? 'Abierta' : 'Abrir'}</button></td></tr>)}</tbody></table></div>
+        : rows.length ? rows.map(row => <button key={row.id} className={selectedId === row.id ? 'is-selected' : ''} onClick={() => updateParams('id', String(row.id))} disabled={busy || savePending} aria-pressed={selectedId === row.id}>
           <span className="hw-inbox-meta"><strong>{String(row.nombre)}</strong><small>{dateLabel(row.createdAt)}</small></span>
           <span className="hw-inbox-subject">{String(row.asunto)}</span><span className="hw-inbox-preview">{String(row.mensaje)}</span>
           <span className="hw-inbox-meta"><span className={'hp-badge hp-state-' + row.estado}>{label(row.estado)}</span><small>{fromChat(row) ? 'Chatbot' : 'Web / manual'}</small></span>
@@ -164,12 +169,12 @@ export default function MessageInbox() {
           <dl className="hw-contact-data"><div><dt>Correo</dt><dd>{String(selected.email)}</dd></div><div><dt>Teléfono</dt><dd>{String(selected.telefono || 'No indicado')}</dd></div></dl>
           <div className="hw-message-text">{String(selected.mensaje)}</div>
           <div className="hp-actions">{email && <a className="hp-btn" href={'mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent('Re: ' + selected.asunto)}><PanelIcon name="mail" />Abrir correo</a>}{phone.length >= 6 && <a className="hp-btn" href={'tel:' + phone}>Llamar</a>}</div>
-          <Link className="hp-btn" to={'/admin/dashboard?section=cotizaciones&contacto='+selected.id}>Preparar cotización</Link><p className="hw-caption">El correo se abre en tu aplicación. El estado de la consulta se actualiza por separado.</p>
-          <AttentionEditor key={selected.id} syncKey={editorEpoch} resource="messages" id={selected.id} onSaved={(item)=>{detail.patch({ estado: item.estado });setNotice('Seguimiento guardado.');setRevision(v=>v+1)}} /><div className="hw-next-action"><strong>Siguiente paso</strong><p>Actualiza el estado según la atención realizada.</p><div className="hp-actions">
-            {metrics.filter(([state]) => state !== selected.estado).map(([state]) => <button className={'hp-btn' + (state === 'atendido' ? ' hp-btn-primary' : '')} key={state} disabled={busy} onClick={() => void changeState(state)}>{busy ? 'Guardando…' : selected.estado === 'archivado' ? 'Reabrir: ' + label(state) : state === 'archivado' ? 'Archivar consulta' : state === 'nuevo' ? 'Volver a pendiente' : state === 'en_proceso' ? 'Iniciar atención' : 'Marcar atendido'}</button>)}
+          <Link className="hp-btn" to={'/admin/dashboard?section=cotizaciones&contacto='+selected.id} aria-disabled={savePending || undefined} onClick={event => { if (savePending) event.preventDefault(); }}>Preparar cotización</Link><p className="hw-caption">El correo se abre en tu aplicación. El estado de la consulta se actualiza por separado.</p>
+          <AttentionEditor key={selected.id} syncKey={editorEpoch} resource="messages" id={selected.id} onPendingChange={setSavePending} onUncertainChange={setSaveUncertain} onSaved={(item)=>{detail.patch({ estado: item.estado });setNotice('Seguimiento guardado.');setRevision(v=>v+1)}} /><div className="hw-next-action"><strong>Siguiente paso</strong><p>Actualiza el estado según la atención realizada.</p><div className="hp-actions">
+            {metrics.filter(([state]) => state !== selected.estado).map(([state]) => <button className={'hp-btn' + (state === 'atendido' ? ' hp-btn-primary' : '')} key={state} disabled={busy || savePending || saveUncertain} onClick={() => void changeState(state)}>{busy ? 'Guardando…' : selected.estado === 'archivado' ? 'Reabrir: ' + label(state) : state === 'archivado' ? 'Archivar consulta' : state === 'nuevo' ? 'Volver a pendiente' : state === 'en_proceso' ? 'Iniciar atención' : 'Marcar atendido'}</button>)}
           </div></div>
           <div className="hw-record-actions"><strong>Acciones del registro</strong><p>Archivar mantiene la consulta y su historial. Eliminar es definitivo y el sistema puede impedirlo.</p>
-            <button className="hp-btn hp-btn-quiet" disabled={busy} onClick={() => setDeleting(true)}><PanelIcon name="trash" size={15} />Eliminar consulta…</button></div>
+            <button className="hp-btn hp-btn-quiet" disabled={busy || savePending || saveUncertain} onClick={() => setDeleting(true)}><PanelIcon name="trash" size={15} />Eliminar consulta…</button></div>
         </> : detail.status === 'loading' ? <div className="hp-empty" role="status"><p>Cargando consulta…</p></div>
           : detail.status === 'missing' ? <div className="hp-empty" role="alert"><PanelIcon name="mail" size={38} /><h3>Esta consulta ya no está disponible</h3><p>Puede haberse eliminado. Elige otra consulta de la lista.</p><button className="hp-btn" onClick={() => updateParams('id', '')}>Cerrar detalle</button></div>
           : detail.status === 'error' ? <div className="hp-empty" role="alert"><PanelIcon name="mail" size={38} /><h3>No pudimos cargar esta consulta</h3><p>Comprueba tu conexión e inténtalo de nuevo. La consulta no se ha eliminado.</p><div className="hp-actions"><button className="hp-btn hp-btn-primary" onClick={detail.retry}>Reintentar</button><button className="hp-btn" onClick={() => updateParams('id', '')}>Cerrar detalle</button></div></div>

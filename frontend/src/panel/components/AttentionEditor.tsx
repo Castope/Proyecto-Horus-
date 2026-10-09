@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type SubmitEvent } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type SubmitEvent } from 'react';
 import { useAdminAuth } from '../context';
 import { PanelApiError, panelRequest, errorMessage } from '../services/panelApi';
 import { useRequestStatus } from '../hooks/useRequestStatus';
@@ -15,13 +15,17 @@ const SEND_STATE: Record<string, string> = { iniciado: 'envío iniciado, sin res
 type Banner = { kind: 'comparing' | 'conflict' | 'merged' | 'compare-error'; text: string };
 const COMPARE_TIMEOUT_MS = 15_000;
 const SAVE_TIMEOUT_MS = 15_000;
+const CHECK_TIMEOUT_MS = 15_000;
+// Guardado sin respuesta (editor completo): el servidor pudo procesarlo aunque el navegador dejó de esperar. `baseRevision` y `sent` permiten reconciliar
+// el resultado con un GET de seguimiento sin inventar estados; `check` recuerda qué se pudo concluir.
+type SaveDoubt = { baseRevision: number; sent: AttentionValues; check: 'none' | 'checking' | 'unchanged' | 'failed' };
 const stateText = (value: string) => value.replace('_', ' ');
 
 // Tres versiones: `base` (última del servidor que se aceptó como punto de partida), `form` (el borrador local) y la versión fresca del servidor.
 // Nunca se adopta una revisión nueva sin comparar qué cambió (ver services/attentionMerge.ts): un campo cambiado por ambas partes con valores distintos
 // es un conflicto y exige elegir; el guardado siempre usa la revisión de la última versión comparada, así que el servidor sigue rechazando (409) cualquier
 // cambio ajeno posterior en vez de pisarlo.
-export default function AttentionEditor({ resource, id, onSaved, onPendingChange, syncKey = 0, stateOnly = false }: { resource: 'messages' | 'reclamaciones'; id: number; onSaved?: (item: { estado: string }, changed?: boolean) => void; onPendingChange?: (pending: boolean) => void; syncKey?: number; stateOnly?: boolean }) {
+export default function AttentionEditor({ resource, id, onSaved, onPendingChange, onUncertainChange, syncKey = 0, stateOnly = false }: { resource: 'messages' | 'reclamaciones'; id: number; onSaved?: (item: { estado: string }, changed?: boolean) => void; onPendingChange?: (pending: boolean) => void; onUncertainChange?: (uncertain: boolean) => void; syncKey?: number; stateOnly?: boolean }) {
   const { token } = useAdminAuth(); const latestToken = useLatest(token);
   const conflictId = useId();
   const [reload, setReload] = useState(0);
@@ -32,6 +36,11 @@ export default function AttentionEditor({ resource, id, onSaved, onPendingChange
   const [comparing, setComparing] = useState(false);
   const [busy, setBusy] = useState(false), [actionError, setActionError] = useState(''), [notice, setNotice] = useState('');
   const [mail, setMail] = useState<(MailResult & { action: MailAction }) | null>(null);
+  const [doubt, setDoubt] = useState<SaveDoubt | null>(null);
+  const doubtRef = useLatest(doubt), doubtBox = useRef<HTMLDivElement>(null);
+  const pendingNotified = useRef(false), pendingCallback = useLatest(onPendingChange), uncertainCallback = useLatest(onUncertainChange);
+  const notifyPending = useCallback((value: boolean) => pendingCallback.current?.(value), [pendingCallback]);
+  const notifyUncertain = useCallback((value: boolean) => uncertainCallback.current?.(value), [uncertainCallback]);
   const baseRef = useLatest(base), formRef = useLatest(form);
   const lock = useRef(false); // un solo envío a la vez, incluso con dobles clics
   const lifetime = useRef({ active: false });
@@ -44,18 +53,26 @@ export default function AttentionEditor({ resource, id, onSaved, onPendingChange
   // Hay cambios cuando el borrador difiere de la base. Un campo en conflicto deja de serlo si ya coincide con el del servidor.
   const dirty = !!form && !!base && ATTENTION_FIELDS.some(key => form[key] !== base[key]);
   const conflicts = pending.filter(key => form && base && form[key] !== base[key]);
-  const confirmLeave = useUnsavedChanges(dirty, (resource === 'messages' ? 'seguimiento de la consulta #' : 'seguimiento de la reclamación #') + id + (conflicts.length ? ' (con conflictos)' : ''));
-  const blocked = conflicts.length > 0 || banner?.kind === 'compare-error' || comparing;
+  const confirmLeave = useUnsavedChanges(dirty, (resource === 'messages' ? 'seguimiento de la consulta #' : 'seguimiento de la reclamación #') + id + (conflicts.length ? ' (con conflictos)' : '') + (busy ? ' (operación en curso)' : doubt ? ' (resultado de guardado incierto)' : ''));
+  const blocked = conflicts.length > 0 || banner?.kind === 'compare-error' || comparing || !!doubt;
 
   useEffect(() => {
     const instance = { active: true }; lifetime.current = instance;
-    return () => { instance.active = false; comparison.current?.abort(); };
-  }, []);
+    return () => {
+      instance.active = false; comparison.current?.abort();
+      // Si el editor se desmonta con un guardado en vuelo, quien lo coordina no debe quedarse esperando una respuesta que ya no se procesará aquí.
+      if (pendingNotified.current) { pendingNotified.current = false; notifyPending(false); }
+    };
+  }, [notifyPending]);
+  // Aviso de resultado incierto al coordinador (la bandeja bloquea las acciones rápidas que escribirían sin conocer ese resultado).
+  const uncertain = !!doubt;
+  useEffect(() => { notifyUncertain(uncertain); return () => notifyUncertain(false); }, [uncertain, notifyUncertain]);
+  useEffect(() => { if (uncertain) doubtBox.current?.focus(); }, [uncertain]);
 
   // Carga inicial (o «Recargar seguimiento», que la persona confirmó): reemplaza base y borrador.
   useEffect(() => {
     const c = new AbortController(); let live = true;
-    void panelRequest<{ item: Attention }>(path, latestToken.current, 'GET', undefined, c.signal).then(r => { if (live) { setBase(r.item); setForm(valuesOf(r.item)); setPending([]); setBanner(null); } })
+    void panelRequest<{ item: Attention }>(path, latestToken.current, 'GET', undefined, c.signal).then(r => { if (live) { setBase(r.item); setForm(valuesOf(r.item)); setPending([]); setBanner(null); setDoubt(null); } })
       .catch(e => { if (live) setError(errorMessage(e)); }).finally(() => { if (live) setLoading(false); });
     return () => { live = false; c.abort(); };
   }, [path, latestToken, reload, setLoading, setError]);
@@ -107,8 +124,9 @@ export default function AttentionEditor({ resource, id, onSaved, onPendingChange
     if (stateOnly && !dirty) { onSaved?.(base, false); return; }
     const instance = lifetime.current, controller = new AbortController();
     let timedOut = false;
-    const timer = stateOnly ? window.setTimeout(() => { timedOut = true; controller.abort(); }, SAVE_TIMEOUT_MS) : undefined;
-    lock.current = true; setBusy(true); onPendingChange?.(true); setActionError(''); setNotice('');
+    const timer = window.setTimeout(() => { timedOut = true; controller.abort(); }, SAVE_TIMEOUT_MS);
+    const sentValues = { ...form }, sentRevision = base.revision;
+    lock.current = true; setBusy(true); pendingNotified.current = true; onPendingChange?.(true); setActionError(''); setNotice('');
     try {
       const r = await panelRequest<{ item: Attention }>(path, token, 'PUT', { ...form, revision: base.revision }, controller.signal);
       if (!instance.active) return;
@@ -116,9 +134,41 @@ export default function AttentionEditor({ resource, id, onSaved, onPendingChange
     } catch (err) {
       if (!instance.active) return;
       // 409 = la revisión quedó obsoleta: el borrador no se toca, no se repite el PUT y se compara con la versión fresca antes de permitir otro guardado.
-      if (conflictOf409(err)) compareWithServer('conflict'); else setActionError(timedOut ? 'No pudimos confirmar si se guardó el cambio. Tu borrador se conserva; comprueba el estado guardado antes de reintentar.' : errorMessage(err));
-    } finally { window.clearTimeout(timer); lock.current = false; if (instance.active) { setBusy(false); onPendingChange?.(false); } }
+      if (conflictOf409(err)) compareWithServer('conflict');
+      // Editor completo: timeout, red caída o 5xx NO prueban que no se guardó. Se conserva el borrador, no se repite el PUT y se exige comprobar el servidor.
+      else if (!stateOnly && (timedOut || !(err instanceof PanelApiError) || err.status >= 500)) setDoubt({ baseRevision: sentRevision, sent: sentValues, check: 'none' });
+      else setActionError(timedOut ? 'No pudimos confirmar si se guardó el cambio. Tu borrador se conserva; comprueba el estado guardado antes de reintentar.' : errorMessage(err));
+    } finally { window.clearTimeout(timer); lock.current = false; if (instance.active) { setBusy(false); pendingNotified.current = false; onPendingChange?.(false); } }
   };
+  // Comprobación EXPLÍCITA tras un guardado incierto, con el GET de seguimiento existente (nunca automática).
+  //  - revisión igual a la enviada: no hay señales de que se aplicara, pero NO se concluye (la solicitud aún podría llegar): sigue incierto;
+  //  - revisión mayor: se reconcilia con el borrador (fusión D3). Coincide con lo enviado en la revisión siguiente -> se toma como guardado; si no, se
+  //    avisa de que otra versión del servidor no permite saber si el guardado se aplicó.
+  const checkSave = async () => {
+    const current = doubtRef.current;
+    if (!current || current.check === 'checking') return;
+    const instance = lifetime.current, requestPath = path;
+    setDoubt({ ...current, check: 'checking' });
+    const controller = new AbortController(), timer = window.setTimeout(() => controller.abort(), CHECK_TIMEOUT_MS);
+    try {
+      const { item: remote } = await panelRequest<{ item: Attention }>(path, latestToken.current, 'GET', undefined, controller.signal);
+      if (!instance.active || pathRef.current !== requestPath) return;
+      const currentBase = baseRef.current, currentForm = formRef.current;
+      if (!currentBase || !currentForm) return;
+      if (remote.revision <= current.baseRevision) { setDoubt({ ...current, check: 'unchanged' }); return; }
+      const exact = remote.revision === current.baseRevision + 1 && ATTENTION_FIELDS.every(key => remote[key] === current.sent[key]);
+      const result = reconcile(valuesOf(currentBase), currentForm, valuesOf(remote));
+      setBase(remote); setForm(result.merged); setPending(result.conflicts); setDoubt(null);
+      setBanner(result.conflicts.length ? { kind: 'conflict', text: 'En los campos marcados tu borrador y la versión del servidor son distintos: elige qué versión conservar antes de guardar.' } : null);
+      setNotice(exact ? 'El servidor muestra exactamente los valores que enviaste (revisión ' + remote.revision + '): se tomó como guardado.'
+        : 'El servidor cambió (revisión ' + remote.revision + ') y no coincide con lo que enviaste, así que no sabemos si tu guardado se aplicó. Se incorporaron sus cambios y se conservó tu borrador: revísalo antes de guardar.');
+      if (exact) onSaved?.(remote, true);
+    } catch { if (instance.active && pathRef.current === requestPath) setDoubt({ ...current, check: 'failed' }); }
+    finally { window.clearTimeout(timer); }
+  };
+  // Decisión explícita de la persona: tras comprobar que el servidor sigue igual, vuelve a permitir guardar. No duplica nada: cada guardado exige la
+  // revisión vigente, así que si el primero llega tarde, uno de los dos recibe 409 y se reconcilia con el flujo de conflictos.
+  const allowNewSave = () => setDoubt(null);
   // Envío manual de correo. El resultado se interpreta con services/mailOutcome.ts: un fallo de red, un timeout o un 5xx sin cuerpo NO significan
   // «no se envió» (se muestra como incierto y no se invita a reintentar); un envío ya registrado exige una confirmación explícita (`confirmar_reenvio`).
   // Tras cualquier desenlace se compara en segundo plano con el servidor: la revisión y el historial cambiaron al registrar el intento.
@@ -165,16 +215,24 @@ export default function AttentionEditor({ resource, id, onSaved, onPendingChange
         <label>Notas internas<textarea value={form.notas} maxLength={10000} {...flagged('notas')} onChange={e => setForm({ ...form, notas: e.target.value })} /></label>
         <label>Respuesta al cliente<textarea value={form.respuesta} maxLength={10000} {...flagged('respuesta')} onChange={e => setForm({ ...form, respuesta: e.target.value })} /></label></>}
       </fieldset>
+      {doubt && <div ref={doubtBox} tabIndex={-1} role="alert" className="hp-error" data-save-uncertain={doubt.check}>
+        <p>No pudimos confirmar si el seguimiento se guardó: el servidor pudo procesar la solicitud aunque no recibimos respuesta. Tu borrador se conserva y no se volverá a enviar automáticamente.</p>
+        {doubt.check === 'checking' && <p role="status">Comprobando el estado del servidor…</p>}
+        {doubt.check === 'unchanged' && <p>El servidor sigue en la revisión {doubt.baseRevision}: no hay señales de que se haya aplicado, pero todavía podría llegar. Vuelve a comprobarlo antes de decidir.</p>}
+        {doubt.check === 'failed' && <p>No pudimos consultar el servidor para comprobarlo. Inténtalo de nuevo.</p>}
+        <div className="hp-actions"><button type="button" className="hp-btn" disabled={doubt.check === 'checking'} onClick={() => void checkSave()}>Comprobar estado del servidor</button>
+          {doubt.check === 'unchanged' && <button type="button" className="hp-btn" onClick={allowNewSave}>Permitir un nuevo guardado</button>}</div>
+      </div>}
       {actionError && <p role="alert" className="hp-error">{actionError}</p>}{notice && <p role="status" className="hp-notice">{notice}</p>}
       {mail && <div role={mail.kind === 'aceptado' ? 'status' : 'alert'} className={mail.kind === 'aceptado' ? 'hp-notice' : 'hp-error'} data-mail-result={mail.kind} ref={mailBox} tabIndex={-1}>
         <p>{mail.message}</p>
         {mail.needsConfirm && <div className="hp-actions"><button type="button" className="hp-btn hp-btn-primary" disabled={busy} onClick={() => void runMail(mail.action, true)}>Enviar de todos modos</button>
           <button type="button" ref={noSendButton} className="hp-btn" disabled={busy} onClick={dismissMail}>No enviar</button></div>}
       </div>}
-      <div className="hp-actions">{!stateOnly && <button type="button" ref={receiptButton} className="hp-btn" disabled={busy} onClick={() => void receipt()}>Reenviar constancia / notificación</button>}
+      <div className="hp-actions">{!stateOnly && <button type="button" ref={receiptButton} className="hp-btn" disabled={busy || !!doubt} onClick={() => void receipt()}>Reenviar constancia / notificación</button>}
         <button ref={saveButton} className="hp-btn hp-btn-primary" disabled={busy || blocked} aria-describedby={blocked ? conflictId + '-why' : undefined}>{stateOnly ? 'Guardar cambios' : 'Guardar seguimiento'}</button>
-        {!stateOnly && <button type="button" ref={sendButton} className="hp-btn" disabled={busy || !base.respuesta} onClick={() => void send()}>Enviar respuesta guardada</button>}</div>
-      {blocked && <p id={conflictId + '-why'} className="hp-form-hint">{comparing ? 'Comparando con la versión del servidor…' : conflicts.length ? 'Elige una versión en cada conflicto para poder guardar.' : 'Reintenta la comparación para poder guardar.'}</p>}
+        {!stateOnly && <button type="button" ref={sendButton} className="hp-btn" disabled={busy || !!doubt || !base.respuesta} onClick={() => void send()}>Enviar respuesta guardada</button>}</div>
+      {blocked && <p id={conflictId + '-why'} className="hp-form-hint">{doubt ? 'Comprueba el estado del servidor para poder guardar de nuevo.' : comparing ? 'Comparando con la versión del servidor…' : conflicts.length ? 'Elige una versión en cada conflicto para poder guardar.' : 'Reintenta la comparación para poder guardar.'}</p>}
       {dirty && <p className="hp-form-hint">Tienes cambios sin guardar.{!stateOnly && ' El correo enviaría la última respuesta guardada, no lo que ves ahora.'}</p>}
       {!stateOnly && <><p>El correo envía la última respuesta guardada. Conserva tus cambios antes de enviarla.</p>
       {(['respuesta', 'constancia'] as const).map(kind => base.envios?.[kind] && <p key={kind} className="hp-form-hint" data-mail-state={kind}>{kind === 'respuesta' ? 'Último envío de la respuesta' : 'Última constancia a la persona'}: {SEND_STATE[base.envios[kind].estado] ?? base.envios[kind].estado} · {new Date(base.envios[kind].fecha).toLocaleString('es-PE')}</p>)}

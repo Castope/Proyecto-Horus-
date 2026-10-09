@@ -255,10 +255,15 @@ async function main() {
   await clean();
   { // 10. Guardado fallido tras resolver conflictos, luego correcto; doble envío
     const p = await openMessage(1); await typeNotes(p, R.messages, 'Versión de A'); await remote('messages', 1, { notas: 'Versión de B' });
-    await save(p, R.messages); await waitBanner(p, 'conflict', 'conflicto'); await choose(p, 'Notas internas', 'Conservar mi versión'); await sleep(250); await set({ putMode: 'fail' });
+    await save(p, R.messages); await waitBanner(p, 'conflict', 'conflicto'); await choose(p, 'Notas internas', 'Conservar mi versión'); await sleep(250); await set({ putMode: 'fail' }); const putsBeforeFail = (await putsOf('messages', 1)).length;
     await save(p, R.messages); await p.wait('document.querySelector("' + R.messages + ' .hp-error")', 'error de guardado'); let v = await view(p, R.messages);
-    ck(v.notas === 'Versión de A' && v.conflicts.length === 0 && v.alert !== '' && !v.saveDisabled, '10. guardado fallido tras resolver: el borrador y la elección se conservan', v);
-    await set({ putMode: 'ok' }); const before = (await putsOf('messages', 1)).length;
+    // D6.3: un 5xx del editor completo es un resultado INCIERTO (no se afirma "falló"): el borrador y la elección se conservan, guardar queda bloqueado
+    // y no hay texto técnico. Para continuar hay que comprobar el servidor y permitir un nuevo guardado de forma explícita.
+    ck(v.notas === 'Versión de A' && v.conflicts.length === 0 && /No pudimos confirmar/.test(v.alert) && !/ER_SECRET|Internal/.test(v.alert) && v.saveDisabled && (await putsOf('messages', 1)).length === putsBeforeFail + 1, '10. guardado fallido tras resolver: el borrador y la elección se conservan', v);
+    await set({ putMode: 'ok' });
+    await p.evaluate("[...document.querySelectorAll('" + R.messages + " button')].find(b => b.textContent.includes('Comprobar estado del servidor')).click(); 1"); await p.wait('document.querySelector("' + R.messages + ' [data-save-uncertain=unchanged]")', 'servidor sin cambios');
+    await p.evaluate("[...document.querySelectorAll('" + R.messages + " button')].find(b => b.textContent.includes('Permitir un nuevo guardado')).click(); 1");
+    const before = (await putsOf('messages', 1)).length;
     await p.evaluate("(() => { const f = document.querySelector('" + R.messages + "'); f.requestSubmit(); f.requestSubmit(); f.requestSubmit(); return 1 })()"); await p.wait('document.querySelector("' + R.messages + ' .hp-notice")?.innerText.includes("Seguimiento guardado")', 'guardado correcto');
     ck((await putsOf('messages', 1)).length === before + 1, '10. doble envío: una sola petición PUT'); await p.close(); }
 

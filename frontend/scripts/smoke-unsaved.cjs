@@ -211,6 +211,8 @@ async function main() {
     await select(p, 2); await p.wait('document.querySelector("dialog.hp-unsaved-dialog[open]")', 'sigue habiendo cambios tras un guardado fallido');
     ck(true, 'un guardado fallido no se considera exitoso: sigue avisando');
     await p.evaluate('document.querySelector("dialog.hp-unsaved-dialog[open] button").click(); 1'); await ctl('writeMode', 'ok');
+    // D6.3: un 5xx del editor completo es un resultado INCIERTO. Para guardar de nuevo hay que comprobar el servidor y permitirlo de forma explícita.
+    await p.clickText('.hw-inbox-detail .hp-btn', 'Comprobar estado del servidor'); await p.wait('document.querySelector(".hw-inbox-detail [data-save-uncertain=unchanged]")', 'servidor sin cambios'); await p.clickText('.hw-inbox-detail .hp-btn', 'Permitir un nuevo guardado');
     await p.clickText('.hw-inbox-detail .hp-btn', 'Guardar seguimiento'); await p.wait('document.body.innerText.includes("Seguimiento guardado")', 'guardado correcto'); await sleep(900);
     await p.wait('document.querySelector(".hw-inbox-list button")', 'bandeja'); await select(p, 2); await editor(p, 2); await sleep(300);
     ck(!(await p.dialog()), 'tras guardar bien ya no hay cambios pendientes: navegar no avisa'); await p.close(); }

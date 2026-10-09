@@ -87,6 +87,8 @@ function connect(url) {
 }
 const SET = "(el, v) => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, v); el.dispatchEvent(new Event('input', { bubbles: true })) }";
 
+// En Windows child.kill() solo cierra el proceso raíz de Edge y dejaba docenas de procesos huérfanos: se cierra el árbol completo.
+function killBrowser(child) { try { if (process.platform === 'win32') require('node:child_process').spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true }); else child.kill(); } catch { /* ya cerrado */ } }
 async function main() {
   if (!fs.existsSync(browser)) throw new Error('Configura SMOKE_BROWSER con una instalación de Edge/Chromium.');
   await new Promise(r => server.listen(0, '127.0.0.1', r)); const origin = 'http://127.0.0.1:' + server.address().port;
@@ -312,7 +314,7 @@ async function main() {
 
   ck(jsErrors.length === 0, 'sin excepciones de JavaScript en toda la prueba', jsErrors.slice(0, 3));
   console.log(fails ? '\nHAY ' + fails + ' FALLA(S)' : '\nAutenticación administrativa: OK.');
-  child.kill(); server.close(); try { fs.rmSync(profile, { recursive: true, force: true }); } catch { /* perfil temporal en uso */ }
+  killBrowser(child); server.close(); try { fs.rmSync(profile, { recursive: true, force: true }); } catch { /* perfil temporal en uso */ }
   process.exit(fails ? 1 : 0);
 }
 main().catch(error => { console.error(error); process.exit(1); });

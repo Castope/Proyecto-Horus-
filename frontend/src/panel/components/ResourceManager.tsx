@@ -11,6 +11,7 @@ import PanelIcon from './PanelIcon';
 import ImageUpload from './ImageUpload';
 import OriginalContentImport from './OriginalContentImport';
 import PanelDialog from './PanelDialog';
+import { buildCsv, recordsOf } from '../services/listRecords';
 import { useUnsavedChanges } from './../unsaved/unsavedContext';
 
 type ListResponse = { items?: Row[]; messages?: Row[]; pagination?: { total: number; pages: number } };
@@ -69,8 +70,8 @@ export default function ResourceManager({ resource: r, autoCreate, scope }: Prop
     panelRequest<ListResponse>(r.endpoint + '?' + params, token, 'GET', undefined, controller.signal)
       .then(data => {
         if (controller.signal.aborted) return;
-        if (data.pagination) {
-          setRows(data.items || []); setTotal(data.pagination?.total || 0); setPages(data.pagination?.pages || 0);
+        if (data.pagination) { // lista paginada: Mensajes entrega sus registros en { messages }, el resto en { items } (ver recordsOf)
+          setRows(recordsOf<Row>(r.endpoint, data)); setTotal(data.pagination?.total || 0); setPages(data.pagination?.pages || 0);
           if (page > 1 && page > (data.pagination?.pages || 0)) setPage(Math.max(1, data.pagination?.pages || 1));
         } else {
           const filtered = (data.items || data.messages || []).filter(row =>
@@ -194,12 +195,7 @@ export default function ResourceManager({ resource: r, autoCreate, scope }: Prop
   };
   const exportPage = () => {
     const cols = ['id', ...r.fields.filter(field => !field.virtual).map(field => field.key)];
-    const escape = (value: unknown) => {
-      let str = String(value ?? '');
-      if (/^[\s]*[=+@-]|^[\t\r\n]/.test(str)) str = "'" + str;
-      return '"' + str.replace(/"/g, '""') + '"';
-    };
-    const csv = '\uFEFF' + [cols, ...rows.map(row => cols.map(key => row[key]))].map(row => row.map(escape).join(',')).join('\r\n');
+    const csv = buildCsv(cols, rows); // mismo formato que antes (BOM, comillas dobles y fórmulas neutralizadas); ahora probado en tests/list-records.test.mjs
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const a = document.createElement('a'); a.href = url; a.download = r.endpoint + '-pagina-' + page + '.csv'; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);

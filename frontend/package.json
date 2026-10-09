@@ -13,7 +13,9 @@
     "test:errors": "node --experimental-strip-types --test tests/public-errors.test.mjs",
     "smoke:auth": "node scripts/smoke-auth.cjs",
     "smoke:unsaved": "npm run build && node scripts/smoke-unsaved.cjs",
-    "test:return-path": "node --experimental-strip-types --test tests/return-path.test.mjs"
+    "test:return-path": "node --experimental-strip-types --test tests/return-path.test.mjs",
+    "test:list-records": "node --experimental-strip-types --test tests/list-records.test.mjs",
+    "smoke:messages-table": "npm run build && node scripts/smoke-messages-table.cjs"
   },
   "dependencies": {
     "react": "^19.2.5",

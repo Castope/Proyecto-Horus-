@@ -102,6 +102,8 @@ function newestMtime(dir) {
   }
   return newest;
 }
+// En Windows child.kill() solo cierra el proceso raíz de Edge y dejaba docenas de procesos huérfanos: se cierra el árbol completo.
+function killBrowser(child) { try { if (process.platform === 'win32') require('node:child_process').spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true }); else child.kill(); } catch { /* ya cerrado */ } }
 async function main() {
   // El smoke sirve dist/: si el código fuente es más reciente, probaría una versión antigua. (npm run smoke:unsaved compila antes, en local y sin red.)
   if (!fs.existsSync(path.join(root, 'index.html'))) throw new Error('Falta dist/: ejecuta "npm run build".');
@@ -442,7 +444,7 @@ async function main() {
   ck(leaks.length === 0, 'ninguna petición externa inesperada (' + blocked.length + ' recursos estáticos públicos de fuentes/iconos bloqueados antes de enviarse)', leaks.slice(0, 4));
   ck(jsErrors.length === 0, 'sin excepciones de JavaScript en toda la prueba', jsErrors.slice(0, 3));
   console.log(fails ? '\nHAY ' + fails + ' FALLA(S)' : '\nCambios sin guardar del panel: OK.');
-  child.kill(); server.close(); try { fs.rmSync(profile, { recursive: true, force: true }); } catch { /* perfil temporal en uso */ }
+  killBrowser(child); server.close(); try { fs.rmSync(profile, { recursive: true, force: true }); } catch { /* perfil temporal en uso */ }
   void s; process.exit(fails ? 1 : 0);
 }
 main().catch(error => { console.error(error); process.exit(1); });

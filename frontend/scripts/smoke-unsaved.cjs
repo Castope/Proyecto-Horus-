@@ -381,7 +381,7 @@ async function main() {
   await clean();
   { // 409: un conflicto de revisión conserva notas y respuesta
     const p = await noteSetup(1); await p.type('.hw-inbox-detail form textarea', 0, MARK + ' notas'); await p.type('.hw-inbox-detail form textarea', 1, MARK + ' respuesta'); await sleep(150);
-    await ctl('bump', '1'); await p.clickText('.hw-inbox-detail .hp-btn', 'Guardar seguimiento'); await p.wait('document.querySelector(".hw-inbox-detail [role=alert]")', 'conflicto');
+    await ctl('bump', '1'); await p.clickText('.hw-inbox-detail .hp-btn', 'Guardar seguimiento'); await p.wait('document.querySelector(".hw-inbox-detail .hp-conflict-banner.is-merged")', 'conflicto de revisión resuelto sin pisar nada');
     ck((await field(p, 0)) === MARK + ' notas' && (await field(p, 1)) === MARK + ' respuesta', 'un 409 preserva notas y respuesta');
     await select(p, 2); await p.wait('document.querySelector("dialog.hp-unsaved-dialog[open]")', 'sigue protegido tras el 409'); ck(true, 'tras el 409 el borrador sigue protegido'); await p.close(); }
   await clean();

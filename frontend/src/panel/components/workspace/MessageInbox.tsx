@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAdminAuth } from '../../context';
 import { useConfirmLeave } from '../../unsaved/unsavedContext';
-import { panelRequest, errorMessage } from '../../services/panelApi';
+import { PanelApiError, panelRequest, errorMessage } from '../../services/panelApi';
 import { label, type Row } from '../../types/workspace';
 import { useCollection, dateLabel } from './useCollection';
 import { useMessageDetail } from './useMessageDetail';
@@ -45,11 +45,24 @@ export default function MessageInbox() {
     lock.current = true; setBusy(true); setActionError(''); setNotice('');
     try {
       const path='seguimiento/messages/'+selected.id;
-      const {item}=await panelRequest<{item:{revision:number;responsable:string;notas:string;respuesta:string}}>(path,token);
+      const {item}=await panelRequest<{item:{estado:string;revision:number;responsable:string;notas:string;respuesta:string}}>(path,token);
+      // El PUT reemplaza los cuatro campos con los valores que el servidor tiene AHORA (responsable, notas y respuesta no se tocan) y solo se acepta con su
+      // revisión. Antes se comprueba que el estado siga siendo el que la persona veía: si otro administrador lo cambió, no se sobrescribe a ciegas.
+      const current = item.estado === 'archivado' ? 'atendido' : item.estado;
+      if (current !== selected.estado) {
+        detail.patch({ estado: current }); setEditorEpoch(value => value + 1); setRevision(value => value + 1);
+        setActionError('Otro administrador cambió el estado de esta consulta a «' + label(current) + '». No se aplicó tu cambio; revisa el seguimiento y vuelve a elegir.');
+        return;
+      }
       await panelRequest(path,token,'PUT',{estado:state,revision:item.revision,responsable:item.responsable,notas:item.notas,respuesta:item.respuesta});
       detail.patch({ estado: state }); // el detalle abierto refleja el estado nuevo aunque ya no cumpla el filtro del listado
       setNotice('Consulta de ' + selected.nombre + ': ' + label(state) + '.'); setRevision(value => value + 1); setEditorEpoch(value => value + 1);
-    } catch (err) { setActionError(errorMessage(err)); }
+    } catch (err) {
+      if (err instanceof PanelApiError && err.status === 409) { // el seguimiento cambió entre la lectura y el guardado: no se reintenta solo
+        setActionError('Otro administrador actualizó este seguimiento mientras cambiabas el estado. No se aplicó el cambio; revisa el seguimiento y vuelve a intentarlo.');
+        setEditorEpoch(value => value + 1); setRevision(value => value + 1);
+      } else setActionError(errorMessage(err));
+    }
     finally { lock.current = false; setBusy(false); }
   };
   const metrics = [['nuevo', 'Por atender'], ['en_proceso', 'En proceso'], ['atendido', 'Atendidos']];

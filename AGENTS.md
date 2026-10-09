@@ -68,7 +68,7 @@ Usa npm y respeta los lockfiles. Ambos paquetes declaran Node.js 22.x; verifica 
 | `frontend/` | `npm run build` | Comprobar tipos y generar el frontend |
 | `frontend/` | `npm run preview` | Revisar el frontend compilado |
 | `frontend/` | `npm run test:deploy` | Probar la URL de API y las reescrituras de rutas de despliegue |
-| `frontend/` | `npm run test:errors`, `test:return-path`, `test:list-records`, `test:attention-merge` | Pruebas unitarias de módulos puros, sin navegador: mensajes de error públicos, ruta de retorno tras iniciar sesión, lectura de listas y CSV, y fusión del seguimiento de atención |
+| `frontend/` | `npm run test:errors`, `test:return-path`, `test:list-records`, `test:attention-merge`, `test:mail-outcome` | Pruebas unitarias de módulos puros, sin navegador: mensajes de error públicos, ruta de retorno tras iniciar sesión, lectura de listas y CSV, y fusión del seguimiento de atención |
 
 El backend separa las salidas de compilación: `npm start`, `start:dev` y `start:debug` usan `tsconfig.dev.json` y `dist-dev/`, incluida su caché incremental. `npm run build` y `start:prod` usan `dist/`. Mantén esta separación: una compilación limpia no debe borrar los módulos de un servidor de desarrollo en ejecución.
 
@@ -200,8 +200,9 @@ Ejecuta estos scripts desde `frontend/`. Usan Edge/Chromium con perfiles tempora
 | `npm run smoke:unsaved` | Compila antes; protección de cambios sin guardar, caducidad y cambio de sesión, ruta de retorno y avisos |
 | `npm run smoke:messages-table`, `smoke:message-detail` | Compilan antes; tabla de Mensajes (totales, paginación, CSV) y detalle independiente de la bandeja (`?id=`, filtros, errores) |
 | `npm run smoke:attention-conflicts` | Compila antes; concurrencia del seguimiento: conflictos entre administradores, HTTP 409 y reclamaciones |
+| `npm run smoke:mail-attempts` | Compila antes; envíos manuales de correo (D5) con proveedor simulado: aceptado, fallido, incierto, bloqueado con confirmación, corte de red y doble clic. Detalle en [backend/MAIL.md](backend/MAIL.md) |
 
-Los cuatro `smoke:*` que compilan antes comprueban además que `dist/` no esté desactualizado respecto a `src/` y bloquean, antes de enviarla, cualquier petición a un origen distinto del servidor simulado. Con `smoke:auth` y los `node scripts/smoke-*.cjs` compila antes tú. Los smokes de navegador se ejecutan en serie; `smoke:auth` y los cuatro anteriores cierran el árbol completo de procesos de Edge al terminar.
+Los `smoke:*` que compilan antes comprueban además que `dist/` no esté desactualizado respecto a `src/` y bloquean, antes de enviarla, cualquier petición a un origen distinto del servidor simulado. Con `smoke:auth` y los `node scripts/smoke-*.cjs` compila antes tú. Los smokes de navegador se ejecutan en serie; `smoke:auth` y los cuatro anteriores cierran el árbol completo de procesos de Edge al terminar.
 
 `SMOKE_BROWSER` permite escoger el ejecutable de Edge/Chromium. `SMOKE_SCREENSHOTS` permite guardar capturas de `smoke-ui.cjs` y `smoke-home.cjs` en un directorio elegido; no las añadas a Git salvo solicitud. Los fixtures verifican interacción; la persistencia real se comprueba con la integración MySQL y la entrega SMTP requiere verificación en el destino correspondiente.
 

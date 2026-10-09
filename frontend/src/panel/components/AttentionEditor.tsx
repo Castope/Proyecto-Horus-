@@ -4,8 +4,13 @@ import { PanelApiError, panelRequest, errorMessage } from '../services/panelApi'
 import { useRequestStatus } from '../hooks/useRequestStatus';
 import { useUnsavedChanges } from '../unsaved/unsavedContext';
 import { useLatest } from '../hooks/useLatest';
+import { mailResultFromFailure, mailResultFromSuccess, type MailResult } from '../services/mailOutcome';
 import { ATTENTION_FIELDS, FIELD_LABELS, isOlderThan, reconcile, valuesOf, type AttentionField, type AttentionValues } from '../services/attentionMerge';
-type Attention = AttentionValues & { revision: number; historial: { accion: string; usuario: number; fecha: string }[] };
+type SendInfo = { estado: string; fecha: string; intento: string } | null;
+type Attention = AttentionValues & { revision: number; historial: { accion: string; usuario: number; fecha: string }[]; envios?: { respuesta: SendInfo; constancia: SendInfo } };
+type MailAction = 'send' | 'receipt';
+const MAIL_TIMEOUT_MS = 25_000; // más que el límite del proveedor en el servidor: cortar antes no prueba que el correo no salió
+const SEND_STATE: Record<string, string> = { iniciado: 'envío iniciado, sin resultado', aceptado: 'aceptado por el proveedor (no confirma la entrega)', fallido: 'no se pudo enviar', incierto: 'no se pudo confirmar si salió' };
 // Banner único (sin avisos duplicados): 'comparing' mientras se compara tras un 409; 'conflict' y 'compare-error' exigen una acción antes de guardar.
 type Banner = { kind: 'comparing' | 'conflict' | 'merged' | 'compare-error'; text: string };
 const COMPARE_TIMEOUT_MS = 15_000;
@@ -26,12 +31,14 @@ export default function AttentionEditor({ resource, id, onSaved, onPendingChange
   const [banner, setBanner] = useState<Banner | null>(null);
   const [comparing, setComparing] = useState(false);
   const [busy, setBusy] = useState(false), [actionError, setActionError] = useState(''), [notice, setNotice] = useState('');
+  const [mail, setMail] = useState<(MailResult & { action: MailAction }) | null>(null);
   const baseRef = useLatest(base), formRef = useLatest(form);
   const lock = useRef(false); // un solo envío a la vez, incluso con dobles clics
   const lifetime = useRef({ active: false });
   const sequence = useRef(0), comparison = useRef<AbortController | null>(null), synced = useRef(syncKey);
   const bannerBox = useRef<HTMLDivElement>(null), saveButton = useRef<HTMLButtonElement>(null), conflictBox = useRef<HTMLElement>(null);
-  const path = 'seguimiento/' + resource + '/' + id;
+  const path = 'seguimiento/' + resource + '/' + id, pathRef = useLatest(path);
+  const mailBox = useRef<HTMLDivElement>(null), noSendButton = useRef<HTMLButtonElement>(null), sendButton = useRef<HTMLButtonElement>(null), receiptButton = useRef<HTMLButtonElement>(null);
   const { loading, error, setLoading, setError } = useRequestStatus(resource + id + ':' + reload);
 
   // Hay cambios cuando el borrador difiere de la base. Un campo en conflicto deja de serlo si ya coincide con el del servidor.
@@ -55,14 +62,14 @@ export default function AttentionEditor({ resource, id, onSaved, onPendingChange
 
   // Compara el servidor con la base y el borrador. `reason`: 'sync' (otra pantalla cambió algo, p. ej. una acción rápida), 'conflict' (el PUT devolvió 409) o 'retry'.
   const compareWithServer = (reason: 'sync' | 'conflict' | 'retry') => {
-    const instance = lifetime.current;
+    const instance = lifetime.current, requestPath = path;
     const mine = ++sequence.current; comparison.current?.abort();
     const controller = new AbortController(); comparison.current = controller;
     const timer = window.setTimeout(() => controller.abort(), COMPARE_TIMEOUT_MS);
     setComparing(true);
     if (reason !== 'sync') setBanner({ kind: 'comparing', text: 'Otro administrador actualizó este seguimiento. Estamos comparando sus cambios con tu borrador; no se pierde nada.' });
     panelRequest<{ item: Attention }>(path, latestToken.current, 'GET', undefined, controller.signal).then(response => {
-      if (!instance.active || mine !== sequence.current) return; // edición desmontada o comparación más reciente
+      if (!instance.active || mine !== sequence.current || pathRef.current !== requestPath) return; // edición desmontada, comparación más reciente u otro registro
       const currentBase = baseRef.current, currentForm = formRef.current;
       if (!currentBase || !currentForm) return;
       if (isOlderThan(response.item, currentBase)) { if (reason !== 'sync') setBanner(null); return; } // respuesta fuera de orden: más antigua que lo ya aceptado
@@ -88,7 +95,11 @@ export default function AttentionEditor({ resource, id, onSaved, onPendingChange
     setPending(previous => previous.filter(item => item !== key));
     window.setTimeout(() => (conflictBox.current?.querySelector<HTMLElement>('.hp-conflict-field button') ?? saveButton.current)?.focus(), 0);
   };
-  const conflictOf409 = (err: unknown) => err instanceof PanelApiError && err.status === 409;
+  // Foco del resultado de un envío: con confirmación pendiente va a la opción segura («No enviar»); si no, al aviso (los botones se deshabilitaron
+  // mientras se enviaba y el foco habría caído al <body>).
+  useEffect(() => { if (mail) (mail.needsConfirm ? noSendButton.current : mailBox.current)?.focus(); }, [mail]);
+  const dismissMail = () => { const action = mail?.action; setMail(null); window.setTimeout(() => (action === 'send' ? sendButton.current : receiptButton.current)?.focus(), 0); };
+  const conflictOf409 =(err: unknown) => err instanceof PanelApiError && err.status === 409;
   const save = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!form || !base || lock.current || blocked) return;
@@ -108,13 +119,25 @@ export default function AttentionEditor({ resource, id, onSaved, onPendingChange
       if (conflictOf409(err)) compareWithServer('conflict'); else setActionError(timedOut ? 'No pudimos confirmar si se guardó el cambio. Tu borrador se conserva; comprueba el estado guardado antes de reintentar.' : errorMessage(err));
     } finally { window.clearTimeout(timer); lock.current = false; if (instance.active) { setBusy(false); onPendingChange?.(false); } }
   };
-  const receipt = async () => { if (lock.current) return; lock.current = true; setBusy(true); setActionError(''); try { const r = await panelRequest<{ mensaje: string }>(path + '/constancia', token, 'POST'); setNotice(r.mensaje); } catch (err) { setActionError(errorMessage(err)); } finally { lock.current = false; setBusy(false); } };
-  const send = async () => {
-    if (!base || lock.current) return; lock.current = true; setBusy(true); setActionError(''); setNotice('');
-    try { const r = await panelRequest<{ mensaje: string }>(path + '/correo', token, 'POST', { revision: base.revision }); setNotice(r.mensaje); }
-    catch (err) { if (conflictOf409(err)) compareWithServer('conflict'); else setActionError(errorMessage(err)); }
-    finally { lock.current = false; setBusy(false); }
+  // Envío manual de correo. El resultado se interpreta con services/mailOutcome.ts: un fallo de red, un timeout o un 5xx sin cuerpo NO significan
+  // «no se envió» (se muestra como incierto y no se invita a reintentar); un envío ya registrado exige una confirmación explícita (`confirmar_reenvio`).
+  // Tras cualquier desenlace se compara en segundo plano con el servidor: la revisión y el historial cambiaron al registrar el intento.
+  const runMail = async (action: MailAction, confirmed = false) => {
+    if (!base || lock.current) return;
+    const instance = lifetime.current, controller = new AbortController(), startedPath = path;
+    const timer = window.setTimeout(() => controller.abort(), MAIL_TIMEOUT_MS);
+    lock.current = true; setBusy(true); setActionError(''); setNotice(''); setMail(null);
+    let result: MailResult;
+    try {
+      const data = await panelRequest<unknown>(path + (action === 'send' ? '/correo' : '/constancia'), token, 'POST', { ...(action === 'send' ? { revision: base.revision } : {}), ...(confirmed ? { confirmar_reenvio: true } : {}) }, controller.signal);
+      result = mailResultFromSuccess(data);
+    } catch (err) { result = mailResultFromFailure(err instanceof PanelApiError ? err : undefined); }
+    finally { window.clearTimeout(timer); lock.current = false; if (instance.active) setBusy(false); }
+    if (!instance.active || pathRef.current !== startedPath) return; // otro registro ocupa ya este editor: la respuesta tardía no le pertenece
+    setMail({ ...result, action });
+    compareWithServer(result.kind === 'obsoleto' ? 'conflict' : 'sync');
   };
+  const receipt = () => runMail('receipt'), send = () => runMail('send');
   const show = (key: AttentionField, value: string) => value.trim() ? (key === 'estado' ? stateText(value) : value) : '(vacío)';
   const flagged = (key: AttentionField) => conflicts.includes(key) ? { 'aria-invalid': true as const, 'aria-describedby': conflictId } : {};
 
@@ -143,12 +166,18 @@ export default function AttentionEditor({ resource, id, onSaved, onPendingChange
         <label>Respuesta al cliente<textarea value={form.respuesta} maxLength={10000} {...flagged('respuesta')} onChange={e => setForm({ ...form, respuesta: e.target.value })} /></label></>}
       </fieldset>
       {actionError && <p role="alert" className="hp-error">{actionError}</p>}{notice && <p role="status" className="hp-notice">{notice}</p>}
-      <div className="hp-actions">{!stateOnly && <button type="button" className="hp-btn" disabled={busy} onClick={() => void receipt()}>Reenviar constancia / notificación</button>}
+      {mail && <div role={mail.kind === 'aceptado' ? 'status' : 'alert'} className={mail.kind === 'aceptado' ? 'hp-notice' : 'hp-error'} data-mail-result={mail.kind} ref={mailBox} tabIndex={-1}>
+        <p>{mail.message}</p>
+        {mail.needsConfirm && <div className="hp-actions"><button type="button" className="hp-btn hp-btn-primary" disabled={busy} onClick={() => void runMail(mail.action, true)}>Enviar de todos modos</button>
+          <button type="button" ref={noSendButton} className="hp-btn" disabled={busy} onClick={dismissMail}>No enviar</button></div>}
+      </div>}
+      <div className="hp-actions">{!stateOnly && <button type="button" ref={receiptButton} className="hp-btn" disabled={busy} onClick={() => void receipt()}>Reenviar constancia / notificación</button>}
         <button ref={saveButton} className="hp-btn hp-btn-primary" disabled={busy || blocked} aria-describedby={blocked ? conflictId + '-why' : undefined}>{stateOnly ? 'Guardar cambios' : 'Guardar seguimiento'}</button>
-        {!stateOnly && <button type="button" className="hp-btn" disabled={busy || !base.respuesta} onClick={() => void send()}>Enviar respuesta guardada</button>}</div>
+        {!stateOnly && <button type="button" ref={sendButton} className="hp-btn" disabled={busy || !base.respuesta} onClick={() => void send()}>Enviar respuesta guardada</button>}</div>
       {blocked && <p id={conflictId + '-why'} className="hp-form-hint">{comparing ? 'Comparando con la versión del servidor…' : conflicts.length ? 'Elige una versión en cada conflicto para poder guardar.' : 'Reintenta la comparación para poder guardar.'}</p>}
       {dirty && <p className="hp-form-hint">Tienes cambios sin guardar.{!stateOnly && ' El correo enviaría la última respuesta guardada, no lo que ves ahora.'}</p>}
       {!stateOnly && <><p>El correo envía la última respuesta guardada. Conserva tus cambios antes de enviarla.</p>
+      {(['respuesta', 'constancia'] as const).map(kind => base.envios?.[kind] && <p key={kind} className="hp-form-hint" data-mail-state={kind}>{kind === 'respuesta' ? 'Último envío de la respuesta' : 'Última constancia a la persona'}: {SEND_STATE[base.envios[kind].estado] ?? base.envios[kind].estado} · {new Date(base.envios[kind].fecha).toLocaleString('es-PE')}</p>)}
       <h4>Historial</h4>{base.historial.length ? <ul>{base.historial.map((h, i) => <li key={i}>{new Date(h.fecha).toLocaleString('es-PE')} · {h.accion} · Administrador #{h.usuario}</li>)}</ul> : <p>Aún no hay cambios de seguimiento.</p>}</>}
     </form>}</section>;
 }

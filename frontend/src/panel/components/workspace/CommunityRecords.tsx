@@ -91,7 +91,7 @@ export default function CommunityRecords({ kind }: { kind: 'newsletter' | 'recla
       <dl className="hp-details">{fields.map(([key, title]) => <div key={key}><dt>{title}</dt><dd className="hw-record-value">{valueLabel(selected, key)}</dd></div>)}</dl>
       {!complaints && selected.activo === true && <button className="hp-btn" disabled={subscriberBusy} onClick={()=>void deactivate()}>Desactivar suscripción</button>}
       {subscriberError && <p role="alert" className="hp-error">{subscriberError}</p>}
-      {complaints && <AttentionEditor resource="reclamaciones" id={selected.id} />}
+      {complaints && <AttentionEditor key={'reclamaciones:' + selected.id} resource="reclamaciones" id={selected.id} />}
       <div className="hp-dialog-footer"><button className="hp-btn" onClick={() => confirmLeave(() => setSelected(null))}>Cerrar detalle</button></div>
     </PanelDialog>}
   </>;

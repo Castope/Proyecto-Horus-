@@ -3,7 +3,8 @@ import { API_BASE } from '../../apiBase';
 import { resolveContentImages } from '../../contentImages';
 import { reportExpiredSession } from '../context/sessionEvents';
 export class PanelApiError extends Error {
-  constructor(message: string, public status: number) { super(message); }
+  // `body`: cuerpo JSON de la respuesta de error, para que los envíos de correo lean el resultado estructurado (envio, motivo, item).
+  constructor(message: string, public status: number, public body?: unknown) { super(message); }
 }
 
 export async function panelRequest<T>(path: string, token: string | null, method = 'GET', body?: unknown, signal?: AbortSignal): Promise<T> {
@@ -16,7 +17,7 @@ export async function panelRequest<T>(path: string, token: string | null, method
   if (response.status === 401) reportExpiredSession(token); // con el token de ESTA petición: una sesión nueva no se cierra por un 401 antiguo
   if (!response.ok || data?.ok === false) {
     const detail = data?.mensaje || data?.message;
-    throw new PanelApiError(Array.isArray(detail) ? detail.join(' · ') : detail || 'No se pudo completar la operación (' + response.status + ').', response.status);
+    throw new PanelApiError(Array.isArray(detail) ? detail.join(' · ') : detail || 'No se pudo completar la operación (' + response.status + ').', response.status, data);
   }
   if (!data) throw new PanelApiError('El servidor devolvió una respuesta inválida.', response.status);
   if(method!=='GET')notifyContentChange(path.split(/[/?]/)[0]);

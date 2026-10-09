@@ -10,8 +10,10 @@ const FORGOT_DONE = 'Si el correo corresponde a una cuenta activa, recibirás un
 const RESET_DONE = 'Tu contraseña fue actualizada. Inicia sesión con la nueva contraseña.';
 
 export default function AdminRecovery({ reset = false }: { reset?: boolean }) {
-  const [params] = useSearchParams();
-  const token = params.get('token') || '';
+  const [params, setParams] = useSearchParams();
+  // El token se conserva solo en memoria de esta pantalla: se retira de la URL cuando ya no sirve (usado o inválido) para que no quede en el historial.
+  const [token] = useState(() => params.get('token') || '');
+  const stripToken = () => { if (reset && params.has('token')) setParams(new URLSearchParams(), { replace: true }); };
   const [email, setEmail] = useState(''), [password, setPassword] = useState(''), [confirm, setConfirm] = useState('');
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [mismatch, setMismatch] = useState(false);
   const [done, setDone] = useState(false), [linkInvalid, setLinkInvalid] = useState(false);
@@ -41,11 +43,11 @@ export default function AdminRecovery({ reset = false }: { reset?: boolean }) {
       // Un solo intento: ni un timeout ni un error ilegible se reintentan solos, porque el servidor pudo haber aplicado la operación.
       await panelRequest(reset ? 'reset-password' : 'forgot-password', null, 'POST', reset ? { token, password } : { email: email.trim() }, controller.signal);
       if (controller.signal.aborted || attempt.current !== controller || !alive.current) return;
-      setPassword(''); setConfirm(''); setDone(true);
+      setPassword(''); setConfirm(''); setDone(true); stripToken();
     } catch (caught) {
       if (attempt.current !== controller || !alive.current || (controller.signal.aborted && !timedOut)) return;
       const failure = authError(reset ? 'reset' : 'forgot', caught, timedOut);
-      if (failure.linkInvalid) { setPassword(''); setConfirm(''); setLinkInvalid(true); }
+      if (failure.linkInvalid) { setPassword(''); setConfirm(''); setLinkInvalid(true); stripToken(); }
       setError(failure.message);
     } finally {
       window.clearTimeout(timer);

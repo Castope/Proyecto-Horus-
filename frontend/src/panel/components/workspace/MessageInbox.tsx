@@ -37,7 +37,10 @@ export default function MessageInbox() {
   const selected = detail.row && detail.row.id !== removedId ? detail.row : null;
   // Vista del listado: ambas comparten datos, filtros, selección y detalle. Solo cambia cómo se dibuja la lista; el detalle (y el borrador del editor)
   // ocupa siempre el mismo lugar del árbol, así que alternar la vista no lo desmonta. Es estado local: cambiar la URL con un borrador abierto avisaría sin necesidad.
-  const [view, setView] = useState<'bandeja' | 'tabla'>(() => params.get('listado') === 'tabla' ? 'tabla' : 'bandeja');
+  // Alias heredados: `vista=tabla` (la antigua tabla de mensajes) y `listado=tabla` abren la vista Tabla de entrada. Aquí solo llegan las URL de MENSAJES
+  // (AdminDashboard dirige el resto de secciones a ResourceManager), así que `vista=` de cursos, servicios, etc. no se ve afectado. No hay redirección:
+  // los parámetros (`id`, `estado`, `crear`…) se conservan tal cual y el historial no cambia.
+  const [view, setView] = useState<'bandeja' | 'tabla'>(() => params.get('listado') === 'tabla' || params.get('vista') === 'tabla' ? 'tabla' : 'bandeja');
   const [deleting, setDeleting] = useState(false);
   // Guardado del seguimiento en vuelo, o con resultado incierto (lo notifica AttentionEditor). Mientras el PUT está pendiente no se cambia de consulta, de
   // filtro de estado ni de vista (desmontarían o abandonarían el editor sin conocer la respuesta). La navegación externa (menú, Atrás/Adelante) no se puede
@@ -146,7 +149,7 @@ export default function MessageInbox() {
         <div className="hw-tabs" role="group" aria-label="Vista del listado"><button aria-pressed={view === 'bandeja'} disabled={savePending} onClick={() => setView('bandeja')}>Bandeja</button><button aria-pressed={view === 'tabla'} disabled={savePending} onClick={() => setView('tabla')}>Tabla</button></div>
         {exporting && <button className="hp-btn" onClick={() => exportController.current?.abort()}>Cancelar exportación</button>}
         <button className="hp-btn" onClick={() => void exportResults()} disabled={exporting || loading || !!error || !total}><PanelIcon name="download" />{exporting ? 'Exportando…' : 'Exportar resultados'}</button>
-        <Link className="hp-text-btn" to="/admin/dashboard?section=mensajes&vista=tabla">Vista de registros</Link></div></div>
+        </div></div>
       {exportNote && <p className="hp-notice" role="status">{exportNote}</p>}{exportError && <p className="hp-error" role="alert">{exportError}</p>}
       <div className="hp-toolbar"><div className="hp-search"><PanelIcon name="search" /><input aria-label="Buscar consultas" placeholder="Nombre, correo, asunto o mensaje…" value={search} onChange={e => { const value = e.target.value; confirmLeave(() => { setPage(1); setSearch(value); }); }} /></div>
         <select aria-label="Estado de atención" disabled={savePending} value={status} onChange={e => updateParams('estado', e.target.value)}><option value="">Todos los estados</option>{metrics.map(([state, title]) => <option value={state} key={state}>{title}</option>)}</select>

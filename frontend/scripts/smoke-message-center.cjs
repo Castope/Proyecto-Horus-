@@ -230,11 +230,39 @@ async function main() {
     await clickBtn(D, 'Cancelar'); await sleep(250);
     ck((await page.evaluate('location.pathname + location.search')) === '/admin/messages?id=3', '9. al cerrar se conservan los demás parámetros (?id=3)'); }
 
-  { // 10. La tabla antigua sigue disponible
-    await session('/admin/dashboard?section=mensajes&vista=tabla'); await page.wait('document.querySelector(".hp-table tbody tr")', 'tabla antigua');
-    ck(await page.evaluate("!document.querySelector('.hw-inbox') && !!document.querySelector('.hp-table')"), '10. vista=tabla sigue mostrando la tabla antigua (ResourceManager)');
-    await session('/admin/dashboard?section=mensajes&vista=tabla&crear=1'); await page.wait('document.querySelector("' + D + ' form") && document.querySelector(".hp-table tbody tr")', 'formulario antiguo y tabla');
-    ck(await page.evaluate("!document.querySelector('.hw-inbox') && !!document.querySelector('.hp-table')"), '10. vista=tabla&crear=1 conserva el formulario de la tabla antigua'); }
+  { // 10. D6.3 fase A: todas las URL de mensajes abren la bandeja moderna, con sus parámetros intactos
+    const probe = async route => {
+      await session(route); await page.wait('document.querySelector(".hw-inbox-table tbody tr, .hw-inbox-list > button, .hw-inbox-list .hp-empty")', 'listado de ' + route);
+      if (route.includes('crear=1')) await page.wait('document.querySelector("' + D + ' form")', 'registro manual en ' + route);
+      await sleep(250);
+      return page.evaluate('({ url: location.pathname + location.search, inbox: !!document.querySelector(".hw-inbox"), table: !!document.querySelector(".hw-inbox-table"), cards: document.querySelectorAll(".hw-inbox-list > button").length, dialog: !!document.querySelector("' + D + ' form"), detail: document.querySelector(".hw-detail-heading small")?.innerText || "", estado: document.querySelector("select[aria-label=\\"Estado de atención\\"]")?.value, legacy: !!document.querySelector(".hp-table:not(.hw-inbox-table)") })');
+    };
+    const cases = [
+      ['/admin/messages', { table: false }], ['/admin/messages?id=221', { table: false, detail: 'Consulta #221' }], ['/admin/messages?estado=archivado', { table: false, estado: 'archivado' }],
+      ['/admin/messages?vista=tabla', { table: true }], ['/admin/dashboard?section=mensajes', { table: false }], ['/admin/dashboard?section=mensajes&vista=tabla', { table: true }],
+      ['/admin/dashboard?section=mensajes&crear=1', { table: false, dialog: true }], ['/admin/dashboard?section=mensajes&vista=tabla&crear=1', { table: true, dialog: true }],
+      ['/admin/messages?vista=tabla&id=220&estado=archivado', { table: true, detail: 'Consulta #220', estado: 'archivado' }], ['/admin/messages?vista=tabla&crear=1&id=220', { table: true, dialog: true, detail: 'Consulta #220' }],
+      ['/admin/messages?vista=tabla&id=abc', { table: true, detail: '' }], ['/admin/messages?listado=tabla', { table: true }],
+    ];
+    for (const [route, expected] of cases) {
+      const got = await probe(route);
+      const wrong = Object.entries({ inbox: true, legacy: false, dialog: false, detail: '', ...expected }).filter(([key, value]) => got[key] !== value);
+      ck(wrong.length === 0 && got.url === route, '10. ' + route + ' abre la bandeja moderna (' + (expected.table ? 'vista Tabla' : 'vista Bandeja') + (expected.dialog ? ', con el registro manual' : '') + ') y conserva la URL', { got, wrong });
+    }
+    // Regla de alcance: vista= en otras secciones sigue siendo de ResourceManager
+    await session('/admin/dashboard?section=cursos&seccion=cursos&vista=tabla'); await page.wait('document.querySelector(".hp-heading h1")', 'cursos');
+    ck(await page.evaluate('!document.querySelector(".hw-inbox") && [...document.querySelectorAll(".hw-tabs button")].some(b => b.textContent.trim() === "Tabla" && b.getAttribute("aria-pressed") === "true")'), '10. vista=tabla en cursos sigue siendo de ResourceManager (alias acotado a mensajes)');
+    await session('/admin/dashboard?section=servicios&vista=tabla'); await page.wait('document.querySelector(".hp-heading h1")', 'servicios');
+    ck(await page.evaluate('!document.querySelector(".hw-inbox") && document.querySelector(".hp-heading h1").innerText !== "Centro de consultas"'), '10. vista=tabla en servicios no abre la bandeja de mensajes');
+    // Atrás/Adelante con el alias: se conserva la URL de entrada y la vista; seleccionar añade una sola entrada
+    const entry = '/admin/dashboard?section=mensajes&vista=tabla';
+    await session(entry); await page.wait('document.querySelector(".hw-inbox-table tbody tr")', 'tabla'); const startHistory = await page.evaluate('history.length');
+    await page.evaluate('document.querySelectorAll(".hw-inbox-table tbody tr button")[1].click(); 1'); await page.wait('location.search.includes("id=")', 'selección');
+    const selectedUrl = await page.evaluate('location.pathname + location.search'), pushed = (await page.evaluate('history.length')) - startHistory;
+    await page.evaluate('history.back(); 1'); await page.wait('!location.search.includes("id=")', 'Atrás');
+    const back = await page.evaluate('({ url: location.pathname + location.search, table: !!document.querySelector(".hw-inbox-table") })');
+    await page.evaluate('history.forward(); 1'); await page.wait('location.search.includes("id=")', 'Adelante');
+    ck(pushed === 1 && back.url === entry && back.table && (await page.evaluate('location.pathname + location.search')) === selectedUrl, '10. con el alias, seleccionar añade una sola entrada al historial y Atrás/Adelante recorren la URL de entrada y la selección sin cambiar de vista', { pushed, back, selectedUrl }); }
 
   { // 11. Atrás y Adelante con el diálogo
     await inbox('/admin/messages?id=3'); await page.evaluate("document.querySelectorAll('.hw-inbox-list button')[1].click(); 1"); await sleep(250);
@@ -516,10 +544,8 @@ async function main() {
     await page.wait('!document.body.innerText.includes("Asunto 217")', 'lista sin la consulta 217'); s = await state();
     ck(s.total === TOTAL - 1 && s.deletes.length >= 1 && s.deletes.every(d => d.id === 217) && !(await dialogOpen2()), '40. estado final: la consulta 217 no existe en el servidor, la lista no la muestra y todos los DELETE fueron de esa consulta', { total: s.total, deletes: s.deletes }); }
 
-  { // 41. Compatibilidad: ResourceManager y enlaces heredados
-    await session('/admin/dashboard?section=mensajes&vista=tabla'); await page.wait('document.querySelector(".hp-table tbody tr")', 'tabla antigua');
-    ck(await page.evaluate('!document.querySelector(".hw-inbox") && !document.querySelector(' + JSON.stringify(viewTabs) + ') && !![...document.querySelectorAll("button")].find(b => (b.getAttribute("aria-label") || "").startsWith("Eliminar "))'), '41. vista=tabla sigue siendo la tabla anterior (ResourceManager) con su Eliminar, sin el conmutador nuevo');
-    await inbox(); ck(await page.evaluate('!!document.querySelector("a[href=\\"/admin/dashboard?section=mensajes&vista=tabla\\"]")'), '41. la bandeja conserva el enlace heredado a «Vista de registros»');
+  { // 41. Enlaces heredados retirados y crear=1 vigente
+    await inbox(); ck(await page.evaluate('![...document.querySelectorAll("a")].some(a => (a.getAttribute("href") || "").includes("vista=tabla")) && !document.body.innerText.includes("Vista de registros")'), '41. la bandeja ya no ofrece el enlace heredado «Vista de registros» (lo sustituye el conmutador)');
     await session('/admin/messages?crear=1'); await page.wait('document.querySelector("' + D + ' form")', 'registro manual'); await clickBtn(D, 'Cancelar'); await sleep(200);
     ck(!(await page.evaluate('location.search')).includes('crear') && await page.evaluate('!!document.querySelector(' + JSON.stringify(viewTabs) + ')'), '41. crear=1 sigue abriendo el registro manual (D6.1) junto al conmutador'); }
 

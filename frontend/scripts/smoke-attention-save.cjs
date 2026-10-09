@@ -218,6 +218,7 @@ async function main() {
     await page.wait('document.body.innerText.includes("Guardando el seguimiento")', 'aviso de guardado pendiente');
     const c = await cards();
     ck(c.total > 0 && c.disabled, '8. mientras el PUT está pendiente, las consultas del listado están deshabilitadas', c);
+    ck(await page.evaluate('document.querySelector("' + F + '").getAttribute("aria-busy") === "true" && [...document.querySelectorAll("[role=status]")].some(e => e.textContent.includes("Guardando el seguimiento"))'), '8. la operación pendiente se anuncia de forma accesible (aria-busy y región de estado)');
     await page.evaluate('document.querySelectorAll(".hw-inbox-list > button")[2].click(); 1'); await sleep(250);
     ck((await url()) === '/admin/messages?id=5' && (await heading()) === 'Consulta #5' && (await notesValue()) === 'Nota pendiente' && !(await unsavedDialog()), '8. un clic forzado sobre otra consulta no cambia la selección, ?id= ni el borrador', { url: await url(), heading: await heading() });
     const vb = await viewButtons();
@@ -256,6 +257,19 @@ async function main() {
   { // 16. 5xx durante el guardado: incierto (el servidor pudo procesarlo)
     await editor('/admin/messages?id=10'); await set({ putMode: 'fail500' }); await typeNotes('Nota 5xx'); await submit(); await waitDoubt();
     ck(!/ER_SECRET|Internal/.test(await bodyText()) && (await state()).writes.length === 1 && (await notesValue()) === 'Nota 5xx', '16. un 5xx se trata como resultado incierto (sin texto técnico, sin reintento y con el borrador)'); }
+
+  { // 18. Invalidación de sesión con un PUT pendiente (equivale a la antigua suite de cierre del diálogo de estado, ya retirada)
+    await editor('/admin/messages?id=11'); await set({ putMode: 'hold' }); await typeNotes('Nota de la sesión anterior'); await submit(); await waitWrites(1);
+    await page.evaluate('window.dispatchEvent(new CustomEvent("horus:session-expired", { detail: { token: localStorage.getItem(' + JSON.stringify(KEY) + ') } })); 1');
+    await page.wait('location.pathname === "/admin/login"', 'invalidación obligatoria durante el PUT');
+    ck(!(await unsavedDialog()) && (await page.evaluate('localStorage.getItem(' + JSON.stringify(KEY) + ')')) === null, '18. la invalidación de la sesión desmonta el editor con el PUT en vuelo sin retener la sesión ni pedir confirmar el descarte');
+    await page.evaluate('localStorage.setItem(' + JSON.stringify(KEY) + ', ' + JSON.stringify(TOKEN) + '); window.dispatchEvent(new StorageEvent("storage", { key: ' + JSON.stringify(KEY) + ', newValue: ' + JSON.stringify(TOKEN) + ' })); 1');
+    // La sesión revalidada vuelve a la misma consulta (ruta de retorno): se monta un editor NUEVO para el mismo id mientras el PUT anterior sigue retenido.
+    await page.wait('location.pathname === "/admin/messages" && document.querySelector("' + F + ' fieldset textarea")', 'editor nuevo de la misma consulta'); await waitText('Consulta #11', 'misma consulta');
+    await typeNotes('Borrador del editor nuevo'); await release(); await sleep(600); // llega la respuesta del PUT del editor anterior
+    ck((await notesValue()) === 'Borrador del editor nuevo' && !(await bodyText()).includes('Seguimiento guardado.'), '18. la respuesta de un editor anterior de la MISMA consulta no cambia ni limpia el borrador del editor nuevo');
+    await page.evaluate('document.querySelectorAll(".hw-inbox-list > button")[3].click(); 1'); await page.wait('document.querySelector("dialog.hp-unsaved-dialog[open]")', 'borrador nuevo protegido');
+    ck(true, '18. y el borrador nuevo sigue protegido (el callback antiguo no limpia el aviso de cambios sin guardar)'); }
 
   { // 17. CommunityRecords (reclamaciones): el mismo editor, dentro de un diálogo
     const D2 = 'dialog.hp-dialog[open] form.hp-form';

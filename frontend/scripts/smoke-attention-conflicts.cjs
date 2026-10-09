@@ -328,35 +328,37 @@ async function main() {
     await p.wait('document.querySelector(".hw-detail-heading .hp-badge")?.textContent === "En proceso"','reapertura explícita');
     const s=await state(); ck(s.attention['messages:1'].estado==='en_proceso' && s.attention['messages:1'].notas==='Nota remota D4','D4: reapertura explícita conserva datos remotos'); await p.close();
   }
-  const TABLE='/admin/dashboard?section=mensajes&vista=tabla';
+  // D6.3 fase A: `vista=tabla` abre la vista Tabla de la bandeja (MessageInbox). Estos casos antes usaban la tabla antigua con un diálogo de solo estado.
+  const TABLE='/admin/messages?vista=tabla';
   {
     await clean(); await remote('messages',1,{estado:'archivado'});
-    const p=await session(TABLE+'&estado=archivado',375);
-    await p.wait('document.querySelectorAll(".hp-table tbody tr").length === 1','tabla filtrada por archivado');
-    ck((await p.evaluate('document.querySelector(".hp-table .hp-badge")?.textContent'))==='Archivado','D4: tabla antigua muestra y filtra archivado');
-    await p.clickText('button[aria-label="Editar Asunto 1"]','Editar Asunto 1');
-    await p.wait('document.querySelector("dialog.hp-dialog[open] form select")?.value === "archivado"','formulario archivado');
-    await p.evaluate('document.querySelector("dialog.hp-dialog[open] form").requestSubmit(); 1');
-    await p.wait('document.body.innerText.includes("No había cambios de estado")','guardar sin cambios');
-    ck((await putsOf('messages',1)).length===0 && (await state()).attention['messages:1'].estado==='archivado','D4: guardar sin cambios no escribe ni desarchiva'); await p.close();
+    const p=await session(TABLE+'&estado=archivado&id=1',375);
+    await p.wait('document.querySelectorAll(".hw-inbox-table tbody tr").length === 1','tabla filtrada por archivado');
+    ck((await p.evaluate('document.querySelector(".hw-inbox-table .hp-badge")?.textContent'))==='Archivado','D4: la vista Tabla muestra y filtra archivado (375 px)');
+    await editorReady(p,R.messages);
+    await p.wait('document.querySelector("'+R.messages+' fieldset select")?.value === "archivado"','formulario archivado');
+    await save(p,R.messages);
+    await p.wait('document.querySelector("'+R.messages+' .hp-notice")?.innerText.includes("Seguimiento guardado")','guardar sin cambios');
+    const puts=await putsOf('messages',1);
+    // El editor completo escribe aunque no haya cambios (la tabla antigua con stateOnly no lo hacía); la invariante de D4 es que NO reabre el caso.
+    ck(puts.length===1 && puts[0].data.estado==='archivado' && (await state()).attention['messages:1'].estado==='archivado','D4: guardar sin cambios no desarchiva (el PUT conserva «archivado»)'); await p.close();
   }
   {
-    await clean(); await remote('messages',1,{estado:'atendido'}); const p=await session(TABLE);
-    await p.wait(`document.querySelector('button[aria-label="Editar Asunto 1"]')`,'tabla');
-    await p.clickText('button[aria-label="Editar Asunto 1"]','Editar Asunto 1');
-    await p.wait('document.querySelector("dialog.hp-dialog[open] form select")?.value === "atendido"','estado base de tabla');
-    await p.type('dialog.hp-dialog[open] form select',0,'en_proceso');
+    await clean(); await remote('messages',1,{estado:'atendido'}); const p=await session(TABLE+'&id=1');
+    await editorReady(p,R.messages);
+    await p.wait('document.querySelector("'+R.messages+' fieldset select")?.value === "atendido"','estado base de la vista Tabla');
+    await p.type(R.messages+' fieldset select',0,'en_proceso');
     await remote('messages',1,{estado:'archivado',notas:'Nota remota de tabla'});
-    await p.evaluate('document.querySelector("dialog.hp-dialog[open] form").requestSubmit(); 1');
-    await p.wait('document.querySelector("dialog.hp-dialog[open] .hp-conflict-field")','conflicto explícito de tabla');
-    ck((await p.evaluate('document.querySelector("dialog.hp-dialog[open] form select").value'))==='en_proceso' && (await state()).attention['messages:1'].estado==='archivado','D4: 409 en tabla conserva borrador y no sustituye archivo remoto');
-    await p.clickText('dialog.hp-dialog[open] > button.hp-btn','Cancelar');
-    await p.wait('document.querySelector("dialog.hp-unsaved-dialog[open]")','borrador de tabla protegido');
+    await save(p,R.messages);
+    await p.wait('document.querySelector("'+R.messages+' .hp-conflict-field")','conflicto explícito en la vista Tabla');
+    ck((await p.evaluate('document.querySelector("'+R.messages+' fieldset select").value'))==='en_proceso' && (await state()).attention['messages:1'].estado==='archivado','D4: 409 en la vista Tabla conserva el borrador y no sustituye el archivo remoto');
+    await p.evaluate('document.querySelector(".hw-inbox-table tbody tr button").click(); 1');
+    await p.wait('document.querySelector("dialog.hp-unsaved-dialog[open]")','borrador protegido en la vista Tabla');
     await p.evaluate('document.querySelector("dialog.hp-unsaved-dialog[open] button").click(); 1');
     await choose(p,'Estado','Conservar mi versión');
-    await p.evaluate('document.querySelector("dialog.hp-dialog[open] form").requestSubmit(); 1');
-    await p.wait('document.body.innerText.includes("Cambios guardados correctamente.")','reapertura decidida desde tabla');
-    const s=await state(); ck(s.attention['messages:1'].estado==='en_proceso' && s.attention['messages:1'].notas==='Nota remota de tabla','D4: tabla reutiliza fusión D3 y reabre solo tras elección explícita'); await p.close();
+    await save(p,R.messages);
+    await p.wait('document.querySelector("'+R.messages+' .hp-notice")?.innerText.includes("Seguimiento guardado")','reapertura decidida desde la vista Tabla');
+    const s=await state(); ck(s.attention['messages:1'].estado==='en_proceso' && s.attention['messages:1'].notas==='Nota remota de tabla','D4: la vista Tabla reutiliza la fusión D3 y reabre solo tras elección explícita'); await p.close();
   }
   {
     await clean(); await remote('messages',1,{estado:'archivado'}); const p=await session('/admin/dashboard');
@@ -364,7 +366,6 @@ async function main() {
     ck((await p.evaluate(`document.querySelector('a[href="/admin/messages?estado=archivado"]').innerText`)).includes('1 consultas archivadas') && (await p.evaluate('document.querySelector(".hp-activity .hp-badge")?.textContent'))==='Archivado','D4: dashboard y actividad reciente muestran archivo coherente'); await p.close();
   }
   }
-  await require('./smoke-editor-race.cjs')({ clean, set, state, session, choose, ck, sleep, KEY, TOKEN, release: () => fetch(origin + '/__release') });
   const PUBLIC_ASSET_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com', 'cdnjs.cloudflare.com'];
   const leaks = blocked.filter(b => { try { return b.method !== 'GET' || !PUBLIC_ASSET_HOSTS.includes(new URL(b.url).hostname); } catch { return true; } });
   ck(leaks.length === 0, 'ninguna petición externa inesperada (' + blocked.length + ' recursos públicos de fuentes/iconos bloqueados antes de enviarse)', leaks.slice(0, 3));

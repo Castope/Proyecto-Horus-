@@ -10,7 +10,7 @@ export function useCollection(endpoint:string,catalog=false,revision=0,params='p
  const {token}=useAdminAuth();const latestToken=useLatest(token);const [data,setData]=useState<CollectionResponse>({});
  const {loading,error,setLoading,setError}=useRequestStatus(JSON.stringify([endpoint,catalog,revision,params]));
  useEffect(()=>{const c=new AbortController();let live=true;const timeout=window.setTimeout(()=>c.abort(),15000);
- void panelRequest<CollectionResponse>(endpoint+'?'+params,latestToken.current,'GET',undefined,c.signal).then(r=>{if(live)setData(r)}).catch(e=>{if(live)setError(c.signal.aborted?'La consulta tardó demasiado. Reintenta la carga.':errorMessage(e))}).finally(()=>{window.clearTimeout(timeout);if(live)setLoading(false)});
+ void panelRequest<CollectionResponse>(endpoint+'?'+params,latestToken.current,'GET',undefined,c.signal).then(r=>{if(endpoint==='messages'&&r.pagination&&!Array.isArray(r.messages))throw new Error('El servidor devolvió una lista con un formato inesperado.');if(live)setData(r)}).catch(e=>{if(live)setError(c.signal.aborted?'La consulta tardó demasiado. Reintenta la carga.':errorMessage(e))}).finally(()=>{window.clearTimeout(timeout);if(live)setLoading(false)});
  return()=>{live=false;c.abort();window.clearTimeout(timeout)};
  },[latestToken,endpoint,catalog,revision,params,setLoading,setError]);
  return{rows:collectionRows(data),loading,error,total:data.pagination?.total||0,pages:data.pagination?.pages||0,metrics:data.metrics||{},interests:data.interests||[]};

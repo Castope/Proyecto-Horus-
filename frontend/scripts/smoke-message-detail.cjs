@@ -231,10 +231,13 @@ async function main() {
     await p.wait('document.querySelector("dialog.hp-unsaved-dialog[open]")', 'aviso con borrador'); ck((await editorInfo(p)).value === MARK, 'Atrás con una nota sin guardar pide confirmar y no pierde el texto');
     await p.evaluate('document.querySelector("dialog.hp-unsaved-dialog[open] button").click(); 1'); await sleep(300); ck(!(await unsaved(p)) && (await detailTitle(p)) === 'Consulta #44', 'Seguir editando conserva la consulta y la nota'); await p.close(); }
   await clean();
-  { // acceso desde la tabla antigua y hacia cotizaciones
-    const p = await session('/admin/dashboard?section=mensajes&vista=tabla', 1280); await p.wait('document.querySelector(".hp-table tbody tr")', 'tabla');
-    await p.evaluate('document.querySelector("a[href=\\"/admin/messages\\"]").click(); 1'); await listReady(p);
-    ck((await p.path()) === '/admin/messages', 'desde la tabla antigua se llega a la bandeja');
+  { // alias heredado vista=tabla y acceso hacia cotizaciones (D6.3 fase A)
+    const alias = '/admin/dashboard?section=mensajes&vista=tabla';
+    const p = await session(alias, 1280); await p.wait('document.querySelector(".hw-inbox-table tbody tr")', 'vista Tabla de la bandeja');
+    ck((await p.path()) === alias && (await p.evaluate('!!document.querySelector(".hw-inbox") && !document.querySelector(".hw-inbox-list > button")')), 'el alias vista=tabla abre la bandeja moderna en vista Tabla y conserva la URL (sin redirección)');
+    await p.evaluate('document.querySelectorAll(".hw-tabs[aria-label=\\"Vista del listado\\"] button")[0].click(); 1'); await listReady(p);
+    ck(await p.evaluate('document.querySelectorAll(".hw-inbox-list > button").length > 0 && !document.querySelector(".hw-inbox-table")'), 'desde la vista Tabla, el conmutador lleva a la Bandeja sin recargar');
+    ck((await p.evaluate('!!document.querySelector("a[href*=\\"vista=tabla\\"]")')) === false, 'ya no existe el enlace heredado «Vista de registros»');
     await p.go('/admin/messages?id=3'); await waitDetail(p, 3);
     await p.clickText('.hw-inbox-detail a.hp-btn', 'Preparar cotización'); await p.wait('document.querySelector("dialog.hp-dialog[open] form")', 'cotización');
     ck((await p.path()).includes('contacto=3') && (await p.evaluate('document.querySelector("dialog.hp-dialog[open] input").value')) === 'Persona 3', 'desde un detalle fuera de la página se prepara la cotización con los datos de esa consulta'); await p.close(); }

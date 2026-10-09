@@ -1,5 +1,6 @@
-// Tabla administrativa de Mensajes (ResourceManager) con API simulada: nada real (ni datos, ni sesiones, ni correo). Edge por DevTools.
-// Regresión D1: GET /admin/messages responde { messages, pagination, metrics } y la tabla antigua leía "items" (siempre vacía).
+// Vista Tabla de Mensajes en la bandeja moderna (MessageInbox) con API simulada: nada real (ni datos, ni sesiones, ni correo). Edge por DevTools.
+// Cobertura heredada de la tabla antigua (D1, ResourceManager), migrada en D6.3 fase A: GET /admin/messages responde { messages, pagination, metrics }
+// y una respuesta paginada SIN «messages» es un error de formato, no una lista vacía.
 const http = require('node:http'), fs = require('node:fs'), path = require('node:path'), os = require('node:os'), { spawn } = require('node:child_process');
 const root = path.resolve(__dirname, '../dist'), browser = process.env.SMOKE_BROWSER || 'C:/Users/PCT40T/Documents/Proyecto-Horus-/../../../../Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const edge = process.env.SMOKE_BROWSER || 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
@@ -13,7 +14,7 @@ const messages = Array.from({ length: 25 }, (_, i) => { const id = 25 - i; retur
 // Textos con caracteres especiales para la seguridad del CSV
 Object.assign(messages.find(m => m.id === 24), { nombre: '=HYPERLINK("http://x.test","clic")' });
 Object.assign(messages.find(m => m.id === 23), { asunto: '@SUM(1+1)' });
-Object.assign(messages.find(m => m.id === 22), { mensaje: 'línea 1\nlínea 2, con "comillas"' });
+Object.assign(messages.find(m => m.id === 22), { asunto: 'línea 1\nlínea 2, con "comillas"' });
 Object.assign(messages.find(m => m.id === 21), { telefono: '+51 987 654 321' });
 Object.assign(messages.find(m => m.id === 20), { nombre: '-cmd|calc' });
 const cursos = [1, 2, 3].map(id => ({ id, titulo: 'Curso ' + id, slug: 'curso-' + id, tipo: 'curso', modalidad: 'virtual', duracion: '10 horas', descripcion: 'Descripción ' + id, estado: 'publicado', categoria: 'curso', fecha_inicio: '2099-01-01', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' }));
@@ -118,87 +119,84 @@ async function main() {
   const state = () => fetch(origin + '/__state').then(r => r.json());
   const session = async (route, width) => { const p = await open(width); await p.go('/__empty'); await p.evaluate('localStorage.setItem(' + JSON.stringify(KEY) + ', ' + JSON.stringify(TOKEN) + '); 1'); await p.go(route); return p; };
   const TABLE = '/admin/dashboard?section=mensajes&vista=tabla';
-  const rowsOf = p => p.evaluate("[...document.querySelectorAll('.hp-table tbody tr')].map(tr => tr.querySelector('.hp-record strong')?.textContent)");
-  const info = p => p.evaluate("({ count: document.querySelector('.hp-card-heading .hp-count')?.textContent, pager: document.querySelector('.hp-pagination div span')?.textContent, foot: document.querySelector('.hp-pagination span')?.textContent, alert: document.querySelector('.hp-card [role=alert]')?.innerText || '', prevDisabled: [...document.querySelectorAll('.hp-pagination button')].find(b => b.textContent.trim() === 'Anterior')?.disabled, nextDisabled: [...document.querySelectorAll('.hp-pagination button')].find(b => b.textContent.trim() === 'Siguiente')?.disabled })");
+  const rowsOf = p => p.evaluate("[...document.querySelectorAll('.hw-inbox-table tbody tr td strong')].map(x => x.textContent)");
+  const info = p => p.evaluate("({ count: document.querySelector('.hp-card-heading p')?.textContent || '', page: document.querySelector('.hp-pagination span')?.textContent || '', alert: document.querySelector('.hp-error[role=alert]')?.innerText || '', listError: document.querySelector('.hw-inbox-list .hp-empty')?.innerText || '', prevDisabled: [...document.querySelectorAll('.hp-pagination button')].find(b => b.textContent.trim() === 'Anterior')?.disabled, nextDisabled: [...document.querySelectorAll('.hp-pagination button')].find(b => b.textContent.trim() === 'Siguiente')?.disabled })");
   const subject = id => 'Asunto ' + id;
-  const waitRows = (p, n, what) => p.wait('document.querySelectorAll(".hp-table tbody tr").length === ' + n, what);
-  const visible = (rows) => rows.map(r => r.asunto);
+  const waitRows = (p, n, what) => p.wait('document.querySelectorAll(".hw-inbox-table tbody tr").length === ' + n, what);
+  const refresh = p => p.evaluate("[...document.querySelectorAll('.hp-heading button')].find(b => b.textContent.includes('Actualizar')).click(); 1");
 
-  console.log('\n== TABLA DE MENSAJES (D1)');
-  { const p = await session(TABLE); await waitRows(p, 8, 'primera página');
+  console.log('\n== VISTA TABLA DE MENSAJES (D1, migrada a la bandeja moderna)');
+  { const p = await session(TABLE); await waitRows(p, 20, 'primera página');
     const rows = await rowsOf(p), i = await info(p);
-    ck(rows.length === 8 && rows[0] === subject(25) && rows[7] === subject(18), 'respuesta con «messages» y paginación: la tabla muestra los registros (antes quedaba vacía)', rows);
-    ck(i.count === '25' && /25 registros encontrados/.test(i.foot) && i.pager === '1 / 4' && i.prevDisabled === true && i.nextDisabled === false, 'conserva el total real (25), las páginas (1 / 4) y los botones de paginación', i);
-    await p.clickText('.hp-pagination button', 'Siguiente'); await p.wait('document.querySelector(".hp-table tbody tr .hp-record strong")?.textContent === "Asunto 17"', 'segunda página');
-    let r2 = await rowsOf(p), i2 = await info(p);
-    ck(r2.length === 8 && r2[0] === subject(17) && i2.pager === '2 / 4' && i2.prevDisabled === false, 'página siguiente: registros 17 a 10 y contador 2 / 4', { r2, i2 });
-    await p.clickText('.hp-pagination button', 'Anterior'); await p.wait('document.querySelector(".hp-table tbody tr .hp-record strong")?.textContent === "Asunto 25"', 'vuelta a la primera');
-    ck((await info(p)).pager === '1 / 4', 'página anterior: vuelve a la primera');
-    for (let n = 0; n < 3; n++) { await p.clickText('.hp-pagination button', 'Siguiente'); await sleep(450); }
-    await p.wait('document.querySelectorAll(".hp-table tbody tr").length === 1', 'última página');
-    const last = await info(p); ck((await rowsOf(p))[0] === subject(1) && last.pager === '4 / 4' && last.nextDisabled === true, 'última página: queda 1 registro y «Siguiente» se deshabilita', last);
-    await p.close(); }
+    ck(rows.length === 20 && rows[0] === subject(25) && rows[19] === subject(6), 'respuesta con «messages» y paginación: la tabla muestra los registros (antes quedaba vacía)', rows);
+    ck(/^25 consultas coinciden/.test(i.count) && i.page === 'Página 1' && i.prevDisabled === true && i.nextDisabled === false, 'conserva el total real (25) y los botones de paginación', i);
+    await p.clickText('.hp-pagination button', 'Siguiente'); await waitRows(p, 5, 'segunda página');
+    const r2 = await rowsOf(p), i2 = await info(p);
+    ck(r2[0] === subject(5) && r2[4] === subject(1) && i2.page === 'Página 2' && i2.prevDisabled === false && i2.nextDisabled === true, 'última página: quedan 5 registros (5 a 1), contador «Página 2» y «Siguiente» deshabilitado', { r2, i2 });
+    await p.clickText('.hp-pagination button', 'Anterior'); await waitRows(p, 20, 'vuelta a la primera');
+    ck((await info(p)).page === 'Página 1' && (await rowsOf(p))[0] === subject(25), 'página anterior: vuelve a la primera'); await p.close(); }
 
-  { // filtros: búsqueda y estado
-    const p = await session(TABLE); await waitRows(p, 8, 'tabla');
+  { // filtros: búsqueda y estado (los mismos que la bandeja)
+    const p = await session(TABLE); await waitRows(p, 20, 'tabla');
     const wantSearch = messages.filter(x => [x.nombre, x.email, x.asunto, x.mensaje].some(v => v.toLowerCase().includes('persona 2'))).length;
-    await p.type('input[aria-label="Buscar registros"]', 0, 'Persona 2'); await p.clickText('.hp-toolbar button', 'Buscar'); await waitRows(p, Math.min(8, wantSearch), 'búsqueda');
-    let i = await info(p); ck(i.count === String(wantSearch) && (await rowsOf(p)).length === Math.min(8, wantSearch), 'búsqueda: el total y las filas corresponden al filtro del servidor (' + wantSearch + ' resultados)', { i, wantSearch });
-    await p.type('input[aria-label="Buscar registros"]', 0, ''); await p.clickText('.hp-toolbar button', 'Buscar'); await waitRows(p, 8, 'sin búsqueda');
+    await p.type('input[aria-label="Buscar consultas"]', 0, 'Persona 2'); await p.wait('document.querySelector(".hp-card-heading p")?.textContent.startsWith("' + wantSearch + ' consultas coinciden")', 'búsqueda');
+    let i = await info(p); ck((await rowsOf(p)).length === Math.min(20, wantSearch), 'búsqueda: el total y las filas corresponden al filtro del servidor (' + wantSearch + ' resultados)', { i, wantSearch });
+    await p.type('input[aria-label="Buscar consultas"]', 0, ''); await waitRows(p, 20, 'sin búsqueda');
     const wantState = messages.filter(x => x.estado === 'en_proceso').length;
-    await p.type('select[aria-label="Filtrar por estado"]', 0, 'en_proceso'); await waitRows(p, wantState, 'filtro por estado'); i = await info(p);
-    ck(i.count === String(wantState) && i.pager === '1 / 1', 'filtro por estado: total y páginas correctos (' + wantState + ' en proceso)', i);
+    await p.type('select[aria-label="Estado de atención"]', 0, 'en_proceso'); await p.wait('document.querySelector(".hp-card-heading p")?.textContent.startsWith("' + wantState + ' consultas coinciden")', 'filtro por estado'); i = await info(p);
+    ck((await rowsOf(p)).length === Math.min(20, wantState) && i.page === 'Página 1', 'filtro por estado: total y filas correctos (' + wantState + ' en proceso)', i);
     await p.close(); }
 
   { // vacío frente a error
-    const p = await session(TABLE); await waitRows(p, 8, 'tabla');
-    await ctl('mode', 'empty'); await p.evaluate('document.querySelector("button[aria-label=\\"Actualizar registros\\"]").click(); 1'); await p.wait('document.querySelector(".hp-empty h3")?.textContent.includes("Tu próximo proyecto")', 'lista vacía');
-    let i = await info(p); ck(i.alert === '' && i.count === '0' && (await p.evaluate('document.querySelectorAll(".hp-table tbody tr").length')) === 0, 'lista vacía: se muestra como vacía (sin error) y el total es 0', i);
-    await ctl('mode', 'error'); await p.evaluate('document.querySelector("button[aria-label=\\"Actualizar registros\\"]").click(); 1'); await p.wait('document.querySelector(".hp-card [role=alert]")', 'error de carga'); i = await info(p);
-    ck(/No pudimos cargar los registros/.test(i.alert) && /Reintentar/.test(i.alert) && i.count === '—' && (await p.evaluate('document.querySelectorAll(".hp-table tbody tr").length')) === 0, 'error HTTP: se distingue del vacío (alerta «No pudimos cargar los registros», total «—» y botón Reintentar)', i);
-    await ctl('mode', 'broken'); await p.clickText('.hp-card [role=alert] button', 'Reintentar'); await p.wait('document.querySelector(".hp-card [role=alert]")?.innerText.includes("formato inesperado")', 'formato inesperado');
-    ck(true, 'una respuesta sin «messages» se trata como error de formato, no como lista vacía');
-    await ctl('mode', 'ok'); await p.clickText('.hp-card [role=alert] button', 'Reintentar'); await waitRows(p, 8, 'recuperación');
-    ck((await rowsOf(p))[0] === subject(25), 'Reintentar recupera la lista'); await p.close(); }
+    const p = await session(TABLE); await waitRows(p, 20, 'tabla');
+    await ctl('mode', 'empty'); await refresh(p); await p.wait('document.querySelector(".hw-inbox-list .hp-empty")?.innerText.includes("No hay consultas con estos filtros")', 'lista vacía');
+    let i = await info(p); ck(i.alert === '' && /^0 consultas coinciden/.test(i.count) && (await p.evaluate('document.querySelectorAll(".hw-inbox-table tbody tr").length')) === 0, 'lista vacía: se muestra como vacía (sin error) y el total es 0', i);
+    await ctl('mode', 'error'); await refresh(p); await p.wait('document.querySelector(".hp-error[role=alert]")', 'error de carga'); i = await info(p);
+    ck(/No se pudo consultar la bandeja/.test(i.listError) && /Reintentar/.test(i.listError) && /Datos no disponibles/.test(i.count) && (await p.evaluate('document.querySelectorAll(".hw-inbox-table tbody tr").length')) === 0, 'error HTTP: se distingue del vacío (alerta, «Datos no disponibles», sin filas y botón Reintentar)', i);
+    await ctl('mode', 'broken'); await p.clickText('.hw-inbox-list .hp-empty button', 'Reintentar'); await p.wait('document.querySelector(".hp-error[role=alert]")?.innerText.includes("formato inesperado")', 'formato inesperado');
+    ck(true, 'una respuesta paginada sin «messages» se trata como error de formato, no como lista vacía');
+    await ctl('mode', 'ok'); await p.clickText('.hw-inbox-list .hp-empty button', 'Reintentar'); await waitRows(p, 20, 'recuperación');
+    ck((await rowsOf(p))[0] === subject(25) && (await info(p)).alert === '', 'Reintentar recupera la lista'); await p.close(); }
 
-  { // exportación CSV de lo visible, con caracteres especiales
-    const p = await session(TABLE); await waitRows(p, 8, 'tabla');
+  { // exportación CSV completa, con caracteres especiales (D6.1)
+    const p = await session(TABLE); await waitRows(p, 20, 'tabla');
     await p.evaluate("window.__csv = null; const make = URL.createObjectURL.bind(URL); URL.createObjectURL = blob => { blob.arrayBuffer().then(buf => { window.__bom = [...new Uint8Array(buf).slice(0, 3)]; window.__csv = new TextDecoder('utf-8', { ignoreBOM: true }).decode(buf); }); return make(blob); }; HTMLAnchorElement.prototype.click = function () { window.__download = this.download; }; 1");
-    await p.clickText('.hp-card-heading .hp-btn', 'Exportar página'); await p.wait('window.__csv', 'CSV generado');
+    await p.clickText('.hp-card-heading .hp-btn', 'Exportar resultados'); await p.wait('window.__csv', 'CSV generado');
     const csv = await p.evaluate('window.__csv'), name = await p.evaluate('window.__download'), bom = await p.evaluate('window.__bom'); const rows = parseCsv(csv.replace(/^\uFEFF/, ''));
-    ck(bom.join(',') === '239,187,191' && name === 'messages-pagina-1.csv', 'exporta las filas visibles con BOM y nombre messages-pagina-1.csv', name);
-    ck(rows.length === 9 && rows[0].join('|') === 'id|nombre|email|telefono|asunto|mensaje' && rows[1][0] === '25', 'el CSV tiene la cabecera y las 8 filas visibles (de la 25 a la 18)', rows.map(r => r[0]));
+    ck(bom.join(',') === '239,187,191' && /^consultas-\d{4}-\d{2}-\d{2}\.csv$/.test(name), 'exporta con BOM y nombre consultas-AAAA-MM-DD.csv', name);
+    ck(rows.length === 26 && rows[0].join('|') === 'id|nombre|correo|telefono|asunto|origen|estado|fecha' && rows[1][0] === '25', 'el CSV exporta TODOS los resultados (25, no solo la página visible) con cabecera estable', rows.map(r => r[0]));
     const byId = Object.fromEntries(rows.slice(1).map(r => [r[0], r]));
     ck(byId['24'][1] === "'=HYPERLINK(\"http://x.test\",\"clic\")" && byId['23'][4] === "'@SUM(1+1)" && byId['21'][3] === "'+51 987 654 321" && byId['20'][1] === "'-cmd|calc", 'las fórmulas (=, @, +, -) quedan neutralizadas y las comillas se conservan', { n24: byId['24'][1], a23: byId['23'][4], t21: byId['21'][3], n20: byId['20'][1] });
-    ck(byId['22'][5] === 'línea 1\nlínea 2, con "comillas"', 'comas, comillas y saltos de línea del mensaje se conservan sin romper las filas', byId['22'][5]);
+    ck(byId['22'][4] === 'línea 1\nlínea 2, con "comillas"', 'comas, comillas y saltos de línea se conservan sin romper las filas', byId['22'][4]);
+    ck(!/nota previa|mensaje/i.test(rows[0].join('|')), 'el CSV no incluye notas ni el cuerpo del mensaje');
     await p.close(); }
 
-  { // otro recurso con «items»
+  { // otro recurso con «items» (ResourceManager sigue intacto para el resto de secciones)
     const p = await session('/admin/dashboard?section=cursos&seccion=cursos&vista=tabla'); await p.wait('document.querySelectorAll(".hp-table tbody tr").length === 3', 'tabla de cursos');
-    const i = await info(p); ck((await rowsOf(p)).join('|') === 'Curso 1|Curso 2|Curso 3' && i.count === '3', 'cursos (respuesta con «items»): sigue mostrando sus registros y su total', { i }); await p.close(); }
+    const rows = await p.evaluate("[...document.querySelectorAll('.hp-table tbody tr')].map(tr => tr.querySelector('.hp-record strong')?.textContent)");
+    ck(rows.join('|') === 'Curso 1|Curso 2|Curso 3' && (await p.evaluate("document.querySelector('.hp-card-heading .hp-count')?.textContent")) === '3', 'cursos (respuesta con «items»): sigue mostrando sus registros y su total en ResourceManager', { rows }); await p.close(); }
 
   console.log('\n== FUNCIONES CONSERVADAS');
-  { const p = await session(TABLE); await waitRows(p, 8, 'tabla');
-    ck((await p.evaluate('!!document.querySelector("a[href=\\"/admin/messages\\"]")')), 'enlace de vuelta al centro de consultas');
-    await p.clickText('button[aria-label^="Ver Asunto 25"]', 'Ver Asunto 25'); await p.wait('document.querySelector("dialog.hp-dialog[open] .hp-details")', 'detalle');
-    ck((await p.evaluate('document.querySelector("dialog.hp-dialog[open]").innerText')).includes('Persona 25'), 'ver detalle de un registro'); await p.clickText('dialog.hp-dialog[open] header button', 'Cerrar ventana'); await sleep(250);
-    await p.clickText('button[aria-label^="Editar Asunto 24"]', 'Editar Asunto 24'); await p.wait('document.querySelector("dialog.hp-dialog[open] select")', 'cambio de estado');
-    await p.type('dialog.hp-dialog[open] select', 0, 'atendido'); await p.evaluate("document.querySelector('dialog.hp-dialog[open] form').requestSubmit(); 1"); await p.wait('document.body.innerText.includes("Cambios guardados correctamente.")', 'estado guardado');
+  { const p = await session(TABLE); await waitRows(p, 20, 'tabla');
+    ck((await p.evaluate('!![...document.querySelectorAll(".hw-tabs[aria-label=\\"Vista del listado\\"] button")].find(b => b.textContent.trim() === "Tabla" && b.getAttribute("aria-pressed") === "true")')), 'el alias vista=tabla abre la bandeja con la vista Tabla activa');
+    await p.clickText('.hw-inbox-table button', 'Abrir consulta: Asunto 25'); await p.wait('document.querySelector(".hw-inbox-detail .hw-detail-heading")', 'detalle');
+    ck((await p.evaluate('document.querySelector(".hw-inbox-detail").innerText')).includes('Persona 25') && (await p.path()).includes('id=25'), 'ver detalle de un registro: la fila abre el detalle de la bandeja (con ?id=25)');
+    await p.clickText('.hw-inbox-table button', 'Abrir consulta: Asunto 24'); await p.wait('document.querySelector(".hw-inbox-detail form select")?.value && document.querySelector(".hw-detail-heading small")?.innerText === "Consulta #24"', 'cambio de estado');
+    await p.type('.hw-inbox-detail form select', 0, 'atendido'); await p.clickText('.hw-inbox-detail form .hp-btn-primary', 'Guardar seguimiento'); await p.wait('document.body.innerText.includes("Seguimiento guardado.")', 'estado guardado');
     const w = (await state()).writes.find(x => x.route === 'seguimiento/messages/24' && x.method === 'PUT');
     ck(w && w.data.estado === 'atendido' && w.data.notas === 'nota previa' && w.data.revision === 1, 'cambio de estado mediante Seguimiento (conserva notas y revisión)', w);
-    await p.clickText('button[aria-label^="Eliminar Asunto 19"]', 'Eliminar Asunto 19'); await p.wait('document.querySelector("dialog.hp-dialog[open] .hp-confirm")', 'confirmación');
-    await p.clickText('dialog.hp-dialog[open] .hp-btn-danger', 'Eliminar definitivamente'); await p.wait('document.body.innerText.includes("Registro eliminado")', 'eliminación');
-    ck((await state()).writes.some(x => x.method === 'DELETE' && x.route === 'messages/19'), 'eliminar pide confirmación y envía DELETE al recurso');
+    await p.clickText('.hw-inbox-table button', 'Abrir consulta: Asunto 19'); await p.wait('document.querySelector(".hw-detail-heading small")?.innerText === "Consulta #19"', 'consulta 19');
+    await p.clickText('.hw-inbox-detail button', 'Eliminar consulta'); await p.wait('document.querySelector("dialog.hp-dialog[open] .hp-confirm")', 'confirmación');
+    await p.clickText('dialog.hp-dialog[open] .hp-btn-danger', 'Eliminar definitivamente'); await p.wait('document.body.innerText.includes("Consulta eliminada")', 'eliminación');
+    ck((await state()).writes.filter(x => x.method === 'DELETE').length === 1 && (await state()).writes.some(x => x.method === 'DELETE' && x.route === 'messages/19'), 'eliminar pide confirmación y envía un único DELETE al recurso');
     await p.close(); }
-  { const p = await session('/admin/dashboard?section=mensajes&crear=1'); await p.wait('document.querySelector("dialog.hp-dialog[open] form")', 'registro manual');
-    await p.type('dialog.hp-dialog[open] input', 0, 'Persona manual'); await p.type('dialog.hp-dialog[open] input', 1, 'manual@example.test'); await p.type('dialog.hp-dialog[open] input', 3, 'Asunto manual'); await p.type('dialog.hp-dialog[open] textarea', 0, 'Texto de la consulta manual');
+  { const p = await session('/admin/dashboard?section=mensajes&vista=tabla&crear=1'); await p.wait('document.querySelector("dialog.hp-dialog[open] form")', 'registro manual');
+    ck(await p.evaluate('!!document.querySelector(".hw-inbox-table")'), 'el registro manual (crear=1) se abre sobre la vista Tabla');
+    await p.type('#manual-message-nombre', 0, 'Persona manual'); await p.type('#manual-message-email', 0, 'manual@example.test'); await p.type('#manual-message-asunto', 0, 'Asunto manual'); await p.type('#manual-message-mensaje', 0, 'Texto de la consulta manual');
     await p.clickText('dialog.hp-dialog[open] .hp-btn', 'Cancelar'); await p.wait('document.querySelector("dialog.hp-unsaved-dialog[open]")', 'protección de cambios');
     ck(true, 'registro manual: cerrar con datos escritos pide confirmar (protección de cambios sin guardar)'); await p.evaluate('document.querySelector("dialog.hp-unsaved-dialog[open] button").click(); 1'); await sleep(200);
-    await p.evaluate("document.querySelector('dialog.hp-dialog[open] form').requestSubmit(); 1"); await p.wait('document.body.innerText.includes("Se creó") || document.body.innerText.includes("Cambios guardados") || document.body.innerText.includes("Consulta registrada")', 'creación'); // D6.1: ?crear=1 abre el registro manual dentro de la bandeja
+    await p.evaluate("document.querySelector('dialog.hp-dialog[open] form').requestSubmit(); 1"); await p.wait('document.body.innerText.includes("Consulta registrada")', 'creación');
     ck((await state()).writes.some(x => x.method === 'POST' && x.route === 'messages' && x.data.nombre === 'Persona manual'), 'registro manual de consultas: envía POST con los datos escritos'); await p.close(); }
-  { const p = await session('/admin/messages'); await p.wait('document.querySelector(".hw-inbox")', 'bandeja');
-    const href = await p.evaluate('document.querySelector("a[href*=\\"vista=tabla\\"]")?.getAttribute("href")'); ck(href === '/admin/dashboard?section=mensajes&vista=tabla', 'la bandeja enlaza a la vista de registros', href);
-    await p.evaluate('document.querySelector("a[href*=\\"vista=tabla\\"]").click(); 1'); await waitRows(p, 8, 'tabla desde la bandeja'); ck(true, 'el enlace abre la tabla con sus registros'); await p.close(); }
   { const p = await open(); await p.go('/__empty'); await p.evaluate('localStorage.clear(); 1'); await p.go(TABLE, 'document.querySelector(".admin-auth")');
     ck((await p.path()) === '/admin/login', 'sin sesión administrativa la tabla no se muestra: redirige al login'); await p.close(); }
 
@@ -208,6 +206,6 @@ async function main() {
   ck(jsErrors.length === 0, 'sin excepciones de JavaScript', jsErrors.slice(0, 3));
   console.log(fails ? '\nHAY ' + fails + ' FALLA(S)' : '\nTabla de Mensajes: OK.');
   cleanup();
-  void browser; void visible; process.exit(fails ? 1 : 0);
+  void browser; process.exit(fails ? 1 : 0);
 }
 main().catch(error => { console.error(error); process.exit(1); });

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useAdminAuth } from '../../context';
 import { useConfirmLeave } from '../../unsaved/unsavedContext';
 import { useLatest } from '../../hooks/useLatest';
@@ -20,7 +20,7 @@ const EXPORT_PAGE_TIMEOUT_MS = 15_000;
 
 export default function MessageInbox() {
   const { token } = useAdminAuth();
-  const [params, setParams] = useSearchParams();
+  const [params, setParams] = useSearchParams(); const location = useLocation();
   const [revision, setRevision] = useState(0);
   const [search, setSearch] = useState('');
   const [channel, setChannel] = useState('');
@@ -181,7 +181,7 @@ export default function MessageInbox() {
           <dl className="hw-contact-data"><div><dt>Correo</dt><dd>{String(selected.email)}</dd></div><div><dt>Teléfono</dt><dd>{String(selected.telefono || 'No indicado')}</dd></div></dl>
           <div className="hw-message-text">{String(selected.mensaje)}</div>
           <div className="hp-actions">{email && <a className="hp-btn" href={'mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent('Re: ' + selected.asunto)}><PanelIcon name="mail" />Abrir correo</a>}{phone.length >= 6 && <a className="hp-btn" href={'tel:' + phone}>Llamar</a>}</div>
-          <Link className="hp-btn" to={'/admin/dashboard?section=cotizaciones&contacto='+selected.id} aria-disabled={savePending || undefined} onClick={event => { if (savePending) event.preventDefault(); }}>Preparar cotización</Link><p className="hw-caption">El correo se abre en tu aplicación. El estado de la consulta se actualiza por separado.</p>
+          <Link className="hp-btn" to={'/admin/dashboard?section=cotizaciones&contacto='+selected.id} state={{ from: location.pathname + location.search }} aria-disabled={savePending || undefined} onClick={event => { if (savePending) event.preventDefault(); }}>Preparar cotización</Link><p className="hw-caption">El correo se abre en tu aplicación. El estado de la consulta se actualiza por separado.</p>
           <AttentionEditor key={selected.id} syncKey={editorEpoch} resource="messages" id={selected.id} onPendingChange={setSavePending} onUncertainChange={setSaveUncertain} onSaved={(item)=>{detail.patch({ estado: item.estado });setNotice('Seguimiento guardado.');setRevision(v=>v+1)}} /><div className="hw-next-action"><strong>Siguiente paso</strong><p>Actualiza el estado según la atención realizada.</p><div className="hp-actions">
             {metrics.filter(([state]) => state !== selected.estado).map(([state]) => <button className={'hp-btn' + (state === 'atendido' ? ' hp-btn-primary' : '')} key={state} disabled={busy || savePending || saveUncertain} onClick={() => void changeState(state)}>{busy ? 'Guardando…' : selected.estado === 'archivado' ? 'Reabrir: ' + label(state) : state === 'archivado' ? 'Archivar consulta' : state === 'nuevo' ? 'Volver a pendiente' : state === 'en_proceso' ? 'Iniciar atención' : 'Marcar atendido'}</button>)}
           </div></div>

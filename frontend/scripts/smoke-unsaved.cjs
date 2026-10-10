@@ -260,7 +260,8 @@ async function main() {
     ck(await p.evaluate('!!document.querySelector("dialog.hp-dialog[open] form")'), 'guardado fallido de la cotización: el formulario sigue abierto con sus datos');
     await p.clickText('dialog.hp-dialog[open] .hp-btn', 'Cancelar'); await p.wait('document.querySelector("dialog.hp-unsaved-dialog[open]")', 'sigue avisando tras fallo');
     ck(true, 'tras un guardado fallido la cotización sigue contando como no guardada'); await p.evaluate('document.querySelector("dialog.hp-unsaved-dialog[open] button").click(); 1'); await ctl('writeMode', 'ok'); await sleep(200);
-    await p.evaluate("document.querySelector('dialog.hp-dialog[open] form').requestSubmit(); 1"); await sleep(900);
+    // D7: un 500 al CREAR es un resultado incierto (el servidor pudo guardar): el reintento exige confirmar de forma explícita.
+    await p.evaluate("document.querySelector('dialog.hp-dialog[open] form').requestSubmit(); 1"); await p.wait('document.querySelector("dialog.hp-dialog[open] [data-quote-uncertain=confirming]")', 'confirmación tras el resultado incierto'); await p.clickText('dialog.hp-dialog[open] .hp-btn', 'Guardar de todos modos'); await sleep(900);
     ck(!(await p.evaluate('!!document.querySelector("dialog.hp-dialog[open]")')) && !(await p.dialog()), 'guardado correcto: el formulario se cierra sin pedir confirmación', await state()); await p.close(); }
   await clean();
   { const p = await withSession(TOK.A1, '/admin/dashboard?section=ajustes');

@@ -3,15 +3,19 @@
 // retiro de Suscripciones y Reclamaciones del panel (menú, tarjetas y rutas directas) y los canales públicos que se conservan.
 const { start, sleep, TOKEN } = require('./smoke-kit.cjs');
 
-const sim = { stats: 'ok', list: 'ok', libro: 'ok', unsub: 'ok' };
+const sim = { stats: 'ok', list: 'ok', libro: 'ok', unsub: 'ok', activity: 'ok' };
 const requests = [];
 const zero = { total: 0, publicados: 0, borradores: 0, archivados: 0 };
 const catalogo = { cursos: { total: 4, publicados: 3, borradores: 1, archivados: 0, por_tipo: { curso: { total: 3, publicados: 2, borradores: 1, archivados: 0 }, capacitacion: { total: 1, publicados: 1, borradores: 0, archivados: 0 } } }, servicios: { ...zero, total: 5, publicados: 5 }, 'preguntas-frecuentes': { ...zero, total: 2, publicados: 2 } };
 const messages = Array.from({ length: 6 }, (_, i) => { const id = 6 - i; return { id, nombre: 'Persona ' + id, email: 'p' + id + '@example.test', telefono: '987654' + String(id).padStart(3, '0'), asunto: 'Asunto ' + id, mensaje: 'Mensaje ' + id, estado: id % 2 ? 'nuevo' : 'en_proceso', createdAt: '2026-05-0' + id + 'T10:00:00.000Z', updatedAt: '2026-05-0' + id + 'T10:00:00.000Z' }; });
+// Serie ficticia terminada hoy (UTC): día i → i % 4 mensajes, la mitad (redondeo hacia abajo) del chatbot.
+const activity = dias => { const today = Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate());
+  const mensajes = Array.from({ length: dias }, (_, i) => { const total = i % 4; return { fecha: new Date(today - (dias - 1 - i) * 86400000).toISOString().slice(0, 10), total, chatbot: Math.floor(total / 2) }; });
+  return { ok: true, dias, desde: mensajes[0].fecha, hasta: mensajes[dias - 1].fecha, mensajes, cotizaciones: { total: 4, porEstado: { borrador: 1, enviada: 2, aceptada: 1, rechazada: 0, anulada: 0 } } }; };
 const attention = id => ({ ok: true, item: { estado: messages.find(m => m.id === id)?.estado || 'nuevo', responsable: '', notas: '', respuesta: '', revision: 1, historial: [] } });
 
 const handler = async (req, res, { route, url, json, body }) => {
-  if (route.startsWith('/__s/')) { const [, , key, value] = route.split('/'); if (key === 'clear') { requests.length = 0; Object.assign(sim, { stats: 'ok', list: 'ok', libro: 'ok', unsub: 'ok' }); } else sim[key] = value; return json({ ok: true }) || true; }
+  if (route.startsWith('/__s/')) { const [, , key, value] = route.split('/'); if (key === 'clear') { requests.length = 0; Object.assign(sim, { stats: 'ok', list: 'ok', libro: 'ok', unsub: 'ok', activity: 'ok' }); } else sim[key] = value; return json({ ok: true }) || true; }
   if (route === '/__state') return json({ requests }) || true;
   if (!route.startsWith('/api/')) return false;
   const token = (req.headers.authorization || '').replace('Bearer ', '');
@@ -24,6 +28,7 @@ const handler = async (req, res, { route, url, json, body }) => {
   if (route === '/api/admin/me') return (token === TOKEN ? json({ ok: true, user: { id: 1, nombre: 'Ana Administradora', email: 'ana@example.test' } }) : json({ message: 'Unauthorized' }, 401)) || true;
   if (token !== TOKEN) return json({ message: 'Unauthorized' }, 401) || true;
   const sub = route.slice('/api/admin/'.length); let m;
+  if (sub === 'stats/actividad') return (sim.activity === 'error' ? json({ message: 'Internal server error ER_SECRET' }, 500) : sim.activity === 'malformed' ? json({ ok: true, items: [] }) : json(activity(+url.searchParams.get('dias') || 30))) || true;
   if (sub === 'stats' && sim.stats === 'malformed') return json({ ok: true, items: [], pagination: { page: 1, total: 0, pages: 1 } }) || true;
   if (sub === 'stats') return (sim.stats === 'error' ? json({ message: 'Internal server error ER_SECRET' }, 500) : json({ ok: true, stats: { catalogo, mensajes: { total: 6, nuevos: 3, enProceso: 3, atendidos: 0, archivados: 0 }, reclamaciones: { total: 9 }, contenido: { total: 0 }, administradores: { total: 1 } }, actividadReciente: { mensajes: messages.slice(0, 2).map(x => ({ id: x.id, nombre: x.nombre, asunto: x.asunto, estado: x.estado, createdAt: x.createdAt })), reclamaciones: [] } })) || true;
   if (sub === 'messages') {
@@ -76,6 +81,26 @@ const handler = async (req, res, { route, url, json, body }) => {
     const text = await p.text('main'); const values = await metricValues(p);
     ck(!/No pudimos abrir esta página/.test(await p.text()) && /formato inesperado/.test(text), 'un cuerpo con forma inesperada no rompe la página: se muestra el aviso de indicadores no disponibles', text.slice(0, 160));
     ck(values.every(v => v === '—') && !(await p.evaluate('!!document.querySelector(".hw-work")')), 'los indicadores muestran «—» (no ceros inventados) y no hay tarjetas de trabajo'); await p.close(); }
+
+  console.log('\n== RESUMEN: GRÁFICO DE ACTIVIDAD');
+  await clean();
+  { const p = await session('/admin/dashboard'); await p.wait('document.querySelectorAll(".hp-chart title").length === 30', 'gráfico de 30 días');
+    const expected = Array.from({ length: 30 }, (_, i) => i % 4).reduce((a, b) => a + b, 0);
+    const summary = await p.evaluate('document.querySelector(".hp-chart-summary strong").textContent');
+    ck(+summary === expected, 'el total del gráfico coincide con la suma de la serie de la API (' + expected + ')', summary);
+    ck(await p.evaluate('document.querySelector(".hp-chart").getAttribute("role") === "img" && !!document.getElementById(document.querySelector(".hp-chart").getAttribute("aria-labelledby"))?.textContent.includes("mensajes")'), 'el gráfico tiene nombre accesible con un resumen en texto');
+    ck(await p.evaluate('document.querySelectorAll(".hp-chart-data tbody tr").length === 30 && document.querySelector(".hp-chart-data").open === false'), 'los mismos datos están disponibles en una tabla plegada');
+    ck(await p.evaluate('[...document.querySelectorAll(".hp-quotes-chart li")].map(li => li.querySelector("strong").textContent).join() === "1,2,1,0,0"'), 'cotizaciones por estado muestran los conteos de la API');
+    await p.click('.hp-activity-card .hw-tabs button', '7 días'); await p.wait('document.querySelectorAll(".hp-chart title").length === 7 && document.querySelector(".hp-activity-card .hw-tabs button[aria-pressed=true]").textContent.startsWith("7")', 'cambio a 7 días');
+    ck(true, 'el selector de periodo vuelve a consultar y dibuja 7 días'); await p.close(); }
+  await clean();
+  { await ctl('activity', 'error'); const p = await session('/admin/dashboard'); await p.wait('document.querySelector(".hp-activity-card [role=alert]")', 'error de actividad'); const text = await p.text('.hp-activity-card'); const values = await metricValues(p);
+    ck(!/ER_SECRET/.test(text) && /No se pudo cargar la actividad/.test(text) && !(await p.evaluate('!!document.querySelector(".hp-chart")')), 'si falla la actividad se avisa sin texto técnico y no se dibuja un gráfico inventado', text.slice(0, 160));
+    ck(values.join() === '11,10,3,1', 'los indicadores del resumen siguen disponibles aunque falle el gráfico', values);
+    await ctl('activity', 'ok'); await p.click('.hp-activity-card [role=alert] .hp-btn', 'Reintentar'); await p.wait('document.querySelectorAll(".hp-chart title").length === 30', 'recuperación'); ck(true, '«Reintentar» recupera el gráfico'); await p.close(); }
+  await clean();
+  { await ctl('activity', 'malformed'); const p = await session('/admin/dashboard'); await p.wait('document.querySelector(".hp-activity-card [role=alert]")', 'formato inesperado');
+    ck(/formato inesperado/.test(await p.text('.hp-activity-card')) && !(await p.evaluate('!!document.querySelector(".hp-chart")')), 'una respuesta con forma inesperada no se dibuja como «sin actividad»'); await p.close(); }
 
   console.log('\n== SECCIONES RETIRADAS: RUTAS DIRECTAS');
   await clean();

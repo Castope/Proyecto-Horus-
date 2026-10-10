@@ -14,6 +14,7 @@ import PanelQuotes from '../components/PanelQuotes';
 import PanelChatbot from '../components/PanelChatbot';
 import PanelConvenios from '../components/PanelConvenios';
 import '../styles/workspace.css';
+import '../styles/panel-polish.css';
 
 const mobileQuery = '(max-width: 760px)';
 const subscribeToViewport = (callback: () => void) => {

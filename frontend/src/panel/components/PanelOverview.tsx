@@ -6,6 +6,7 @@ import { type DashboardStats, label } from '../types/workspace';
 import PanelIcon from './PanelIcon';
 import { useNavigate } from 'react-router-dom';
 import OverviewWork from './workspace/OverviewWork';
+import OverviewActivity from './workspace/OverviewActivity';
 
 // Una respuesta con otra forma (proxy, versión distinta del servidor) no debe romper la página entera: se trata como error de carga.
 const isObject = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object';
@@ -50,6 +51,7 @@ export default function PanelOverview({ go }: { go: (section: string, create?: b
         { title: 'Borradores', value: draft, sub: 'Contenido por revisar', icon: 'edit', section: 'cursos', color: 'purple' }].map(item =>
         <article key={item.title}><div className="hp-metric-top"><span className={'hp-metric-icon hp-tone-' + item.color}><PanelIcon name={item.icon} /></span><span className="hp-metric-label">{item.title}</span></div><strong>{metric(item.value)}</strong><p>{item.sub}</p></article>)}
     </section>
+    <OverviewActivity go={go} />
     {!loading && !error && data && <OverviewWork data={data} />}
     <div className="hp-overview-grid"><section className="hp-card hp-distribution"><div className="hp-card-heading"><div><p className="hp-kicker">CATÁLOGO</p><h2>Tu contenido, en perspectiva</h2></div><PanelIcon name="file" /></div>
       <div className="hp-distribution-total"><strong>{metric(catalogTotal)}</strong><span>registros en total</span></div>

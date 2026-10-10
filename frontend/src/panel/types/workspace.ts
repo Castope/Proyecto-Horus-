@@ -10,7 +10,12 @@ export type DashboardStats = {
   };
   actividadReciente: { mensajes: { id: number; nombre: string; asunto: string; estado: string; createdAt: string }[] };
 };
-const title: Field = { key: 'titulo', label: 'Título', required: true, max: 160 };
+export type ActivityStats = {
+  dias: number; desde: string; hasta: string;
+  mensajes: { fecha: string; total: number; chatbot: number }[];
+  cotizaciones: { total: number; porEstado: Record<string, number> };
+};
+const title: Field ={ key: 'titulo', label: 'Título', required: true, max: 160 };
 const slug: Field = { key: 'slug', label: 'Identificador URL (slug)', required: true, max: 180 };
 const description: Field = { key: 'descripcion', label: 'Descripción', type: 'textarea', required: true, max: 20000 };
 const states = ['borrador', 'publicado', 'archivado'];
@@ -53,7 +58,7 @@ export const resources: Record<string, Resource> = {
       { key: 'orden', label: 'Orden', type: 'number', min: 0 },
       { key: 'activo', label: 'Visibilidad', type: 'select', options: ['activo', 'inactivo'], required: true }] },
 };
-export const labels: Record<string, string> = { '':'Por confirmar',indigo:'Índigo',coral:'Coral',verde:'Verde',violeta:'Violeta',oscuro:'Oscuro',normal:'Tarjeta general',camara:'Cámara con monitor',alertas:'Notificaciones',nube:'Almacenamiento en la nube',app:'Aplicación móvil',mantenimiento:'Ciclo de mantenimiento',software:'Terminal de software',redes:'Diagrama de redes',emergencia:'Atención urgente',asesoria:'Asesoramiento',beneficio:'Beneficio (Por qué elegirnos)',linea:'Línea de asesoramiento',heart:'Salud',legal:'Derecho',finance:'Finanzas',technology:'Tecnología',education:'Educación',business:'Empresa',network:'Red',camera:'Cámara',bell:'Campana',cloud:'Nube',mobile:'Móvil',tools:'Herramientas',emergency:'Urgencia',star:'Estrella',users:'Especialistas',target:'Soluciones',handshake:'Acompañamiento', en_proceso: 'En proceso', capacitacion: 'Capacitación', hibrida: 'Híbrida', camaras: 'Cámaras', publicado: 'Publicado', borrador: 'Borrador', archivado: 'Archivado', activo: 'Activo', inactivo: 'Inactivo', nuevo: 'Nuevo', atendido: 'Atendido' };
+export const labels: Record<string, string> = { '':'Por confirmar',indigo:'Índigo',coral:'Coral',verde:'Verde',violeta:'Violeta',oscuro:'Oscuro',normal:'Tarjeta general',camara:'Cámara con monitor',alertas:'Notificaciones',nube:'Almacenamiento en la nube',app:'Aplicación móvil',mantenimiento:'Ciclo de mantenimiento',software:'Terminal de software',redes:'Diagrama de redes',emergencia:'Atención urgente',asesoria:'Asesoramiento',beneficio:'Beneficio (Por qué elegirnos)',linea:'Línea de asesoramiento',heart:'Salud',legal:'Derecho',finance:'Finanzas',technology:'Tecnología',education:'Educación',business:'Empresa',network:'Red',camera:'Cámara',bell:'Campana',cloud:'Nube',mobile:'Móvil',tools:'Herramientas',emergency:'Urgencia',star:'Estrella',users:'Especialistas',target:'Soluciones',handshake:'Acompañamiento', en_proceso: 'En proceso', capacitacion: 'Capacitación', hibrida: 'Híbrida', camaras: 'Cámaras', publicado: 'Publicado', borrador: 'Borrador', archivado: 'Archivado', activo: 'Activo', inactivo: 'Inactivo', nuevo: 'Nuevo', atendido: 'Atendido', enviada: 'Enviada', aceptada: 'Aceptada', rechazada: 'Rechazada', anulada: 'Anulada' };
 // A panel section shows one slice of a resource. Its filters are the backend query, the form defaults and the allowed options.
 // `choices` fixes the values a select may offer (creating and editing); without it only the filters restrict new records.
 export type PanelScope = { key: string; label: string; singular: string; kicker: string; description: string; resource: string; filters: Record<string, string>; choices?: Record<string, string[]> };

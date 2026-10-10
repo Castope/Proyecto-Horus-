@@ -191,6 +191,7 @@ async function main() {
     ck((await state()).writes.filter(x => x.method === 'DELETE').length === 1 && (await state()).writes.some(x => x.method === 'DELETE' && x.route === 'messages/19'), 'eliminar pide confirmación y envía un único DELETE al recurso');
     await p.close(); }
   { const p = await session('/admin/dashboard?section=mensajes&vista=tabla&crear=1'); await p.wait('document.querySelector("dialog.hp-dialog[open] form")', 'registro manual');
+    await p.wait('document.querySelector(".hw-inbox-table")', 'la tabla bajo el diálogo (el listado se carga en paralelo al diálogo)');
     ck(await p.evaluate('!!document.querySelector(".hw-inbox-table")'), 'el registro manual (crear=1) se abre sobre la vista Tabla');
     await p.type('#manual-message-nombre', 0, 'Persona manual'); await p.type('#manual-message-email', 0, 'manual@example.test'); await p.type('#manual-message-asunto', 0, 'Asunto manual'); await p.type('#manual-message-mensaje', 0, 'Texto de la consulta manual');
     await p.clickText('dialog.hp-dialog[open] .hp-btn', 'Cancelar'); await p.wait('document.querySelector("dialog.hp-unsaved-dialog[open]")', 'protección de cambios');

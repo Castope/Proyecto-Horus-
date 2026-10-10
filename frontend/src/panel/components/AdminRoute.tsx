@@ -3,6 +3,7 @@ import { useAdminAuth } from '../context';
 import { safeAdminReturn } from '../context/returnPath';
 import UnsavedChangesProvider from '../unsaved/UnsavedChangesProvider';
 import RouteLoading from '../../components/RouteLoading';
+import PanelToaster from './PanelToaster';
 export default function AdminRoute() {
   const { isAuthenticated, checking, sessionError, retrySession, logout, user, endReason } = useAdminAuth();
   const location = useLocation();
@@ -15,5 +16,5 @@ export default function AdminRoute() {
     return <Navigate to="/admin/login" replace state={{ from, expired: endReason === 'expired' }} />;
   }
   // `key`: si la identidad cambia, el panel se vuelve a montar y no conserva formularios ni datos de la cuenta anterior.
-  return <UnsavedChangesProvider key={user?.id}><Outlet /></UnsavedChangesProvider>;
+  return <UnsavedChangesProvider key={user?.id}><PanelToaster /><Outlet /></UnsavedChangesProvider>;
 }

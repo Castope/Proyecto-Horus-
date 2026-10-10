@@ -9,6 +9,7 @@ import { quoteTransitions } from '../types/quotes';
 import QuoteForm from './QuoteForm';
 import QuotePrint from './QuotePrint';
 import PanelDialog from './PanelDialog';
+import { notify } from '../services/notify';
 import '../styles/quotes.css';
 export default function PanelQuotes() {
  const {token}=useAdminAuth();const [params,setParams]=useSearchParams();const location=useLocation(),navigate=useNavigate();const fromState=(location.state as {from?:unknown}|null)?.from;const origin=typeof fromState==='string'&&/^\/admin\/[\w?=&%.-]*$/.test(fromState)?fromState:'';const [related,setRelated]=useState<{numero:string;estado:string}[]>([]);
@@ -53,5 +54,5 @@ export default function PanelQuotes() {
  {mail&&<div role={mail.kind==='aceptado'?'status':'alert'} className={(mail.kind==='aceptado'?'hp-notice':'hp-error')+' hq-no-print'} data-mail-result={mail.kind} ref={mailBox} tabIndex={-1}><p>{mail.message}</p>
  {mail.needsConfirm&&<div className="hp-actions"><button type="button" className="hp-btn hp-btn-primary" disabled={busy} onClick={()=>void email(true)}>Enviar de todos modos</button><button type="button" ref={noSendButton} className="hp-btn" disabled={busy} onClick={dismissMail}>No enviar</button></div>}</div>}
  <section className="hq-no-print"><h3>Historial</h3><ul>{detail.historial.map((h,i)=><li key={i}>{new Date(h.fecha).toLocaleString('es-PE')} · {h.accion} · Administrador #{h.usuario}</li>)}</ul><p>Imprimir o enviar por correo conserva el estado actual. Registra los cambios según la atención realizada.</p></section></PanelDialog>}
- {creating&&<QuoteForm initial={editing||undefined} related={related} onClose={()=>closeForm()} onSaved={()=>{closeForm(true);refresh();setNotice('Borrador guardado.')}}/>}</>;
+ {creating&&<QuoteForm initial={editing||undefined} related={related} onClose={()=>closeForm()} onSaved={()=>{closeForm(true);refresh();notify.success('Borrador guardado.')}}/>}</>;
 }

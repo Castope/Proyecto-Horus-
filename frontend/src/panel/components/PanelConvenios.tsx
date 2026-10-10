@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAdminAuth } from '../context';
 import { useRequestStatus } from '../hooks/useRequestStatus';
 import { panelRequest, errorMessage } from '../services/panelApi';
+import { notify } from '../services/notify';
 import type { Convenio, ConvenioDetalle, ConvenioList, ConvenioResponse } from '../../types/convenios';
 import PanelDialog from './PanelDialog';
 import PanelIcon from './PanelIcon';
@@ -15,7 +16,7 @@ export default function PanelConvenios() {
   const [data, setData] = useState<ConvenioList | null>(null);
   const { loading, error, setLoading, setError } = useRequestStatus(JSON.stringify([token, page, search, estado, revision]));
   const [editing, setEditing] = useState<ConvenioDetalle | 'new' | null>(null), [deleting, setDeleting] = useState<Convenio | null>(null);
-  const [busy, setBusy] = useState(false), [actionError, setActionError] = useState(''), [notice, setNotice] = useState('');
+  const [busy, setBusy] = useState(false), [actionError, setActionError] = useState('');
   const action = useRef<AbortController | null>(null);
   useEffect(() => () => { action.current?.abort(); action.current = null; }, []);
   useEffect(() => {
@@ -42,16 +43,15 @@ export default function PanelConvenios() {
   });
   const toggle = (item: Convenio) => void run(async signal => {
     await panelRequest('convenios/' + item.id, token, 'PUT', { visible: !item.visible }, signal);
-    if (!signal.aborted) { setRevision(v => v + 1); setNotice('Visibilidad actualizada.'); }
+    if (!signal.aborted) { setRevision(v => v + 1); notify.success('Visibilidad actualizada.'); }
   });
   const remove = () => deleting && void run(async signal => {
     await panelRequest('convenios/' + deleting.id, token, 'DELETE', undefined, signal);
-    if (!signal.aborted) { setDeleting(null); setRevision(v => v + 1); setNotice('Convenio eliminado. Los archivos subidos se conservan.'); }
+    if (!signal.aborted) { setDeleting(null); setRevision(v => v + 1); notify.success('Convenio eliminado. Los archivos subidos se conservan.'); }
   });
   return <div className="hp-convenios">
     <div className="hp-heading"><div><h1>Convenios</h1><p>Gestiona las alianzas institucionales y sus fotografías.</p></div>
       <button className="hp-btn hp-btn-primary" disabled={busy} onClick={() => { setActionError(''); setEditing('new'); }}><PanelIcon name="plus" />Nuevo convenio</button></div>
-    {notice && <p className="hp-notice" role="status">{notice}</p>}
     {actionError && !deleting && <p className="hp-error" role="alert">{actionError}</p>}
     <section className="hp-card">
       <div className="hp-convenios-tools"><label>Buscar convenio<input value={search} maxLength={100} onChange={e => { setSearch(e.target.value); setPage(1); }} /></label>
@@ -71,7 +71,7 @@ export default function PanelConvenios() {
         <button className="hp-btn" disabled={page >= data.pagination.pages} onClick={() => setPage(v => v + 1)}>Siguiente</button></nav>}
     </section>
     {editing && <ConvenioEditor key={editing === 'new' ? 'new' : editing.id} initial={editing === 'new' ? null : editing}
-      onClose={() => setEditing(null)} onSaved={() => { setRevision(v => v + 1); setNotice('Convenio guardado.'); }} />}
+      onClose={() => setEditing(null)} onSaved={() => { setRevision(v => v + 1); notify.success('Convenio guardado.'); }} />}
     {deleting && <PanelDialog title="Eliminar convenio" busy={busy} onClose={() => setDeleting(null)}>
       <p>¿Eliminar «{deleting.nombre}» y los registros de sus fotografías? Los archivos físicos se conservarán.</p>
       {actionError && <p className="hp-error" role="alert">{actionError}</p>}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState, type SubmitEvent } from 'react';
 import { useAdminAuth } from '../context';
 import { PanelApiError, panelRequest, errorMessage } from '../services/panelApi';
+import { notify } from '../services/notify';
 import { useRequestStatus } from '../hooks/useRequestStatus';
 import { useUnsavedChanges } from '../unsaved/unsavedContext';
 import { useLatest } from '../hooks/useLatest';
@@ -135,7 +136,7 @@ export default function AttentionEditor({ resource, id, onSaved, onPendingChange
       // 409 = la revisión quedó obsoleta: el borrador no se toca, no se repite el PUT y se compara con la versión fresca antes de permitir otro guardado.
       if (conflictOf409(err)) compareWithServer('conflict');
       // Editor completo: timeout, red caída o 5xx NO prueban que no se guardó. Se conserva el borrador, no se repite el PUT y se exige comprobar el servidor.
-      else if (timedOut || !(err instanceof PanelApiError) || err.status >= 500) setDoubt({ baseRevision: sentRevision, sent: sentValues, check: 'none' });
+      else if (timedOut || !(err instanceof PanelApiError) || err.status >= 500) { setDoubt({ baseRevision: sentRevision, sent: sentValues, check: 'none' }); notify.uncertain('No pudimos confirmar si el seguimiento de la consulta #' + id + ' se guardó. Tu borrador se conserva y no se reenviará solo.'); }
       else setActionError(timedOut ? 'No pudimos confirmar si se guardó el cambio. Tu borrador se conserva; comprueba el estado guardado antes de reintentar.' : errorMessage(err));
     } finally { window.clearTimeout(timer); lock.current = false; if (instance.active) { setBusy(false); pendingNotified.current = false; onPendingChange?.(false); } }
   };

@@ -12,6 +12,7 @@ import ImageUpload from './ImageUpload';
 import OriginalContentImport from './OriginalContentImport';
 import PanelDialog from './PanelDialog';
 import { buildCsv } from '../services/listRecords';
+import { notify } from '../services/notify';
 import { useUnsavedChanges } from './../unsaved/unsavedContext';
 
 type ListResponse = { items?: Row[]; pagination?: { total: number; pages: number } };
@@ -32,7 +33,6 @@ export default function ResourceManager({ resource: r, autoCreate, scope }: Prop
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState(r.states.includes(params.get('estado') || '') ? params.get('estado')! : '');
-  const [notice, setNotice] = useState('');
   const [reload, setReload] = useState(0);
   const [editor, setEditor] = useState<Editor | null>(autoCreate ? { session: 0 } : null);
   const editorSequence = useRef(0), mounted = useRef(false);
@@ -183,8 +183,8 @@ export default function ResourceManager({ resource: r, autoCreate, scope }: Prop
         // Clear filters and open the page that holds the new record.
         const landing = await locate(created.id);
         setSearch(''); setQuery(''); setStatus(''); setPage(landing);
-        setNotice('Se creó «' + String(created[r.title]) + '» y ya aparece en la lista' + (landing > 1 ? ' (página ' + landing + ')' : '') + '.');
-      } else setNotice('Cambios guardados correctamente.');
+        notify.success('Se creó «' + String(created[r.title]) + '» y ya aparece en la lista' + (landing > 1 ? ' (página ' + landing + ')' : '') + '.');
+      } else notify.success('Cambios guardados correctamente.');
       setReload(n => n + 1);
     } catch (err) { setFormError(errorMessage(err)); }
     finally { actionLock.current = false; setBusy(false); }
@@ -194,7 +194,7 @@ export default function ResourceManager({ resource: r, autoCreate, scope }: Prop
     actionLock.current = true; setBusy(true); setFormError('');
     try {
       await panelRequest(r.endpoint + '/' + pendingDelete.id, token, 'DELETE');
-      setPendingDelete(null); setNotice(r.hardDelete ? (r.endpoint === 'servicios' ? 'Servicio eliminado definitivamente.' : 'Eliminado definitivamente: «' + String(pendingDelete[r.title]) + '».') : r.catalog ? 'Registro archivado. Puedes recuperarlo editando su estado.' : 'Registro eliminado.');
+      setPendingDelete(null); notify.success(r.hardDelete ? (r.endpoint === 'servicios' ? 'Servicio eliminado definitivamente.' : 'Eliminado definitivamente: «' + String(pendingDelete[r.title]) + '».') : r.catalog ? 'Registro archivado. Puedes recuperarlo editando su estado.' : 'Registro eliminado.');
       setReload(n => n + 1);
     } catch (err) { setFormError(errorMessage(err)); }
     finally { actionLock.current = false; setBusy(false); }
@@ -205,6 +205,7 @@ export default function ResourceManager({ resource: r, autoCreate, scope }: Prop
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const a = document.createElement('a'); a.href = url; a.download = r.endpoint + '-pagina-' + page + '.csv'; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+    notify.success('Se generó el archivo CSV de la página ' + page + ' (' + rows.length + ' registros).');
   };
   const renderField = (field: Field) => {
       // New records stay in the section they are created from; editing may only move them within the same group.
@@ -228,8 +229,7 @@ export default function ResourceManager({ resource: r, autoCreate, scope }: Prop
   return <>
     <div className="hp-heading"><div><p className="hp-kicker">{scope?.kicker ?? 'ESPACIO DE TRABAJO'}</p><h1>{scope?.label ?? r.label}</h1><p>{scope?.description ?? r.description}</p></div>
       <button className="hp-btn hp-btn-primary" onClick={openNew} disabled={busy}><PanelIcon name="plus" />Crear {singular}</button></div>
-    {['servicios','cursos','galeria'].includes(r.endpoint)&&scope?.filters.tipo!=='curso'&&<div className="hp-actions"><OriginalContentImport section={r.endpoint==='cursos'?'capacitaciones':r.endpoint} onRestored={message=>{setNotice(message);setReload(n=>n+1)}}/></div>}
-    {notice && <div className="hp-notice" role="status"><PanelIcon name="check" />{notice}<button aria-label="Cerrar aviso" onClick={() => setNotice('')}><PanelIcon name="close" size={16} /></button></div>}
+    {['servicios','cursos','galeria'].includes(r.endpoint)&&scope?.filters.tipo!=='curso'&&<div className="hp-actions"><OriginalContentImport section={r.endpoint==='cursos'?'capacitaciones':r.endpoint} onRestored={message=>{notify.success(message);setReload(n=>n+1)}}/></div>}
     <section className="hp-card">
       <div className="hp-card-heading"><div><h2>{r.endpoint === 'galeria' ? 'Biblioteca visual' : r.endpoint === 'cursos' ? 'Oferta y planificación' : r.endpoint === 'servicios' ? 'Portafolio de soluciones' : r.endpoint === 'preguntas-frecuentes' ? 'Centro de respuestas' : 'Todos los registros'} <span className="hp-count">{loading ? '…' : error ? '—' : total}</span></h2><p>{visual ? 'Revisa, prepara y organiza el contenido de esta sección.' : 'Consulta y administra tu información.'}</p></div>
         <div className="hp-actions"><button className="hp-btn" onClick={exportPage} disabled={view === 'agenda' || loading || !!error || !rows.length}><PanelIcon name="download" />Exportar página</button>

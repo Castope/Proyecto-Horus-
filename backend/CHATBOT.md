@@ -65,11 +65,30 @@ solo los formularios; el texto libre del chat no pide un consentimiento específ
 
 **Finalidad y retención (decididas por el responsable):** el registro existe únicamente para mejorar los contenidos publicados y las respuestas del asistente. Se conserva
 **90 días** desde la última aparición de la pregunta (`RETENTION_DAYS` en `chatbot-privacy.ts`); las métricas de interacción siguen el mismo plazo. La limpieza elimina lo vencido
-(`ChatbotMetricsService.purgeExpired`, invocada de forma oportunista como máximo una vez por hora por instancia al registrar una interacción) y, mientras no se ejecute, la vista del panel
+(`ChatbotMetricsService.purgeExpiredBatches`) y, mientras no se ejecute, la vista del panel
 **no muestra** lo anterior a 90 días. El plazo y la finalidad figuran en la política de privacidad (sección «Asistente virtual: preguntas sin respuesta») y en el aviso del widget.
-Solo los administradores autenticados ven estos textos. Trata estas tablas como datos personales: no se exportan ni se envían a terceros. Pendiente: una tarea programada
-externa que limpie aunque no haya tráfico (la limpieza actual depende de que el asistente reciba consultas) y un tope de filas si se detecta abuso (hoy limita el guard: 20 consultas por minuto y por IP).
-Requiere aplicar `npm run db:migrate` (migración `20261009-chatbot-metrics`) antes de iniciar esta versión; la migración añade `contactos.origen` y las dos tablas.
+Solo los administradores autenticados ven estos textos. Trata estas tablas como datos personales: no se exportan ni se envían a terceros. Pendiente: un tope de filas si se detecta abuso (hoy limita el guard: 20 consultas por minuto y por IP).
+
+**Migración requerida:** hay que aplicar `npm run db:migrate` (migración `20261009-chatbot-metrics`) antes de iniciar esta versión; la migración añade `contactos.origen` y las dos tablas.
+
+### Limpieza por retención (90 días)
+
+Hay **dos** mecanismos, ambos con el mismo código (`purgeExpiredBatches`):
+
+| Mecanismo | Cuándo se ejecuta | ¿Es automático? |
+| --- | --- | --- |
+| Oportunista | Al registrar una interacción, como máximo una vez por hora y por instancia, hasta 4 lotes por tabla | Sí, **pero solo si el asistente recibe consultas**. Sin tráfico no limpia |
+| Comando `npm run chatbot:purge` | Cuando alguien (o una tarea programada) lo ejecuta, hasta 200 lotes por tabla | **No lo programa el repositorio**: hay que crear la tarea en el entorno real |
+
+**Hasta que alguien programe el comando en Railway (o en el planificador del servidor), no hay una limpieza garantizada ante la falta de tráfico.** La vista del panel sigue sin mostrar lo vencido, pero las filas permanecen en MySQL.
+
+- **Qué borra:** solo filas de `chatbot_preguntas_sin_respuesta` (con `updatedAt` anterior a 90 días) y de `chatbot_interacciones` (con `createdAt` anterior a 90 días). Comparación estricta: una fila con exactamente 90 días se conserva. Nunca toca `contactos` (ni las cotizaciones o consultas que nacen del chatbot), `cotizaciones`, `reclamaciones` ni `attention_records`.
+- **Seguridad:** lotes de 500 filas por id; cada borrado vuelve a comprobar la fecha, así que una pregunta que reapareció entre la lectura y el borrado se conserva. Es idempotente y puede solaparse con otra ejecución.
+- **Ejecución** (desde `backend/`, tras `npm run build`; en la imagen de producción ya están `dist/` y `scripts/`): `npm run chatbot:purge -- --dry-run` solo cuenta lo vencido y no borra; `npm run chatbot:purge` borra. Usa las variables `DB_*` del entorno; revisa antes que apuntan a la base deseada.
+- **Programarlo (decisión del responsable, no configurado):** una tarea diaria que ejecute `npm run chatbot:purge` en el servicio `backend`, con el planificador que elija el responsable en el entorno donde se aloje la API. **No existe hoy ninguna tarea programada** ni hay evidencia de que se haya creado una; tampoco se comprobó qué planificadores ofrece Railway. No se añadió ningún programador ni dependencia nueva.
+- **Supervisión:** el comando imprime cuántas preguntas y métricas eliminó y avisa si el límite por ejecución dejó filas pendientes (la siguiente ejecución continúa). Termina con código 0 si funcionó y 1 si falló; la tarea programada debe alertar ante un código distinto de 0 o ante ausencia de ejecuciones. Conviene ejecutar `--dry-run` de vez en cuando: debe dar 0 vencidas tras una ejecución correcta.
+- **Ante un fallo:** el comando solo muestra un mensaje genérico (sin trazas ni datos de conexión) y no deja nada a medias: cada lote es independiente y repetirlo es seguro. La limpieza oportunista nunca afecta a la respuesta al visitante (solo deja una advertencia en el log). No hay nada que revertir.
+- Las pruebas (`test/chatbot-retention.test.ts`) usan modelos simulados: acreditan la lógica, **no** la ejecución contra MySQL real.
 
 ## Solicitar cotización
 

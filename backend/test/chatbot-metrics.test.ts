@@ -115,20 +115,20 @@ test('redacción ampliada: teléfonos con punto o barra, fechas y direcciones we
 test('retención de 90 días: la limpieza elimina lo anterior al plazo, se intenta como máximo una vez por hora y nunca rompe el registro', async () => {
   const deletes: { tabla: string; where: Record<string, { lt: Date }> }[] = [];
   const prisma = {
-    chatbotInteraccion: { create: async () => ({}), deleteMany: async ({ where }: { where: Record<string, { lt: Date }> }) => { deletes.push({ tabla: 'interacciones', where }); return { count: 0 }; } },
-    chatbotPreguntaSinRespuesta: { upsert: async () => ({}), deleteMany: async ({ where }: { where: Record<string, { lt: Date }> }) => { deletes.push({ tabla: 'preguntas', where }); return { count: 0 }; } },
+    chatbotInteraccion: { create: async () => ({}), findMany: async () => [{ id: 1 }], deleteMany: async ({ where }: { where: Record<string, { lt: Date }> }) => { deletes.push({ tabla: 'interacciones', where }); return { count: 1 }; } },
+    chatbotPreguntaSinRespuesta: { upsert: async () => ({}), findMany: async () => [{ id: 1 }], deleteMany: async ({ where }: { where: Record<string, { lt: Date }> }) => { deletes.push({ tabla: 'preguntas', where }); return { count: 1 }; } },
   } as unknown as PrismaService;
   const metrics = new ChatbotMetricsService(prisma);
   const now = new Date('2026-10-09T12:00:00.000Z');
   await metrics.purgeExpired(now);
   const cutoff = new Date('2026-07-11T12:00:00.000Z'); // 90 días antes
   assert.equal(RETENTION_DAYS, 90); assert.equal(retentionCutoff(now).getTime(), cutoff.getTime());
-  assert.deepEqual(deletes.map(d => [d.tabla, Object.keys(d.where)[0], d.where[Object.keys(d.where)[0]].lt.getTime()]), [['preguntas', 'updatedAt', cutoff.getTime()], ['interacciones', 'createdAt', cutoff.getTime()]]);
+  assert.deepEqual(deletes.map(d => { const field = Object.keys(d.where).find(key => key !== 'id')!; return [d.tabla, field, d.where[field].lt.getTime()]; }), [['preguntas', 'updatedAt', cutoff.getTime()], ['interacciones', 'createdAt', cutoff.getTime()]]);
   deletes.length = 0;
   await metrics.record({ modo: 'catalogo', resuelta: true, fuentes: 1 }); await metrics.record({ modo: 'catalogo', resuelta: true, fuentes: 1 });
   assert.equal(deletes.length, 2, 'dos registros seguidos disparan una sola limpieza (una por tabla)');
   // Si la limpieza falla, el registro y la respuesta siguen funcionando.
-  const failing = new ChatbotMetricsService({ chatbotInteraccion: { create: async () => ({}), deleteMany: async () => { throw new Error('ER_SECRET'); } }, chatbotPreguntaSinRespuesta: { upsert: async () => ({}), deleteMany: async () => { throw new Error('ER_SECRET'); } } } as unknown as PrismaService);
+  const failing = new ChatbotMetricsService({ chatbotInteraccion: { create: async () => ({}), findMany: async () => { throw new Error('ER_SECRET'); } }, chatbotPreguntaSinRespuesta: { upsert: async () => ({}), findMany: async () => { throw new Error('ER_SECRET'); } } } as unknown as PrismaService);
   await assert.doesNotReject(() => failing.record({ modo: 'ia', resuelta: true, fuentes: 2 }));
 });
 

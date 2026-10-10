@@ -20,6 +20,7 @@
     "db:check": "node scripts/check-database.cjs",
     "db:backup": "node scripts/backup.cjs",
     "db:restore": "node scripts/restore.cjs",
+    "chatbot:purge": "node scripts/purge-chatbot.cjs",
     "content:restore": "node scripts/restore-original.cjs",
     "convenios:import": "node scripts/import-convenios.cjs",
     "test:integration": "npm run build && node --test test/prisma.integration.cjs"

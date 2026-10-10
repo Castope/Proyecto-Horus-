@@ -28,7 +28,8 @@
     "smoke:panel-sections": "npm run build && node scripts/smoke-panel-sections.cjs",
     "smoke:message-responsive": "npm run build && node scripts/smoke-message-responsive.cjs",
     "smoke:quote-origin": "npm run build && node scripts/smoke-quote-origin.cjs",
-    "smoke:panel-toasts": "npm run build && node scripts/smoke-panel-toasts.cjs"
+    "smoke:panel-toasts": "npm run build && node scripts/smoke-panel-toasts.cjs",
+    "smoke:chatbot": "npm run build && node scripts/smoke-chatbot.cjs"
   },
   "dependencies": {
     "react": "^19.2.5",

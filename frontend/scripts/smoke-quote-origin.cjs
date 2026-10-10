@@ -2,13 +2,13 @@
 // parámetro heredado ?contacto, vínculo contacto_id, y protección contra duplicados ante respuestas inciertas (el backend no es idempotente).
 const { start, sleep, TOKEN } = require('./smoke-kit.cjs');
 
-const sim = { post: 'ok' };
+const sim = { post: 'ok', estado: '' };
 let quotes = [], writes = [];
 const messages = [3, 4].map(id => ({ id, nombre: 'Persona ' + id, email: 'p' + id + '@example.test', telefono: '987654' + String(id).padStart(3, '0'), asunto: 'Asunto ' + id, mensaje: 'Mensaje ' + id, estado: 'nuevo', createdAt: '2026-05-0' + id + 'T10:00:00.000Z', updatedAt: '2026-05-0' + id + 'T10:00:00.000Z' }));
-const makeQuote = body => ({ id: quotes.length + 1, numero: 'COT-' + String(quotes.length + 1).padStart(4, '0'), estado: 'borrador', revision: 1, subtotal: '100.00', impuesto: '18.00', total: '118.00', historial: [{ accion: 'creada', usuario: 1, fecha: new Date().toISOString() }], createdAt: new Date().toISOString(), ...body, conceptos: body.conceptos.map(c => ({ ...c, importe: c.cantidad * c.precio })) });
+const makeQuote = body => ({ id: quotes.length + 1, numero: 'COT-' + String(quotes.length + 1).padStart(4, '0'), estado: sim.estado || 'borrador', revision: 1, subtotal: '100.00', impuesto: '18.00', total: '118.00', historial: [{ accion: 'creada', usuario: 1, fecha: new Date().toISOString() }], createdAt: new Date().toISOString(), ...body, conceptos: body.conceptos.map(c => ({ ...c, importe: c.cantidad * c.precio })) });
 
 const handler = async (req, res, { route, url, json, body }) => {
-  if (route.startsWith('/__s/')) { const [, , key, value] = route.split('/'); if (key === 'clear') { quotes = []; writes = []; sim.post = 'ok'; } else sim[key] = value; return json({ ok: true }) || true; }
+  if (route.startsWith('/__s/')) { const [, , key, value] = route.split('/'); if (key === 'clear') { quotes = []; writes = []; sim.post = 'ok'; sim.estado = ''; } else sim[key] = value; return json({ ok: true }) || true; }
   if (route === '/__state') return json({ writes, quotes }) || true;
   if (!route.startsWith('/api/')) return false;
   const token = (req.headers.authorization || '').replace('Bearer ', '');
@@ -107,6 +107,16 @@ const handler = async (req, res, { route, url, json, body }) => {
     await ctl('post', 'ok'); await submit(p); await p.wait('document.querySelector("[data-quote-uncertain=confirming]")', 'confirmación'); await p.click('dialog.hp-dialog[open] button', 'Guardar de todos modos');
     await p.wait('document.body.innerText.includes("Borrador guardado")', 'guardado confirmado');
     const s = await state(); ck(s.writes.length === 2 && s.quotes.length === 1, 'solo con la confirmación explícita se envía el segundo POST', { writes: s.writes.length, quotes: s.quotes.length }); await p.close(); }
+
+  console.log('\n== SOLO LECTURA (cotización ya enviada)');
+  await clean();
+  { await ctl('estado', 'enviada'); const p = await session('/admin/dashboard?section=cotizaciones&contacto=3'); await formReady(p); await fillMinimum(p); await submit(p);
+    await p.wait('document.body.innerText.includes("Borrador guardado")', 'guardado'); await p.click('.hp-table button', 'Ver propuesta'); await p.wait('document.querySelector("dialog.hp-dialog[open]")', 'detalle');
+    await p.click('dialog.hp-dialog[open] button', 'Ver datos del formulario'); await formReady(p);
+    const info = await p.evaluate('({ title: document.querySelector("dialog[open] h2").textContent, disabled: [...document.querySelectorAll("dialog[open] form input, dialog[open] form textarea, dialog[open] form select")].every(x => x.matches(":disabled")), save: [...document.querySelectorAll("dialog[open] button")].some(b => /Guardar/.test(b.textContent)) })');
+    ck(info.title === 'Datos de la cotización' && info.disabled && !info.save, 'una cotización no borrador se abre en modo solo lectura: campos deshabilitados y sin botón de guardar', info);
+    await p.click('dialog.hp-dialog[open] button', 'Cerrar'); await sleep(300);
+    ck(/Detalle de cotización/.test(await p.text('dialog.hp-dialog[open]')) && (await state()).writes.length === 1, 'cerrar la vista de solo lectura vuelve al detalle sin enviar nada'); await p.close(); }
 
   k.finish('Mensajes ↔ Cotizaciones (D7)');
 })().catch(error => { console.error(error); process.exit(1); });

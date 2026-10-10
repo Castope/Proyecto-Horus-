@@ -30,13 +30,41 @@ la respuesta vuelve al catálogo. La interfaz distingue ambos modos.
 se guarda un contacto nuevo con prefijo [Chatbot], visible en Panel → Mensajes.
 No confirma reservas ni inscripciones y no envía correos. Guarda la autorización en el texto
 de la solicitud; no agrega una tabla de consentimientos ni un historial de conversaciones.
-La conversación permanece en memoria del navegador hasta recargar o iniciar una nueva.
+La conversación permanece en memoria del navegador hasta recargar o iniciar una nueva. **Única excepción (métricas):** las preguntas que el asistente no puede
+responder se guardan redactadas; ver «Métricas y preguntas sin respuesta» y su decisión pendiente.
 No se consulta información de administradores, mensajes ni reclamaciones. Solo se leen las claves institucionales públicas conocidas cuando la pregunta solicita contacto, dirección u horarios. Se ocultan patrones de correos, teléfonos y documentos antes de enviar pregunta/historial al proveedor; esto no garantiza anonimato.
+
+## Métricas y preguntas sin respuesta
+
+Cada respuesta del asistente se cuenta en `chatbot_interacciones` (modo `ia` o `catalogo`, si se resolvió y cuántas fuentes usó) **sin guardar el texto del visitante**.
+Cuando no hay información publicada, la pregunta se guarda en `chatbot_preguntas_sin_respuesta` con correos, teléfonos y números largos (también con puntos o barras), fechas numéricas y enlaces ocultos, en una línea,
+acotada a 500 caracteres y deduplicada por huella SHA-256 (`veces` cuenta las repeticiones). El historial de la conversación nunca se guarda. Los saludos no se registran.
+Registrar no espera ni altera la respuesta: si falla, solo se deja una advertencia sin datos. Puedes revisarlas en Panel → Consultas del chatbot (solo lectura; últimos 30 días).
+
+**Limitación importante:** la redacción automática solo reconoce patrones (correos, números, enlaces). **No puede detectar nombres, direcciones, cargos ni datos escritos de forma
+libre u ofuscada** («ana arroba gmail»), así que el texto guardado puede contener datos personales. Además, hoy el consentimiento del sitio y el aviso del widget cubren
+solo los formularios; el texto libre del chat no pide un consentimiento específico para guardarse.
+
+**Finalidad y retención (decididas por el responsable):** el registro existe únicamente para mejorar los contenidos publicados y las respuestas del asistente. Se conserva
+**90 días** desde la última aparición de la pregunta (`RETENTION_DAYS` en `chatbot-privacy.ts`); las métricas de interacción siguen el mismo plazo. La limpieza elimina lo vencido
+(`ChatbotMetricsService.purgeExpired`, invocada de forma oportunista como máximo una vez por hora por instancia al registrar una interacción) y, mientras no se ejecute, la vista del panel
+**no muestra** lo anterior a 90 días. El plazo y la finalidad figuran en la política de privacidad (sección «Asistente virtual: preguntas sin respuesta») y en el aviso del widget.
+Solo los administradores autenticados ven estos textos. Trata estas tablas como datos personales: no se exportan ni se envían a terceros. Pendiente: una tarea programada
+externa que limpie aunque no haya tráfico (la limpieza actual depende de que el asistente reciba consultas) y un tope de filas si se detecta abuso (hoy limita el guard: 20 consultas por minuto y por IP).
+Requiere aplicar `npm run db:migrate` (migración `20261009-chatbot-metrics`) antes de iniciar esta versión; la migración añade `contactos.origen` y las dos tablas.
+
+## Solicitar cotización
+
+El widget ofrece «Solicitar cotización» junto a «Solicitar atención del equipo». Usa el mismo formulario con consentimiento explícito y envía `tipo: "cotizacion"`.
+Se registra un `Contacto` con `origen=chatbot` y asunto `[Chatbot] [Cotización] …`; desde la bandeja de Mensajes se puede usar «Preparar cotización».
+No crea cotizaciones, reservas ni inscripciones ni envía correos.
 
 ## Endpoints
 
 - POST /api/chatbot/message: { message, history?: [{ role: user|assistant, content }] }
 - POST /api/chatbot/contact: { nombre, email, telefono, asunto, mensaje, consentimiento: true }
+  (opcional `tipo`: `contacto` o `cotizacion`)
+- GET /api/admin/chatbot/sin-respuesta (administradores): preguntas sin respuesta y métricas de 30 días, paginado
 
 El historial solo sirve como contexto; no es fuente autorizada. Los datos del catálogo y el historial
 se delimitan como datos en la petición. Las fuentes se muestran como texto escapado por React.

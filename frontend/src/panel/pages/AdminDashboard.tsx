@@ -30,7 +30,7 @@ export default function AdminDashboard() {
   const asked = location.pathname === '/admin/messages' ? 'mensajes' : params.get('section') || 'resumen';
   // 'cursos' is the resource behind the Education menu, so both addresses open the same section.
   const requested = asked === 'educacion' ? 'cursos' : asked;
-  const section = resources[requested] || ['ajustes', 'cotizaciones', 'configuracion', 'convenios'].includes(requested) ? requested : 'resumen';
+  const section = resources[requested] || ['mensajes', 'ajustes', 'cotizaciones', 'configuracion', 'convenios'].includes(requested) ? requested : 'resumen';
   const [menuLocation, setMenuLocation] = useState<string | null>(null);
   // Menu groups: undefined = open while active; false = folded by the administrator.
   const [openGroups, setOpenGroups] = useState<Record<string, boolean | undefined>>({});
@@ -67,7 +67,7 @@ export default function AdminDashboard() {
       trigger?.focus();
     };
   }, [menu, mobile]);
-  const title = section === 'cursos' ? 'Educación' : resources[section]?.label || (section === 'convenios' ? 'Convenios' : section === 'configuracion' ? 'Ajustes' : section === 'cotizaciones' ? 'Cotizaciones' : section === 'ajustes' ? 'Empresa' : 'Resumen');
+  const title = section === 'cursos' ? 'Educación' : resources[section]?.label || (section === 'mensajes' ? 'Bandeja de mensajes' : section === 'convenios' ? 'Convenios' : section === 'configuracion' ? 'Ajustes' : section === 'cotizaciones' ? 'Cotizaciones' : section === 'ajustes' ? 'Empresa' : 'Resumen');
   useEffect(() => { document.title = title + ' — Panel Horus'; window.scrollTo(0, 0); }, [title]);
   useEffect(() => {
     const close = (event: KeyboardEvent) => { if (event.key === 'Escape') setMenuLocation(null); };

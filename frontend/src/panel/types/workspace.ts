@@ -52,13 +52,6 @@ export const resources: Record<string, Resource> = {
       { key: 'imagen_url', label: 'URL o ruta de imagen', required: true, min: 3, max: 500 },
       { key: 'orden', label: 'Orden', type: 'number', min: 0 },
       { key: 'activo', label: 'Visibilidad', type: 'select', options: ['activo', 'inactivo'], required: true }] },
-  mensajes: { label: 'Bandeja de mensajes', singular: 'mensaje', endpoint: 'messages', icon: 'mail', title: 'asunto',
-    description: 'Consulta las solicitudes recibidas y actualiza su atención.', states: ['nuevo', 'en_proceso', 'atendido', 'archivado'],
-    fields: [{ key: 'nombre', label: 'Nombre', required: true, min: 2, max: 100 },
-      { key: 'email', label: 'Correo electrónico', type: 'email', required: true },
-      { key: 'telefono', label: 'Teléfono', min: 6, max: 30 },
-      { key: 'asunto', label: 'Asunto', required: true, min: 3, max: 150 },
-      { key: 'mensaje', label: 'Mensaje', type: 'textarea', required: true, min: 3, max: 5000 }] },
 };
 export const labels: Record<string, string> = { '':'Por confirmar',indigo:'Índigo',coral:'Coral',verde:'Verde',violeta:'Violeta',oscuro:'Oscuro',normal:'Tarjeta general',camara:'Cámara con monitor',alertas:'Notificaciones',nube:'Almacenamiento en la nube',app:'Aplicación móvil',mantenimiento:'Ciclo de mantenimiento',software:'Terminal de software',redes:'Diagrama de redes',emergencia:'Atención urgente',asesoria:'Asesoramiento',beneficio:'Beneficio (Por qué elegirnos)',linea:'Línea de asesoramiento',heart:'Salud',legal:'Derecho',finance:'Finanzas',technology:'Tecnología',education:'Educación',business:'Empresa',network:'Red',camera:'Cámara',bell:'Campana',cloud:'Nube',mobile:'Móvil',tools:'Herramientas',emergency:'Urgencia',star:'Estrella',users:'Especialistas',target:'Soluciones',handshake:'Acompañamiento', en_proceso: 'En proceso', capacitacion: 'Capacitación', hibrida: 'Híbrida', camaras: 'Cámaras', publicado: 'Publicado', borrador: 'Borrador', archivado: 'Archivado', activo: 'Activo', inactivo: 'Inactivo', nuevo: 'Nuevo', atendido: 'Atendido' };
 // A panel section shows one slice of a resource. Its filters are the backend query, the form defaults and the allowed options.

@@ -2,10 +2,10 @@ import { useEffect, useRef, useState, type SubmitEvent } from 'react';
 import { useAdminAuth } from '../../context';
 import { useUnsavedChangesControl } from '../../unsaved/unsavedContext';
 import { PanelApiError, panelRequest } from '../../services/panelApi';
-import { buildMessagePayload, emptyMessageForm, findPossibleDuplicates, hasMessageDraft } from '../../services/messageCreate';
+import { MESSAGE_FIELDS, buildMessagePayload, emptyMessageForm, findPossibleDuplicates, hasMessageDraft } from '../../services/messageCreate';
 import { dateLabel, type CollectionResponse } from './useCollection';
 import { recordsOf } from '../../services/listRecords';
-import { resources, type Row } from '../../types/workspace';
+import type { Row } from '../../types/workspace';
 import PanelDialog from '../PanelDialog';
 import PanelIcon from '../PanelIcon';
 
@@ -18,7 +18,7 @@ const UNCERTAIN = 'No pudimos confirmar si la consulta se registró: puede que e
 type Phase = 'idle' | 'uncertain' | 'confirming';
 type Check = { state: 'idle' | 'loading' | 'done' | 'error'; matches: Row[] };
 
-// Registro manual de una consulta dentro de la bandeja. Reutiliza los campos del recurso «mensajes» y el mismo POST administrativo que el formulario
+// Registro manual de una consulta dentro de la bandeja. Usa los campos de MESSAGE_FIELDS (messageCreate.ts) y el mismo POST administrativo que el formulario
 // genérico anterior. El éxito solo se anuncia cuando el servidor lo confirma. El backend no ofrece idempotencia: tras un resultado incierto el
 // formulario NO repite el POST por sí solo; permite comprobar la bandeja y exige una confirmación explícita que advierte del posible duplicado.
 export default function MessageCreateDialog({ onClose, onCreated, onUncertain }: { onClose: () => void; onCreated: (message: Row | undefined) => void; onUncertain?: () => void }) {
@@ -78,7 +78,7 @@ export default function MessageCreateDialog({ onClose, onCreated, onUncertain }:
   return <PanelDialog title="Registro manual de consulta" busy={busy} onClose={close}>
     <form onSubmit={submit} aria-busy={busy}>
       <fieldset className="hp-form-grid" disabled={busy}><legend className="hp-sr">Datos de la consulta</legend>
-        {resources.mensajes.fields.map((field, index) => {
+        {MESSAGE_FIELDS.map((field, index) => {
           const id = 'manual-message-' + field.key, required = !!field.required;
           const common = { id, value: form[field.key as keyof typeof form] ?? '', required, onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { const value = event.target.value; setForm(previous => ({ ...previous, [field.key]: value })); } };
           return <label key={field.key} className={field.type === 'textarea' ? 'hp-full' : ''} htmlFor={id}>{field.label}{required && <span className="hp-required"> *</span>}

@@ -25,7 +25,7 @@ const stateText = (value: string) => value.replace('_', ' ');
 // Nunca se adopta una revisión nueva sin comparar qué cambió (ver services/attentionMerge.ts): un campo cambiado por ambas partes con valores distintos
 // es un conflicto y exige elegir; el guardado siempre usa la revisión de la última versión comparada, así que el servidor sigue rechazando (409) cualquier
 // cambio ajeno posterior en vez de pisarlo.
-export default function AttentionEditor({ resource, id, onSaved, onPendingChange, onUncertainChange, syncKey = 0, stateOnly = false }: { resource: 'messages'; id: number; onSaved?: (item: { estado: string }, changed?: boolean) => void; onPendingChange?: (pending: boolean) => void; onUncertainChange?: (uncertain: boolean) => void; syncKey?: number; stateOnly?: boolean }) {
+export default function AttentionEditor({ resource, id, onSaved, onPendingChange, onUncertainChange, syncKey = 0 }: { resource: 'messages'; id: number; onSaved?: (item: { estado: string }, changed?: boolean) => void; onPendingChange?: (pending: boolean) => void; onUncertainChange?: (uncertain: boolean) => void; syncKey?: number }) {
   const { token } = useAdminAuth(); const latestToken = useLatest(token);
   const conflictId = useId();
   const [reload, setReload] = useState(0);
@@ -121,7 +121,6 @@ export default function AttentionEditor({ resource, id, onSaved, onPendingChange
     e.preventDefault();
     if (!form || !base || lock.current || blocked) return;
     // La tabla heredada reutiliza revisión y fusión D3. Revisar sin editar no crea seguimiento ni reabre casos.
-    if (stateOnly && !dirty) { onSaved?.(base, false); return; }
     const instance = lifetime.current, controller = new AbortController();
     let timedOut = false;
     const timer = window.setTimeout(() => { timedOut = true; controller.abort(); }, SAVE_TIMEOUT_MS);
@@ -136,7 +135,7 @@ export default function AttentionEditor({ resource, id, onSaved, onPendingChange
       // 409 = la revisión quedó obsoleta: el borrador no se toca, no se repite el PUT y se compara con la versión fresca antes de permitir otro guardado.
       if (conflictOf409(err)) compareWithServer('conflict');
       // Editor completo: timeout, red caída o 5xx NO prueban que no se guardó. Se conserva el borrador, no se repite el PUT y se exige comprobar el servidor.
-      else if (!stateOnly && (timedOut || !(err instanceof PanelApiError) || err.status >= 500)) setDoubt({ baseRevision: sentRevision, sent: sentValues, check: 'none' });
+      else if (timedOut || !(err instanceof PanelApiError) || err.status >= 500) setDoubt({ baseRevision: sentRevision, sent: sentValues, check: 'none' });
       else setActionError(timedOut ? 'No pudimos confirmar si se guardó el cambio. Tu borrador se conserva; comprueba el estado guardado antes de reintentar.' : errorMessage(err));
     } finally { window.clearTimeout(timer); lock.current = false; if (instance.active) { setBusy(false); pendingNotified.current = false; onPendingChange?.(false); } }
   };
@@ -191,10 +190,9 @@ export default function AttentionEditor({ resource, id, onSaved, onPendingChange
   const show = (key: AttentionField, value: string) => value.trim() ? (key === 'estado' ? stateText(value) : value) : '(vacío)';
   const flagged = (key: AttentionField) => conflicts.includes(key) ? { 'aria-invalid': true as const, 'aria-describedby': conflictId } : {};
 
-  return <section className="hp-card"><h3>{stateOnly ? 'Estado de atención' : 'Seguimiento de atención'}</h3>
+  return <section className="hp-card"><h3>Seguimiento de atención</h3>
     <button className="hp-btn" disabled={busy || loading} onClick={() => confirmLeave(() => setReload(v => v + 1))}>Recargar seguimiento</button>
     {loading ? <p role="status">Cargando seguimiento…</p> : error ? <p role="alert" className="hp-error">{error}</p> : form && base && <form onSubmit={save} className="hp-form" aria-busy={busy}>
-      {stateOnly && busy && <p role="status">Guardando cambios…</p>}
       {banner && <div ref={bannerBox} tabIndex={-1} role={banner.kind === 'conflict' || banner.kind === 'compare-error' ? 'alert' : 'status'} className={'hp-conflict-banner is-' + banner.kind}>
         <p>{banner.text}</p>{banner.kind === 'compare-error' && <button type="button" className="hp-btn" disabled={comparing} onClick={() => compareWithServer('retry')}>Reintentar comparación</button>}
       </div>}
@@ -211,9 +209,9 @@ export default function AttentionEditor({ resource, id, onSaved, onPendingChange
       </section>}
       <fieldset disabled={busy}>
         <label>Estado<select value={form.estado} {...flagged('estado')} onChange={e => setForm({ ...form, estado: e.target.value })}>{['nuevo', 'en_proceso', 'atendido', 'archivado'].map(v => <option key={v} value={v}>{stateText(v)}</option>)}</select></label>
-        {!stateOnly && <><label>Responsable<input value={form.responsable} maxLength={100} {...flagged('responsable')} onChange={e => setForm({ ...form, responsable: e.target.value })} /></label>
+        <><label>Responsable<input value={form.responsable} maxLength={100} {...flagged('responsable')} onChange={e => setForm({ ...form, responsable: e.target.value })} /></label>
         <label>Notas internas<textarea value={form.notas} maxLength={10000} {...flagged('notas')} onChange={e => setForm({ ...form, notas: e.target.value })} /></label>
-        <label>Respuesta al cliente<textarea value={form.respuesta} maxLength={10000} {...flagged('respuesta')} onChange={e => setForm({ ...form, respuesta: e.target.value })} /></label></>}
+        <label>Respuesta al cliente<textarea value={form.respuesta} maxLength={10000} {...flagged('respuesta')} onChange={e => setForm({ ...form, respuesta: e.target.value })} /></label></>
       </fieldset>
       {doubt && <div ref={doubtBox} tabIndex={-1} role="alert" className="hp-error" data-save-uncertain={doubt.check}>
         <p>No pudimos confirmar si el seguimiento se guardó: el servidor pudo procesar la solicitud aunque no recibimos respuesta. Tu borrador se conserva y no se volverá a enviar automáticamente.</p>
@@ -229,13 +227,13 @@ export default function AttentionEditor({ resource, id, onSaved, onPendingChange
         {mail.needsConfirm && <div className="hp-actions"><button type="button" className="hp-btn hp-btn-primary" disabled={busy} onClick={() => void runMail(mail.action, true)}>Enviar de todos modos</button>
           <button type="button" ref={noSendButton} className="hp-btn" disabled={busy} onClick={dismissMail}>No enviar</button></div>}
       </div>}
-      <div className="hp-actions">{!stateOnly && <button type="button" ref={receiptButton} className="hp-btn" disabled={busy || !!doubt} onClick={() => void receipt()}>Reenviar constancia / notificación</button>}
-        <button ref={saveButton} className="hp-btn hp-btn-primary" disabled={busy || blocked} aria-describedby={blocked ? conflictId + '-why' : undefined}>{stateOnly ? 'Guardar cambios' : 'Guardar seguimiento'}</button>
-        {!stateOnly && <button type="button" ref={sendButton} className="hp-btn" disabled={busy || !!doubt || !base.respuesta} onClick={() => void send()}>Enviar respuesta guardada</button>}</div>
+      <div className="hp-actions"><button type="button" ref={receiptButton} className="hp-btn" disabled={busy || !!doubt} onClick={() => void receipt()}>Reenviar constancia / notificación</button>
+        <button ref={saveButton} className="hp-btn hp-btn-primary" disabled={busy || blocked} aria-describedby={blocked ? conflictId + '-why' : undefined}>Guardar seguimiento</button>
+        <button type="button" ref={sendButton} className="hp-btn" disabled={busy || !!doubt || !base.respuesta} onClick={() => void send()}>Enviar respuesta guardada</button></div>
       {blocked && <p id={conflictId + '-why'} className="hp-form-hint">{doubt ? 'Comprueba el estado del servidor para poder guardar de nuevo.' : comparing ? 'Comparando con la versión del servidor…' : conflicts.length ? 'Elige una versión en cada conflicto para poder guardar.' : 'Reintenta la comparación para poder guardar.'}</p>}
-      {dirty && <p className="hp-form-hint">Tienes cambios sin guardar.{!stateOnly && ' El correo enviaría la última respuesta guardada, no lo que ves ahora.'}</p>}
-      {!stateOnly && <><p>El correo envía la última respuesta guardada. Conserva tus cambios antes de enviarla.</p>
+      {dirty && <p className="hp-form-hint">Tienes cambios sin guardar. El correo enviaría la última respuesta guardada, no lo que ves ahora.</p>}
+      <><p>El correo envía la última respuesta guardada. Conserva tus cambios antes de enviarla.</p>
       {(['respuesta', 'constancia'] as const).map(kind => base.envios?.[kind] && <p key={kind} className="hp-form-hint" data-mail-state={kind}>{kind === 'respuesta' ? 'Último envío de la respuesta' : 'Última constancia a la persona'}: {SEND_STATE[base.envios[kind].estado] ?? base.envios[kind].estado} · {new Date(base.envios[kind].fecha).toLocaleString('es-PE')}</p>)}
-      <h4>Historial</h4>{base.historial.length ? <ul>{base.historial.map((h, i) => <li key={i}>{new Date(h.fecha).toLocaleString('es-PE')} · {h.accion} · Administrador #{h.usuario}</li>)}</ul> : <p>Aún no hay cambios de seguimiento.</p>}</>}
+      <h4>Historial</h4>{base.historial.length ? <ul>{base.historial.map((h, i) => <li key={i}>{new Date(h.fecha).toLocaleString('es-PE')} · {h.accion} · Administrador #{h.usuario}</li>)}</ul> : <p>Aún no hay cambios de seguimiento.</p>}</>
     </form>}</section>;
 }

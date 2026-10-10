@@ -4,7 +4,9 @@ import type { ListQueryDto } from '../common/list-query.dto';
 
 // Una sola identidad lógica, igual que GET/PUT seguimiento. No depende de que un FK histórico esté poblado.
 export const messageJoin = Prisma.sql`FROM contactos m LEFT JOIN attention_records a ON a.recurso = 'messages' AND a.registro_id = m.id`;
-export const messageState = Prisma.sql`COALESCE(a.estado, m.estado)`;
+// contactos (utf8mb4_0900_ai_ci en MySQL 8) y attention_records (utf8mb4_unicode_ci) pueden diferir de colación:
+// sin COLLATE explícito MySQL responde 1267 (Illegal mix of collations) al comparar el COALESCE. No requiere migración.
+export const messageState = Prisma.sql`COALESCE(a.estado COLLATE utf8mb4_unicode_ci, m.estado COLLATE utf8mb4_unicode_ci)`;
 export const administrativeState = (fallback: string, attention?: { estado: string } | null) => attention ? attention.estado : fallback;
 type Reader = Pick<PrismaService, '$queryRaw'>;
 

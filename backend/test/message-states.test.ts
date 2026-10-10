@@ -23,7 +23,8 @@ function fixture() {
     $queryRaw: async (query: Prisma.Sql) => {
       queries.push(query);
       assert.match(query.sql, /^\s*SELECT/i, 'GET solo ejecuta SELECT');
-      return db.prepare(query.sql).all(...query.values as SQLInputValue[]);
+      // MySQL exige la colación explícita; SQLite (solo pruebas) no la conoce y se ejecuta sin ella.
+      return db.prepare(query.sql.replaceAll(' COLLATE utf8mb4_unicode_ci', '')).all(...query.values as SQLInputValue[]);
     },
     reclamacion: { count: async (q?: {where?: {tipo_registro:string}}) => q?.where?.tipo_registro === 'queja' ? 0 : 1, findMany: async () => [] },
     adminItem: { count: async () => 0 }, adminUser: { count: async () => 1 },
@@ -84,6 +85,21 @@ test('D4: búsqueda/origen/estado combinados, parámetros seguros y respuesta he
     assert.deepEqual((await f.messages.findAll({page:1,search:"' OR 1=1 --"})).messages,[]);
     await assert.rejects(() => f.messages.findOne(999),(e: {getStatus():number}) => e.getStatus() === 404);
     assert.equal(f.queries.filter(q => /LIMIT/.test(q.sql)).every(q => q.values.some(v => typeof v === 'number')),true);
+  } finally { f.db.close(); }
+});
+
+test('Regresión 1267: el estado efectivo fija la colación de ambos operandos del COALESCE en todas las consultas', async () => {
+  const f = fixture();
+  try {
+    const stats = new StatsService({ stats: async () => ({}) } as unknown as CatalogoService, f.prisma);
+    await stats.getDashboardStats();
+    await f.messages.findAll({ page: 1, limit: 5, estado: 'nuevo' });
+    const effective = f.queries.filter(q => /COALESCE\(/.test(q.sql));
+    assert.ok(effective.length >= 4, 'totales, recientes, página filtrada y total filtrado usan el estado efectivo');
+    for (const q of effective) {
+      assert.match(q.sql, /COALESCE\(a\.estado COLLATE utf8mb4_unicode_ci, m\.estado COLLATE utf8mb4_unicode_ci\)/);
+      assert.equal(/COALESCE\(a\.estado, m\.estado\)/.test(q.sql), false, 'sin COALESCE de columnas con colaciones distintas');
+    }
   } finally { f.db.close(); }
 });
 

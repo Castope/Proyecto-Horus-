@@ -1,6 +1,6 @@
 # Respaldo y restauración de MySQL
 
-Guía operativa de `npm run db:backup` y `npm run db:restore` (desde `backend/`). Ambos son comandos **explícitos**: no se ejecutan en la
+Guía operativa de `npm run db:backup`, `npm run db:restore`, `npm run uploads:backup` y `npm run uploads:restore` (desde `backend/`). Todos son comandos **explícitos**: no se ejecutan en la
 instalación, la compilación ni el arranque.
 
 ## Qué hace cada comando
@@ -10,6 +10,9 @@ instalación, la compilación ni el arranque.
 | `npm run db:backup` | Vuelca esquema y datos de la base configurada (`DB_*`) a `backend/.backups/` | **No** (solo lectura) |
 | `npm run db:restore -- --file=<respaldo> --verify-only` | Comprueba firma SHA-256 y contenido del archivo | **No** (ni se conecta) |
 | `npm run db:restore -- --file=<respaldo> --target=horus_restore_<nombre> --yes` | Crea la base aislada `horus_restore_<nombre>` y carga el respaldo | Solo en esa base nueva |
+| `npm run uploads:backup` | Copia los archivos de `UPLOAD_DIR` a `backend/.backups/uploads-AAAAMMDD-HHMMSS/` con manifiesto SHA-256 | **No** (no usa MySQL; solo lee `UPLOAD_DIR`) |
+| `npm run uploads:restore -- --from=<instantánea> --verify-only` | Comprueba la instantánea completa | **No** |
+| `npm run uploads:restore -- --from=<instantánea> --target=<carpeta> --yes` | Copia los archivos a una carpeta nueva o vacía; nunca sobrescribe | **No** (solo archivos) |
 
 ## Respaldo
 
@@ -40,7 +43,7 @@ El respaldo **contiene datos personales** (consultas, reclamaciones, suscriptore
 1. Cífralo antes de moverlo (por ejemplo, con la herramienta de cifrado aprobada por Horus) y guárdalo fuera del repositorio y del servidor.
 2. Restringe el acceso a personas autorizadas y no lo envíes por canales no corporativos.
 3. Define con el responsable la retención y la destrucción segura. **[PENDIENTE DE APROBACIÓN]**: retención, ubicación y cifrado oficiales.
-4. Los archivos subidos (`UPLOAD_DIR`, imágenes) **no** forman parte del respaldo de la base: respáldalos aparte.
+4. Los archivos subidos (`UPLOAD_DIR`, imágenes) **no** forman parte del respaldo de la base: respáldalos con `uploads:backup` (sección «Archivos subidos»).
 
 ## Restauración
 
@@ -72,6 +75,58 @@ La restauración **no** sobrescribe la base de producción. Para recuperarla tra
 4. Si el esquema del respaldo es anterior a las migraciones actuales, ejecuta `npm run db:migrate` **sobre la base restaurada** (comprobando
    antes `DB_NAME`) y después `npm run db:check`.
 
+## Archivos subidos (`UPLOAD_DIR`)
+
+La base guarda solo la **ruta** de cada imagen (`/uploads/<uuid>.png|jpg|webp`); el archivo vive en el volumen de `UPLOAD_DIR`. Sin una copia de los archivos, restaurar solo la base deja imágenes rotas.
+
+```
+npm run uploads:backup                                                # origen: --source, o UPLOAD_DIR, o ./uploads; destino: backend/.backups
+npm run uploads:backup -- --source=/data/uploads --dir=/data/backups  # en el contenedor: carpeta de respaldos en un volumen persistente
+```
+
+- Crea `uploads-AAAAMMDD-HHMMSS/` (misma marca que `db:backup`, para emparejar ambas copias) con `files/<ruta>`, `manifest.json` (ruta, bytes y SHA-256 por archivo, más lo omitido) y `manifest.json.sha256`. Al terminar **relee y verifica** lo escrito; si falla, retira la instantánea parcial que creó.
+- **No borra ni modifica nada del origen.** Los archivos subidos son de escritura única (`wx`, nombre UUID), así que copiarlos con la API en marcha es seguro. Un archivo que desaparezca durante la copia se anota en el manifiesto (`vanished`).
+- **Se excluyen** (y se listan en `excluded`, sin eliminarlos): temporales y de sistema (`*.tmp`, `*.part`, `*.partial`, `*.crdownload`, `*~`, archivos que empiezan por punto, `Thumbs.db`). Los enlaces simbólicos y los nombres no admitidos se omiten y se listan en `skipped`: revísalos. Los archivos que genera la aplicación (nombre UUID con extensión `png`, `jpg` o `webp`) siempre se respaldan. Un nombre fuera del patrón `A-Z a-z 0-9 . _ -` (con espacios, tildes o ñ) **no se respalda**: queda en `skipped` con el motivo «nombre no admitido» y el comando termina con éxito; la aplicación no genera esos nombres, así que solo aparecerían si alguien copió archivos a mano en `UPLOAD_DIR`. Cualquier otro nombre válido se respalda, aunque no sea un UUID.
+- **Origen sin archivos:** si no hay nada que respaldar (carpeta vacía, solo temporales u omitidos) el comando falla y no crea instantánea, porque suele indicar un `--source` o `UPLOAD_DIR` equivocado. Si el origen está vacío a propósito, añade `--allow-empty` (`npm run uploads:backup -- --allow-empty`). Una ruta inexistente falla siempre.
+- La carpeta de respaldos no puede estar dentro de `UPLOAD_DIR`. Las imágenes del sitio no contienen datos personales por diseño, pero revísalas antes de compartir una copia.
+
+```
+npm run uploads:restore -- --from=backend/.backups/uploads-20261010-153045 --verify-only
+npm run uploads:restore -- --from=backend/.backups/uploads-20261010-153045 --target=<carpeta-nueva-o-vacia> --yes
+```
+
+Protecciones (antes de escribir nada se verifica **toda** la instantánea; si algo falla, no se escribe):
+
+1. Firma del manifiesto, existencia, tamaño y SHA-256 de cada archivo; rutas del manifiesto validadas (nada de `..`, rutas absolutas ni barras invertidas).
+2. El destino debe **no existir o estar vacío**. Con `--only-missing` puede contener archivos: solo se copian los que falten, los idénticos se omiten y los **distintos se dejan intactos** y se informan como conflicto (código de salida 1). Nunca se sobrescribe.
+3. El destino no puede estar dentro del respaldo ni contenerlo. Si es la carpeta en uso (`UPLOAD_DIR`) se exige además `--allow-upload-dir`.
+4. Sin `--yes` solo informa de lo que haría. Cada archivo copiado se vuelve a comprobar contra su firma.
+5. Un fallo a medias no revierte lo ya copiado (solo se crearon archivos nuevos): repite con `--only-missing`.
+
+## Recuperación completa y coherente (base + archivos)
+
+Un respaldo útil es el **par** base + archivos de la misma ventana:
+
+1. **Copia:** ejecuta `db:backup` y **después** `uploads:backup`, seguidos y con el mismo destino. La base solo referencia archivos que ya existían cuando se copió y los archivos no se borran, así que la copia de archivos (posterior) los contiene todos; una imagen subida entre ambas copias solo puede *sobrar* (sin consecuencias). En el orden inverso, la base podría referenciar una imagen que la copia de archivos no tiene. Anota ambos nombres (las marcas difieren unos segundos).
+2. **Verifica** ambas: `db:restore -- --file=… --verify-only` y `uploads:restore -- --from=… --verify-only`.
+3. **Ensayo en aislado** (sin tocar producción): `db:restore` en `horus_restore_<nombre>` y `uploads:restore` en una carpeta temporal nueva; compara recuentos con el manifiesto de cada copia y abre algunas imágenes de la carpeta restaurada.
+4. **Recuperación real** tras una pérdida (decisión y ejecución del responsable, con el backend detenido o en mantenimiento): restaura la base como en la sección anterior y promuévela; restaura los archivos en el volumen vacío de `UPLOAD_DIR` (`--allow-upload-dir`; si el volumen conserva algunos archivos, `--only-missing`); aplica `db:migrate` y `db:check` si el respaldo es anterior al esquema actual; comprueba en el panel y en el sitio que las imágenes cargan.
+
+Estos comandos están probados con **dobles y carpetas temporales** (`test/backup-lib.test.ts`, `test/uploads-backup.test.ts`). **No se ha realizado un simulacro completo** con MySQL real, el volumen real ni los datos de producción.
+
+## Medidas que no se resuelven con código (pendientes de decisión del responsable)
+
+| Medida | Estado |
+| --- | --- |
+| Cifrado de las copias (herramienta, gestión de claves, quién custodia la clave) | **[PENDIENTE]** Los comandos no cifran |
+| Almacenamiento externo (proveedor, región, coste) y copia fuera del servidor/volumen | **[PENDIENTE]** No se eligió proveedor ni se creó credencial alguna |
+| Automatizar la copia y su subida al almacenamiento externo (frecuencia, tarea programada en el entorno real) | **[PENDIENTE]** Hoy todo es manual |
+| Control de accesos a las copias (quién lee, quién restaura, registro de accesos) | **[PENDIENTE]** |
+| Política de retención y destrucción segura de copias (cuántas, cuánto tiempo) | **[PENDIENTE]** Alinear con la política de privacidad |
+| Alerta si falla o no se ejecuta una copia | **[PENDIENTE]** |
+| Simulacro completo de recuperación (base + archivos) con registro de resultado y tiempos | **[PENDIENTE]** Ver el ensayo anterior |
+| Copias propias del proveedor (Railway) como segunda línea | **[PENDIENTE]** Confirmar que están activas y cómo se restauran |
+
 ## Requisitos del usuario de MySQL
 
 - En el contenedor del backend (`/app` pertenece a root y el proceso corre como `node`) la carpeta por defecto `.backups` **no es escribible**: usa `--dir=<volumen persistente>`.
@@ -83,7 +138,7 @@ La restauración **no** sobrescribe la base de producción. Para recuperarla tra
 
 - [ ] Ejecutar `db:backup` en el entorno real y comprobar el tamaño y los recuentos del manifiesto.
 - [ ] Restaurar en una base `horus_restore_*` y revisar los datos.
-- [ ] Practicar la recuperación completa (incluido el cifrado y la copia de los uploads) al menos una vez.
+- [ ] Practicar la recuperación completa (base + `uploads:backup`/`uploads:restore`, incluido el cifrado) al menos una vez.
 - [ ] Definir la frecuencia (diaria/semanal), el responsable y la alerta si falla. **[PENDIENTE DE APROBACIÓN]**
 - [ ] Mantener también los respaldos del propio proveedor (Railway) como segunda línea.
 

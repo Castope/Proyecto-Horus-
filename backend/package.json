@@ -21,6 +21,8 @@
     "db:backup": "node scripts/backup.cjs",
     "db:restore": "node scripts/restore.cjs",
     "chatbot:purge": "node scripts/purge-chatbot.cjs",
+    "uploads:backup": "node scripts/backup-uploads.cjs",
+    "uploads:restore": "node scripts/restore-uploads.cjs",
     "content:restore": "node scripts/restore-original.cjs",
     "convenios:import": "node scripts/import-convenios.cjs",
     "test:integration": "npm run build && node --test test/prisma.integration.cjs"

@@ -33,6 +33,7 @@ export class MessagesService {
       ...dto,
       telefono: dto.telefono ?? '',
       estado: 'nuevo',
+      origen: 'manual',
     } });
     return { ok: true, mensaje: 'Mensaje creado correctamente.', message };
   }

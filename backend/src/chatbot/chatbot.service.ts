@@ -1,8 +1,10 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, Logger, Optional, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../database/prisma.service';
 import { ChatContactDto, ChatMessageDto } from './chatbot.dto';
 import { retrievalQuery } from './chatbot-context';
+import { redactPersonalData } from './chatbot-privacy';
+import { ChatbotMetricsService } from './chatbot-metrics.service';
 
 type Source = { id: string; title: string; text: string };
 const normalize = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -11,7 +13,7 @@ export function searchTerms(text: string) {
   return [...new Set(normalize(text).match(/[a-z0-9]{3,}/g) || [])]
     .filter(word => !stopWords.has(word)).map(word => word.replace(/s$/, '')).slice(0, 10);
 }
-export const redactPersonalData = (text: string) => text.replace(/[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9.-]+\.[a-z]{2,}/gi, '[correo oculto]').replace(/(?:\+?\d[\d ()-]{5,}\d)/g, '[número oculto]');
+export { redactPersonalData };
 const plain = (value: unknown, max = 1800) => String(value ?? '').replace(/<[^>]*>/g, '').slice(0, max);
 
 @Injectable()
@@ -21,6 +23,7 @@ export class ChatbotService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    @Optional() private readonly metrics?: ChatbotMetricsService,
   ) {}
 
   private async retrieve(query: string): Promise<Source[]> {
@@ -75,20 +78,22 @@ export class ChatbotService {
     catch {
       throw new ServiceUnavailableException({ ok: false, mensaje: 'No pude consultar el catálogo. Intenta nuevamente o contacta con el equipo.' });
     }
-    if (!sources.length) return {
+    if (!sources.length) { void this.metrics?.record({ modo: 'catalogo', resuelta: false, fuentes: 0, pregunta: dto.message }); return {
       ok: true, mode: 'catalogo',
       answer: 'No encontré información publicada que responda a tu consulta. Prueba con el nombre del curso o servicio, o solicita atención del equipo. No puedo confirmar precios, cupos ni reservas sin información disponible.',
       sources: [],
-    };
+    }; }
     const fallback = () => ({
       ok: true, mode: 'catalogo',
       answer: 'Encontré esta información publicada:\n\n' + sources.slice(0, 3).map(source => source.title + '\n' + source.text.slice(0, 700)).join('\n\n')
         + '\n\nPara confirmar precios, fechas vigentes o disponibilidad, solicita atención del equipo.',
       sources,
     });
+    // Métricas de interacción (sin texto del visitante): no esperan ni alteran la respuesta.
+    const done = <T>(modo: 'ia' | 'catalogo', result: T): T => { void this.metrics?.record({ modo, resuelta: true, fuentes: sources.length }); return result; };
     const key = this.config.get<string>('OPENAI_API_KEY');
     const model = this.config.get<string>('CHATBOT_MODEL');
-    if (this.config.get<string>('CHATBOT_AI_ENABLED') !== 'true' || !key || !model || this.active >= 4) return fallback();
+    if (this.config.get<string>('CHATBOT_AI_ENABLED') !== 'true' || !key || !model || this.active >= 4) return done('catalogo', fallback());
     this.active++;
     try {
       const response = await fetch('https://api.openai.com/v1/responses', {
@@ -118,10 +123,10 @@ export class ChatbotService {
         .flatMap(item => item.content || []).filter(item => item.type === 'output_text')
         .map(item => item.text || '').join('\n').trim();
       if (result.status !== 'completed' || !answer || answer.length > 4000) throw new Error('invalid_provider_response');
-      return { ok: true, mode: 'ia', answer, sources };
+      return done('ia', { ok: true, mode: 'ia', answer, sources });
     } catch {
       this.logger.warn('Chatbot: respuesta de IA no disponible; se devuelve el catálogo.');
-      return { ...fallback(), notice: 'Ahora te muestro la información del catálogo directamente.' };
+      return done('catalogo', { ...fallback(), notice: 'Ahora te muestro la información del catálogo directamente.' });
     } finally { this.active--; }
   }
 
@@ -129,9 +134,9 @@ export class ChatbotService {
     // This endpoint only writes a contact; the model cannot call it or read contacts.
     let item = await this.prisma.contacto.create({ data: {
       nombre: dto.nombre.trim(), email: dto.email.trim(), telefono: dto.telefono.trim(),
-      asunto: ('[Chatbot] ' + dto.asunto.trim()).slice(0, 150),
+      asunto: ('[Chatbot] ' + (dto.tipo === 'cotizacion' ? '[Cotización] ' : '') + dto.asunto.trim()).slice(0, 150),
       mensaje: dto.mensaje.trim() + '\n\nSolicitud enviada desde el chatbot. El visitante autorizó el contacto.',
-      estado: 'nuevo',
+      estado: 'nuevo', origen: 'chatbot',
     } });
     return { ok: true, id: item.id, mensaje: 'Solicitud registrada. El equipo podrá atenderla desde su bandeja de mensajes.' };
   }

@@ -59,4 +59,9 @@ export class ChatContactDto {
   @Transform(({ obj }) => obj.consentimiento)
   @Equals(true, { message: 'Debes autorizar que Horus te contacte.' })
   consentimiento: boolean;
+
+  // 'cotizacion' marca la solicitud como intención comercial (se registra igual como Contacto con origen chatbot).
+  @IsOptional()
+  @IsIn(['contacto', 'cotizacion'])
+  tipo?: 'contacto' | 'cotizacion';
 }

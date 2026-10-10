@@ -39,6 +39,12 @@ export default function PoliticasPrivacidad() {
         <p>A través de la presente POLÍTICA DE PRIVACIDAD, el usuario da su consentimiento expreso para la inclusión de sus datos personales en el mencionado banco de datos.</p>
       </PolicySection>
 
+      <PolicySection id="asistente">
+        <h2 id="asistente-title">Asistente virtual: preguntas sin respuesta</h2>
+        <p>Cuando el asistente virtual no encuentra información publicada para responder una consulta escrita en el chat, registramos el texto de la pregunta (con los correos, teléfonos, números largos y enlaces ocultados automáticamente) junto con contadores de uso. La <strong>finalidad</strong> es únicamente mejorar los contenidos que publicamos y la calidad de las respuestas del asistente.</p>
+        <p>Este registro no incluye tu nombre ni se asocia a ningún formulario. Lo conservamos durante <strong>90 días</strong> desde la última vez que se repite la pregunta y después se elimina automáticamente. La ocultación automática no puede reconocer nombres ni direcciones: evita escribir datos personales en el chat. Para solicitar la eliminación anticipada escríbenos a <a href={`mailto:${correo}`}>{correo}</a>.</p>
+      </PolicySection>
+
       <PolicySection id="consentimiento">
         <h2 id="consentimiento-title">Consentimiento</h2>
         {/* REVISIÓN-HUMANA [contactos-sin-consentimiento]: el formulario de Contactos no tiene casilla de autorización ni enlace a esta política, por eso no se menciona aquí. Pendiente decidir (producto/humano) cómo se informa su consentimiento. */}

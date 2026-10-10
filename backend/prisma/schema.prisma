@@ -98,6 +98,7 @@ model Contacto {
   asunto String @db.VarChar(255)
   mensaje String @db.Text
   estado String @default("nuevo") @db.VarChar(255)
+  origen String @default("web") @db.VarChar(20)
   createdAt DateTime @default(now()) @db.DateTime(0)
   updatedAt DateTime @updatedAt @db.DateTime(0)
   cotizaciones Cotizacion[]
@@ -290,4 +291,25 @@ model ConvenioFoto {
   createdAt DateTime @default(now()) @db.DateTime(0)
   @@index([convenio_id, orden], map: "convenio_fotos_convenio_orden_idx")
   @@map("convenio_fotos")
+}
+
+model ChatbotInteraccion {
+  id Int @id @default(autoincrement())
+  modo String @db.VarChar(10)
+  resuelta Boolean
+  fuentes Int @default(0)
+  createdAt DateTime @default(now()) @db.DateTime(0)
+  @@index([createdAt], map: "chatbot_interacciones_created_idx")
+  @@map("chatbot_interacciones")
+}
+
+model ChatbotPreguntaSinRespuesta {
+  id Int @id @default(autoincrement())
+  huella String @unique(map: "chatbot_sin_respuesta_huella") @db.Char(64)
+  pregunta String @db.VarChar(500)
+  veces Int @default(1)
+  createdAt DateTime @default(now()) @db.DateTime(0)
+  updatedAt DateTime @updatedAt @db.DateTime(0)
+  @@index([updatedAt], map: "chatbot_sin_respuesta_updated_idx")
+  @@map("chatbot_preguntas_sin_respuesta")
 }

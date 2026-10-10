@@ -25,6 +25,7 @@ export default function Chatbot() {
   const [error, setError] = useState('');
   const [contactOpen, setContactOpen] = useState(false);
   const [contact, setContact] = useState(initialContact);
+  const [quote, setQuote] = useState(false); // la solicitud actual pide una cotización (se registra como Contacto con origen chatbot)
   const [success, setSuccess] = useState('');
   const [mode, setMode] = useState('Información del catálogo');
   const dialog = useRef<HTMLDialogElement>(null);
@@ -90,11 +91,11 @@ export default function Chatbot() {
       window.clearTimeout(timeout); locked.current = false; setBusy(false); input.current?.focus();
     }
   };
-  const startContact = (topic?: string) => {
-    setError(''); setSuccess('');
+  const startContact = (topic?: string, asQuote = false) => {
+    setError(''); setSuccess(''); setQuote(asQuote);
     setContact(previous => ({ ...previous,
-      asunto: topic ? ('Consulta: ' + topic).slice(0, 140) : previous.asunto || 'Consulta desde el asistente',
-      mensaje: topic ? 'Quisiera información sobre: ' + topic : previous.mensaje || [...turns].reverse().find(turn => turn.role === 'user')?.content || '',
+      asunto: asQuote ? (topic ? 'Cotización: ' + topic : 'Solicitud de cotización').slice(0, 140) : topic ? ('Consulta: ' + topic).slice(0, 140) : previous.asunto || 'Consulta desde el asistente',
+      mensaje: topic ? (asQuote ? 'Quisiera una cotización para: ' : 'Quisiera información sobre: ') + topic : previous.mensaje || [...turns].reverse().find(turn => turn.role === 'user')?.content || '',
     }));
     setContactOpen(true);
   };
@@ -105,9 +106,9 @@ export default function Chatbot() {
     const abort = new AbortController(); controller.current = abort;
     const timeout = window.setTimeout(() => abort.abort(), 22000);
     try {
-      const response = await chatRequest<{ ok: boolean; id: number }>('contact', contact, abort.signal);
-      setSuccess('Solicitud #' + response.id + ' registrada. El equipo de Horus podrá contactarte.');
-      setContact(initialContact); setContactOpen(false);
+      const response = await chatRequest<{ ok: boolean; id: number }>('contact', { ...contact, tipo: quote ? 'cotizacion' : 'contacto' }, abort.signal);
+      setSuccess(quote ? 'Solicitud de cotización #' + response.id + ' registrada. El equipo de Horus preparará la propuesta y te contactará; no es una compra ni una reserva.' : 'Solicitud #' + response.id + ' registrada. El equipo de Horus podrá contactarte.');
+      setContact(initialContact); setContactOpen(false); setQuote(false);
     } catch (err) {
       // Escritura: si el resultado es incierto (tiempo agotado, red caída, 200 ilegible) se advierte antes de reenviar; nunca se reintenta solo.
       setError(writeErrorMessage(err, abort.signal.aborted));
@@ -143,17 +144,17 @@ export default function Chatbot() {
         <div className="hc-toolbar"><span><i aria-hidden="true" />{mode}</span><button onClick={reset} disabled={busy}><ChatIcon name="reset" size={12} />Nueva conversación</button></div>
         {contactOpen ? <div className="hc-contact">
           <button type="button" className="hc-back" onClick={() => { setContactOpen(false); setError(''); }} disabled={busy}>← Volver al chat</button>
-          <h3>Hablemos de lo que necesitas</h3><p>Revisa tu consulta y autoriza que nuestro equipo te contacte.</p>
+          <h3>{quote ? 'Solicita tu cotización' : 'Hablemos de lo que necesitas'}</h3><p>{quote ? 'Cuéntanos qué necesitas y autoriza que nuestro equipo te contacte con una propuesta. No es una compra ni una reserva.' : 'Revisa tu consulta y autoriza que nuestro equipo te contacte.'}</p>
           <form onSubmit={submitContact}>
             <fieldset disabled={busy}>
               <label>Nombre<input autoFocus required maxLength={100} autoComplete="name" value={contact.nombre} onChange={e => setContact({ ...contact, nombre: e.target.value })} /></label>
               <label>Correo<input required type="email" maxLength={254} autoComplete="email" value={contact.email} onChange={e => setContact({ ...contact, email: e.target.value })} /></label>
-              <label>Teléfono<input required type="tel" maxLength={30} pattern="(?=.*d)[+()ds.-]+" autoComplete="tel" value={contact.telefono} onChange={e => setContact({ ...contact, telefono: e.target.value })} /></label>
+              <label>Teléfono<input required type="tel" maxLength={30} pattern="(?=.*\d)[+\(\)\d\s.\-]+" autoComplete="tel" value={contact.telefono} onChange={e => setContact({ ...contact, telefono: e.target.value })} /></label>
               <label>Asunto<input required maxLength={140} value={contact.asunto} onChange={e => setContact({ ...contact, asunto: e.target.value })} /></label>
               <label>Tu consulta<textarea required maxLength={5000} rows={3} value={contact.mensaje} onChange={e => setContact({ ...contact, mensaje: e.target.value })} /></label>
               {summary && <div className="hc-summary"><button className="hc-back" type="button" disabled={contact.mensaje.includes(summary)} onClick={includeSummary}>{contact.mensaje.includes(summary) ? 'Resumen añadido' : 'Añadir mis últimas consultas'}</button><p>Se añadirán hasta cuatro preguntas al texto de arriba. Puedes revisarlas y editarlas antes de enviar.</p></div>}
               <label className="hc-consent"><input type="checkbox" required checked={contact.consentimiento} onChange={e => setContact({ ...contact, consentimiento: e.target.checked })} /><span>Autorizo a Horus a usar estos datos para atender mi consulta. <Link to="/politicas/privacidad" onClick={close}>Ver privacidad</Link>.</span></label>
-              <button className="hc-submit" type="submit">{busy ? 'Registrando…' : 'Enviar solicitud'}</button>
+              <button className="hc-submit" type="submit">{busy ? 'Registrando…' : quote ? 'Enviar solicitud de cotización' : 'Enviar solicitud'}</button>
             </fieldset>
           </form>
         </div> : <>
@@ -188,12 +189,13 @@ export default function Chatbot() {
               <input ref={input} id="hc-question" placeholder="¿Cómo podemos ayudarte?" value={message} maxLength={1000} disabled={busy} onChange={event => setMessage(event.target.value)} />
               <button type="submit" disabled={busy || !message.trim()} aria-label="Enviar consulta"><ChatIcon name="send" size={18} /></button>
             </form>
+            <button className="hc-handoff" onClick={() => startContact(undefined, true)} disabled={busy}><ChatIcon name="tools" size={15} />Solicitar cotización<ChatIcon name="arrow" size={13} /></button>
             <button className="hc-handoff" onClick={() => startContact()} disabled={busy}><ChatIcon name="person" size={15} />Solicitar atención del equipo<ChatIcon name="arrow" size={13} /></button>
           </div>
         </>}
         {error && <p className="hc-error" role="alert">{error} <Link to="/contactos" onClick={close}>Ir a Contacto</Link></p>}
         {success && <p className="hc-success" role="status">{success}</p>}
-        <footer className="hc-footer"><details><summary><ChatIcon name="lock" size={11} />Tu privacidad importa · Ver detalles</summary><p>Evita compartir datos sensibles en el chat. Si la IA está habilitada, OpenAI procesa la consulta y el contexto reciente. <Link to="/politicas/privacidad" onClick={close}>Política de privacidad</Link></p></details></footer>
+        <footer className="hc-footer"><details><summary><ChatIcon name="lock" size={11} />Tu privacidad importa · Ver detalles</summary><p>Evita compartir datos sensibles en el chat. Si el asistente no puede responder, guarda tu pregunta (con correos, teléfonos y enlaces ocultos) durante 90 días solo para mejorar sus respuestas. Si la IA está habilitada, OpenAI procesa la consulta y el contexto reciente. <Link to="/politicas/privacidad" onClick={close}>Política de privacidad</Link></p></details></footer>
       </div>
     </dialog>
   </>;

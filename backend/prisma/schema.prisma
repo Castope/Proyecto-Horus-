@@ -154,7 +154,7 @@ model Newsletter {
   consent_at DateTime? @db.DateTime(0)
   id Int @id @default(autoincrement())
   email String @unique(map: "email") @db.VarChar(254)
-  interes String @default("market") @db.VarChar(100)
+  interes String @default("novedades") @db.VarChar(100)
   activo Boolean? @default(true)
   createdAt DateTime @default(now()) @db.DateTime(0)
   updatedAt DateTime @updatedAt @db.DateTime(0)

@@ -13,8 +13,9 @@ export class PublicRateLimitGuard implements CanActivate {
  const limit=limits[scope];if(!limit)return true;
  const now=Date.now(),window=Math.floor(now/60000),expiresAt=new Date((window+2)*60000);
  const key=(value:string)=>createHash('sha256').update(value+':'+window).digest('hex');
- const id=key(scope+':'+(request.ip||request.socket.remoteAddress||'unknown')),global=key('all-public');
- // Atomic increments in MySQL share the quota between API processes.
+ const id=key(scope+':'+(request.ip||request.socket.remoteAddress||'unknown')),global=key(scope.startsWith('/admin/')?'all-admin:'+scope:'all-public');
+ // Atomic increments in MySQL share the quota between API processes. Each admin route (login, recovery, reset, password) has its own global
+ // bucket, so neither public form traffic nor another admin route can exhaust the quota of /admin/login.
  const [individual,total]=await this.prisma.$transaction(async tx=>{
  await tx.$executeRaw`INSERT INTO rate_limit_buckets (id, count, expiresAt) VALUES (${id}, 1, ${expiresAt}) ON DUPLICATE KEY UPDATE count = count + 1`;
  await tx.$executeRaw`INSERT INTO rate_limit_buckets (id, count, expiresAt) VALUES (${global}, 1, ${expiresAt}) ON DUPLICATE KEY UPDATE count = count + 1`;

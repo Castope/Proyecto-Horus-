@@ -208,4 +208,18 @@ test('rate limits cover login, recovery, reset and password change per IP, and c
   let blocked = 0;
   for (let i = 0; i < 205; i++) { try { await l.call('/api/contacto', '198.51.100.' + (i % 250)); } catch { blocked++; } }
   assert.equal(blocked, 5);
+  // El tráfico público agotado no bloquea el inicio de sesión, que conserva su propio tope por IP y global.
+  assert.equal(await l.call('/api/admin/login', '192.0.2.50'), true);
+  for (let i = 0; i < 200; i++) { try { await l.call('/api/admin/login', '192.0.2.' + (i % 200)); } catch { /* cuota propia */ } }
+  await assert.rejects(() => l.call('/api/admin/login', '192.0.2.250'), (error: unknown) => error instanceof HttpException && error.getStatus() === 429);
+});
+test('a burst on another admin route cannot exhaust the global quota of /admin/login', async () => {
+  const l = limiter();
+  for (const path of ['/api/admin/forgot-password', '/api/admin/reset-password', '/api/admin/password', '/api/admin/register']) {
+    for (let i = 0; i < 300; i++) { try { await l.call(path, '198.51.100.' + (i % 250)); } catch { /* cuota de esa ruta */ } }
+    await assert.rejects(() => l.call(path, '198.51.100.251'), (error: unknown) => error instanceof HttpException && error.getStatus() === 429, path + ' agotó su propia cuota');
+  }
+  for (let i = 0; i < 10; i++) assert.equal(await l.call('/api/admin/login', '203.0.113.7'), true, 'login #' + (i + 1));
+  await assert.rejects(() => l.call('/api/admin/login', '203.0.113.7'), (error: unknown) => error instanceof HttpException && error.getStatus() === 429, 'el tope por IP del login se conserva');
+  assert.equal(await l.call('/api/admin/login', '203.0.113.8'), true, 'otra IP sigue pudiendo entrar');
 });

@@ -40,6 +40,7 @@ El objetivo es entregar cambios completos, verificables y proporcionados a la ta
 | `frontend/src/assets/`, `frontend/src/styles/` | Recursos visuales y estilos |
 | `frontend/config/`, `frontend/tests/`, `frontend/scripts/` | Configuración de API, pruebas de despliegue y revisión con navegador |
 | `tsconfig.json` | Configuración de TypeScript de la raíz para el backend y sus tests |
+| `docker-compose.local.yml`, `.env.docker.example` | Entorno local (sitio, API, MySQL) con Docker Compose; no es producción. Guía: [docs/procedimientos/docker-local.md](docs/procedimientos/docker-local.md). `.env.docker` real no se versiona |
 
 Hay dos paquetes npm independientes, cada uno con su `package-lock.json`. No existe un paquete npm en la raíz. Ejecuta las comprobaciones con la configuración de cada paquete; el `tsconfig.json` de la raíz no comprueba el frontend.
 

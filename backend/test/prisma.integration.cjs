@@ -290,6 +290,19 @@ test('Prisma works against MySQL and legacy-compatible SQL in an isolated databa
       assert.equal(rolledBack.revision, 3);
       assert.equal(rolledBack.historial.length, 3);
     });
+    await t.test('quote creation is idempotent under the real UNIQUE constraint (migration 20261011)', async () => {
+      const service = new CotizacionesService(client);
+      const dto = { cliente: 'Idempotente', email: '', telefono: '', documento: '', direccion: '', emisor: 'Horus', datos_emisor: '', moneda: 'PEN', validez: '2099-12-31', condiciones: '', conceptos: [{ descripcion: 'Servicio', cantidad: 1, precio: 10 }], descuento: 0, tasa: 0 };
+      const key = 'integration-key-' + randomUUID();
+      const results = await Promise.all(Array.from({ length: 5 }, () => service.create(dto, 1, key)));
+      assert.equal(await client.cotizacion.count({ where: { idempotencia_clave: key } }), 1);
+      assert.equal(new Set(results.map(r => r.item.numero)).size, 1);
+      assert.equal(results.filter(r => r.reutilizada === true).length, 4);
+      assert.ok(results.every(r => !('idempotencia_clave' in r.item)));
+      await assert.rejects(() => service.create({ ...dto, cliente: 'Otro' }, 1, key), e => e.getStatus() === 422);
+      const first = await service.create(dto, 1), second = await service.create(dto, 1);
+      assert.notEqual(first.item.numero, second.item.numero, 'sin clave no hay deduplicación');
+    });
     await t.test('attention uses revision, preserves histories and protects complaints', async () => {
       const { AttentionService } = require('../dist/attention/attention.service');
       const service = new AttentionService(client, {sendMail:async()=>true}, new ConfigService({}));

@@ -1,9 +1,10 @@
-import { Module, Controller, Get, Post, Put, Param, ParseIntPipe, Body, Query, UseGuards } from '@nestjs/common';
+import { Module, Controller, Get, Post, Put, Param, ParseIntPipe, Body, Query, UseGuards, Headers } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthModule } from '../admin/auth/auth.module';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CotizacionesService } from './cotizaciones.service';
+import { IDEMPOTENCY_HEADER, parseIdempotencyKey } from './idempotency';
 import { SendCotizacionDto, CotizacionDto, CotizacionQueryDto, EditCotizacionDto, EstadoCotizacionDto } from './cotizacion.dto';
 
 @ApiTags('Admin - Cotizaciones')
@@ -14,7 +15,7 @@ export class CotizacionesController {
   constructor(private readonly service: CotizacionesService) {}
   @Get() list(@Query() query: CotizacionQueryDto) { return this.service.list(query); }
   @Get(':id') detail(@Param('id', ParseIntPipe) id: number) { return this.service.detail(id); }
-  @Post() create(@Body() dto: CotizacionDto, @CurrentUser('id') user: number) { return this.service.create(dto, user); }
+  @Post() create(@Body() dto: CotizacionDto, @CurrentUser('id') user: number, @Headers(IDEMPOTENCY_HEADER) key?: string) { return this.service.create(dto, user, parseIdempotencyKey(key)); }
   @Put(':id') edit(@Param('id', ParseIntPipe) id: number, @Body() dto: EditCotizacionDto, @CurrentUser('id') user: number) { return this.service.edit(id, dto, user); }
   @Post(':id/correo') email(@Param('id', ParseIntPipe) id: number, @Body() dto: SendCotizacionDto, @CurrentUser('id') user: number) { return this.service.email(id, dto.revision, user, dto.confirmar_reenvio === true); }
   @Post(':id/estado') status(@Param('id', ParseIntPipe) id: number, @Body() dto: EstadoCotizacionDto, @CurrentUser('id') user: number) { return this.service.status(id, dto, user); }

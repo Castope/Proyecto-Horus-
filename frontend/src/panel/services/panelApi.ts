@@ -8,10 +8,11 @@ export class PanelApiError extends Error {
   constructor(message: string, public status: number, public body?: unknown) { super(message); }
 }
 
-export async function panelRequest<T>(path: string, token: string | null, method = 'GET', body?: unknown, signal?: AbortSignal): Promise<T> {
+// `extraHeaders`: encabezados adicionales de la petición (hoy solo `Idempotency-Key` al crear cotizaciones).
+export async function panelRequest<T>(path: string, token: string | null, method = 'GET', body?: unknown, signal?: AbortSignal, extraHeaders?: Record<string, string>): Promise<T> {
   const response = await fetch(API_BASE + '/admin/' + path, {
     method, signal, cache: 'no-store',
-    headers: { ...(token ? { Authorization: 'Bearer ' + token } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) },
+    headers: { ...(token ? { Authorization: 'Bearer ' + token } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}), ...extraHeaders },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
   const data = await response.json().catch(() => null);

@@ -5,6 +5,8 @@ import PanelDialog from './PanelDialog';
 import { useUnsavedChangesControl } from '../unsaved/unsavedContext';
 import type { Quote, QuoteInput } from '../types/quotes';
 const CREATE_TIMEOUT_MS=25000,CHECK_TIMEOUT_MS=15000;
+// Clave de una operación lógica de creación. Solo debe ser única (no secreta); randomUUID exige contexto seguro (https o localhost).
+const newOperationKey=()=>typeof crypto.randomUUID==='function'?crypto.randomUUID():'op-'+Date.now().toString(36)+'-'+Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>b.toString(16).padStart(2,'0')).join('');
 export default function QuoteForm({initial,onClose,onSaved,related=[],readOnly=false}:{initial?:Quote|QuoteInput;onClose:()=>void;onSaved:()=>void;related?:{numero:string;estado:string}[];readOnly?:boolean}) {
  const {token}=useAdminAuth();const lock=useRef(false);
  const [form,setForm]=useState<QuoteInput>(()=>({cliente:initial?.cliente||'',email:initial?.email||'',telefono:initial?.telefono||'',documento:initial?.documento||'',direccion:initial?.direccion||'',emisor:initial?.emisor||'',datos_emisor:initial?.datos_emisor||'',moneda:initial?.moneda||'PEN',validez:initial?.validez||new Date(Date.now()+7*86400000).toISOString().slice(0,10),condiciones:initial?.condiciones||'',conceptos:initial?.conceptos.map(({descripcion,cantidad,precio})=>({descripcion,cantidad,precio:Number(precio)}))||[{descripcion:'',cantidad:1,precio:0}],descuento:Number(initial?.descuento||0),tasa:Number(initial?.tasa??18),...(initial?.contacto_id?{contacto_id:initial.contacto_id}:{})}));
@@ -15,14 +17,17 @@ export default function QuoteForm({initial,onClose,onSaved,related=[],readOnly=f
  const requestClose=()=>confirmLeave(onClose);
  const editing=initial && 'id' in initial;
  const setText=(key:keyof QuoteInput,value:string)=>setForm(v=>({...v,[key]:value}));
- // El backend no ofrece idempotencia: una creación sin resultado conocido (red, timeout, 5xx o 2xx ilegible) puede haberse guardado. El formulario NO repite el POST por sí solo;
- // permite comprobar la lista y exige una confirmación explícita que advierte del posible duplicado. Editar usa `revision`, así que un reintento obsoleto responde 409.
+ // Una creación sin resultado conocido (red, timeout, 5xx o 2xx ilegible) puede haberse guardado. El formulario NO repite el POST por sí solo;
+ // permite comprobar la lista y exige una confirmación explícita. Cada creación envía `Idempotency-Key`: la clave se conserva mientras el contenido enviado no cambie
+ // (un reintento idéntico no duplica en el backend) y se renueva si la persona edita el formulario. Editar usa `revision`, así que un reintento obsoleto responde 409.
+ const operation=useRef<{key:string;body:string}|null>(null);
  const [phase,setPhase]=useState<'idle'|'uncertain'|'confirming'>('idle'),[check,setCheck]=useState<{state:'idle'|'loading'|'done'|'error';matches:{numero:string;estado:string}[]}>({state:'idle',matches:[]});
  const attemptAt=useRef(0),uncertainBox=useRef<HTMLDivElement>(null),alive=useRef(true);
  useEffect(()=>{alive.current=true;return()=>{alive.current=false};},[]);
  useEffect(()=>{if(phase==='uncertain'&&check.state==='idle')uncertainBox.current?.focus();},[phase,check.state]);
  const post=async()=>{if(lock.current)return;lock.current=true;setBusy(true);setError('');setPhase(current=>current==='confirming'?'uncertain':current);const ctrl=new AbortController(),timer=window.setTimeout(()=>ctrl.abort(),CREATE_TIMEOUT_MS);attemptAt.current=Date.now();
-  try{await panelRequest(editing?'cotizaciones/'+initial.id:'cotizaciones',token,editing?'PUT':'POST',{...form,...(editing?{revision:initial.revision}:{})},ctrl.signal);setBaseline(JSON.stringify(form));clear();onSaved();}
+  try{const sent=JSON.stringify(form);if(!editing&&operation.current?.body!==sent)operation.current={key:newOperationKey(),body:sent};
+   await panelRequest(editing?'cotizaciones/'+initial.id:'cotizaciones',token,editing?'PUT':'POST',{...form,...(editing?{revision:initial.revision}:{})},ctrl.signal,!editing&&operation.current?{'Idempotency-Key':operation.current.key}:undefined);setBaseline(JSON.stringify(form));clear();onSaved();}
   catch(e){const uncertain=!editing&&(!(e instanceof PanelApiError)||e.status>=500||e.status<400);if(!alive.current)return;if(uncertain){setPhase('uncertain');setCheck({state:'idle',matches:[]});}else{setPhase('idle');setError(errorMessage(e));}}
   finally{window.clearTimeout(timer);lock.current=false;if(alive.current)setBusy(false);}};
  const checkList=async()=>{setCheck({state:'loading',matches:[]});const ctrl=new AbortController(),timer=window.setTimeout(()=>ctrl.abort(),CHECK_TIMEOUT_MS);

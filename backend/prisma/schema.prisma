@@ -131,6 +131,8 @@ model Cotizacion {
   @@index([contacto_id], map: "cotizaciones_contacto_id_idx")
   revision Int @default(1)
   historial Json
+  idempotencia_clave String? @unique(map: "cotizaciones_idempotencia_clave") @db.VarChar(128)
+  idempotencia_huella String? @db.Char(64)
   createdAt DateTime @default(now()) @db.DateTime(0)
   updatedAt DateTime @updatedAt @db.DateTime(0)
   @@map("cotizaciones")

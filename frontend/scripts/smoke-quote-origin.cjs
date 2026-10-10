@@ -1,5 +1,5 @@
 // Mensajes ↔ Cotizaciones (D7) con API simulada: nada real. «Preparar cotización» desde el Centro de atención, precarga, retorno al origen,
-// parámetro heredado ?contacto, vínculo contacto_id, y protección contra duplicados ante respuestas inciertas (el backend no es idempotente).
+// parámetro heredado ?contacto, vínculo contacto_id, y protección contra duplicados ante respuestas inciertas (sin reintento automático y con confirmación explícita; el POST envía `Idempotency-Key`, que el backend usa para no duplicar un reintento idéntico, pero este smoke usa un servidor simulado que no la aplica).
 const { start, sleep, TOKEN } = require('./smoke-kit.cjs');
 
 const sim = { post: 'ok', estado: '' };
@@ -16,7 +16,7 @@ const handler = async (req, res, { route, url, json, body }) => {
   if (route === '/api/admin/me') return (token === TOKEN ? json({ ok: true, user: { id: 1, nombre: 'Ana Administradora', email: 'ana@example.test' } }) : json({}, 401)) || true;
   const sub = route.replace('/api/admin/', ''); let m;
   if (req.method === 'POST' && sub === 'cotizaciones') {
-    const data = await body(); writes.push({ route: sub, data });
+    const data = await body(); writes.push({ route: sub, data, key: req.headers['idempotency-key'] });
     if (sim.post === 'bad') return json({ ok: false, message: 'Correo del cliente inválido.' }, 400) || true;
     if (sim.post === 'lost') { quotes.push(makeQuote(data)); res.writeHead(200, { 'Content-Type': 'text/plain' }); res.end('respuesta ilegible'); return true; } // el servidor guarda, pero la respuesta es ilegible (sin cortar el socket: Edge puede repetir un POST cortado)
     if (sim.post === 'fail500') return json({ message: 'Internal server error ER_SECRET' }, 500) || true; // no guarda
@@ -106,7 +106,8 @@ const handler = async (req, res, { route, url, json, body }) => {
     ck(true, 'si no hay coincidencias se dice que eso no garantiza que no se haya creado');
     await ctl('post', 'ok'); await submit(p); await p.wait('document.querySelector("[data-quote-uncertain=confirming]")', 'confirmación'); await p.click('dialog.hp-dialog[open] button', 'Guardar de todos modos');
     await p.wait('document.body.innerText.includes("Borrador guardado")', 'guardado confirmado');
-    const s = await state(); ck(s.writes.length === 2 && s.quotes.length === 1, 'solo con la confirmación explícita se envía el segundo POST', { writes: s.writes.length, quotes: s.quotes.length }); await p.close(); }
+    const s = await state(); ck(s.writes.length === 2 && s.quotes.length === 1, 'solo con la confirmación explícita se envía el segundo POST', { writes: s.writes.length, quotes: s.quotes.length });
+    ck(!!s.writes[0].key && s.writes[0].key === s.writes[1].key, 'el reintento idéntico reutiliza la misma Idempotency-Key (el backend no duplica)', s.writes.map(w => typeof w.key)); await p.close(); }
 
   console.log('\n== SOLO LECTURA (cotización ya enviada)');
   await clean();

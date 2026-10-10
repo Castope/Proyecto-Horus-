@@ -97,7 +97,7 @@ export function configureCors(app: NestExpressApplication, env: Env) {
     origin: corsOrigins(env), // lista exacta, nunca '*'
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key'], // Idempotency-Key: creación de cotizaciones (sin él, el preflight entre orígenes la rechazaría)
   });
 }
 

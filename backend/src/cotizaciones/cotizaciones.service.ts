@@ -1,14 +1,15 @@
-import { BadRequestException, ConflictException, HttpException, HttpStatus, Injectable, Logger, NotFoundException, Optional, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, ConflictException, HttpException, HttpStatus, Injectable, Logger, NotFoundException, Optional, ServiceUnavailableException, UnprocessableEntityException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MailService, type MailOutcome } from '../mail/mail.service';
 import { attemptEntry, decideSend, fingerprint, lastAttempt, stateOfOutcome, type SendBlock } from '../mail/mail-attempts';
 import { PrismaService } from '../database/prisma.service';
-import { serializeQuote } from '../database/serialization';
+import { isUniqueViolation, serializeQuote } from '../database/serialization';
 import { randomUUID } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 
 
 import { CotizacionDto, CotizacionQueryDto, EditCotizacionDto, EstadoCotizacionDto } from './cotizacion.dto';
+import { quoteRequestHash } from './idempotency';
 
 export const transitions: Record<string, string[]> = { borrador: ['enviada', 'anulada'], enviada: ['aceptada', 'rechazada', 'anulada'], aceptada: [], rechazada: [], anulada: [] };
 export function calculateQuote(dto: CotizacionDto) {
@@ -61,11 +62,37 @@ export class CotizacionesService {
       emisor: dto.emisor, datos_emisor: dto.datos_emisor, moneda: dto.moneda, validez: new Date(dto.validez), condiciones: dto.condiciones,
       contacto_id: dto.contacto_id || null, ...calculateQuote(dto) };
   }
-  async create(dto: CotizacionDto, user: number) {
+  // Con `idempotencyKey` la creación es idempotente: la restricción UNIQUE de `idempotencia_clave` decide la carrera entre solicitudes simultáneas, así que
+  // la misma clave y el mismo contenido devuelven SIEMPRE la misma cotización (sin crear otra) y la misma clave con otro contenido responde 422.
+  // Crear no envía correo ni notifica: el envío es otro endpoint con su propio control de intentos.
+  async create(dto: CotizacionDto, user: number, idempotencyKey?: string) {
+    const huella = idempotencyKey ? quoteRequestHash(dto, user) : undefined;
+    if (idempotencyKey) {
+      const previous = await this.prisma.cotizacion.findUnique({ where: { idempotencia_clave: idempotencyKey } });
+      if (previous) return this.replay(previous, huella!);
+    }
     const data = await this.payload(dto);
-    const item = await this.prisma.cotizacion.create({ data: { ...data, numero: 'COT-' + new Date().getUTCFullYear() + '-' + randomUUID(), estado: 'borrador', revision: 1,
-      historial: [{ accion: 'Creada como borrador', usuario: user, fecha: new Date().toISOString() }] } }).catch(error => this.referenceConflict(error));
-    return { ok: true, item: { ...serializeQuote(item), ...calculateQuote(dto) } };
+    try {
+      const item = await this.prisma.cotizacion.create({ data: { ...data, numero: 'COT-' + new Date().getUTCFullYear() + '-' + randomUUID(), estado: 'borrador', revision: 1,
+        historial: [{ accion: 'Creada como borrador', usuario: user, fecha: new Date().toISOString() }],
+        ...(idempotencyKey ? { idempotencia_clave: idempotencyKey, idempotencia_huella: huella } : {}) } });
+      return { ok: true, item: { ...serializeQuote(item), ...calculateQuote(dto) } };
+    } catch (error) {
+      if (idempotencyKey && isUniqueViolation(error)) {
+        // Otra solicitud con la misma clave ganó la carrera entre la lectura y la inserción.
+        const winner = await this.prisma.cotizacion.findUnique({ where: { idempotencia_clave: idempotencyKey } });
+        if (winner) return this.replay(winner, huella!);
+      }
+      return this.referenceConflict(error);
+    }
+  }
+  // Devuelve la cotización tal como está ahora en la base (puede haberse editado desde la creación), nunca importes recalculados con el contenido original.
+  // Los importes van como números, igual que en la respuesta de la creación.
+  private replay(previous: import('@prisma/client').Cotizacion, huella: string) {
+    if (previous.idempotencia_huella !== huella) throw new UnprocessableEntityException('Esta clave de idempotencia ya se usó con otro contenido. Revisa la cotización o genera una solicitud nueva.');
+    const item = serializeQuote(previous);
+    for (const field of ['subtotal', 'descuento', 'tasa', 'impuesto', 'total']) item[field] = Number(item[field]);
+    return { ok: true, reutilizada: true, item };
   }
   async edit(id: number, dto: EditCotizacionDto, user: number) {
     const data = await this.payload(dto);

@@ -393,7 +393,9 @@ test('Prisma works against MySQL and legacy-compatible SQL in an isolated databa
       assert.equal(await client.servicio.count(),before.services);
       const imported=await restore.restore('servicios','borrador');assert.equal(imported.created,19);
       assert.equal((await catalog.list('servicios',{page:1,limit:100},true)).items.length,0);
-      const first=await client.servicio.findFirst({where:{origen_original:{not:null}},orderBy:{orden:'asc'}});
+      // `orden` se repite entre categorías (hay un servicio con orden 1 en cada una): sin categoría ni desempate por id, MySQL elige cualquiera de ellos
+      // (con LIMIT 1 y filesort devolvió «asesoramiento») y la comprobación posterior sobre «cableado» fallaba. Se fija la categoría y un desempate estable.
+      const first=await client.servicio.findFirst({where:{origen_original:{not:null},categoria:'cableado'},orderBy:[{orden:'asc'},{id:'asc'}]});
       await catalog.update('servicios',first.id,{titulo:'Contenido revisado desde el panel',slug:'nuevo-enlace-revisado',estado:'publicado',nombre_corto:'Nombre revisado',etiquetas:'Etiqueta editada'});
       const repeated=await restore.restore('servicios');assert.equal(repeated.created,0);
       const visible=await catalog.list('servicios',{categoria:'cableado',page:1,limit:100},true);

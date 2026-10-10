@@ -1,0 +1,160 @@
+# Integración continua de Horus. Solo comprueba: NO despliega, no usa secretos ni bases de producción ni servicios externos (correo, IA).
+# Los comandos son los de AGENTS.md / los scripts reales de cada package.json. Guía y límites: docs/procedimientos/ci.md
+name: CI
+
+on:
+  push:
+    branches: [main, anderson]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      smokes:
+        description: 'Ejecutar también los smokes con navegador (manual, sin verificar en este runner)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (tipos, pruebas, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Instalar dependencias (genera el cliente Prisma, sin conectar a MySQL)
+        run: npm ci
+      - name: Comprobar tipos (incluye los tests)
+        run: node node_modules/typescript/bin/tsc --noEmit --incremental false
+      # En serie y con la precarga que impide que @prisma/client cargue un backend/.env real (AGENTS.md / CLAUDE.md §3).
+      - name: Pruebas del backend (aisladas, sin MySQL ni red)
+        run: node --test --test-concurrency=1 -r ./test/isolate-env.cjs -r ts-node/register test/*.test.ts
+      - name: Compilar
+        run: npm run build
+
+  frontend:
+    name: Frontend (tipos, lint, pruebas, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run check
+      - run: npm run lint
+      - name: Pruebas unitarias (módulos puros, sin navegador)
+        run: |
+          npm run test:deploy
+          npm run test:errors
+          npm run test:return-path
+          npm run test:list-records
+          npm run test:attention-merge
+          npm run test:mail-outcome
+          npm run test:message-export
+          npm run test:notify
+      - run: npm run build
+
+  # MySQL efímero del propio runner: se crea y se destruye con el job, con una contraseña de un solo uso que no es un secreto.
+  # test:integration crea y elimina solo una base horus_prisma_test_<UUID>, aplica init + migraciones (dos veces), db:check y las pruebas de módulos.
+  # Se lanza con `docker run` (y no como service) porque necesita argumentos del servidor: mysql_native_password, como en docker-compose.local.yml.
+  integration:
+    name: Integración (MySQL efímero)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # Primera versión sin ejecutar todavía en GitHub: un fallo se ve en el resumen, pero no bloquea. Retirar esta línea cuando haya una ejecución verde.
+    continue-on-error: true
+    needs: [backend]
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: '3306'
+      DB_NAME: horus_ci
+      DB_USER: root
+      DB_PASS: ci-only-throwaway-password
+      DB_SSL: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Iniciar MySQL efímero (solo 127.0.0.1)
+        working-directory: .
+        run: |
+          docker run -d --name mysql-ci -p 127.0.0.1:3306:3306 -e MYSQL_ROOT_PASSWORD="$DB_PASS" -e MYSQL_DATABASE="$DB_NAME" \
+            mysql:8.4 --mysql-native-password=ON --authentication-policy=mysql_native_password --character-set-server=utf8mb4
+          for i in $(seq 1 60); do
+            if docker exec -e MYSQL_PWD="$DB_PASS" mysql-ci mysqladmin ping -h 127.0.0.1 -uroot --silent; then exit 0; fi
+            sleep 2
+          done
+          docker logs mysql-ci | tail -20
+          exit 1
+      - run: npm ci
+      - name: Integración con MySQL
+        run: npm run test:integration
+      - name: Retirar MySQL
+        if: always()
+        working-directory: .
+        run: docker rm -f mysql-ci || true
+
+  # Solo a demanda: los smokes necesitan Chrome/Chromium y no se han ejecutado en un runner Linux de GitHub. Se lanzan en serie
+  # (CLAUDE.md §10) con la API simulada y bloqueo de peticiones externas, sin MySQL ni correo.
+  smokes:
+    name: Smokes con navegador (manual)
+    if: github.event_name == 'workflow_dispatch' && inputs.smokes
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    needs: [frontend]
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      SMOKE_BROWSER: /usr/bin/google-chrome
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
+      - run: npm ci
+      - name: Instalar y compilar el backend (algunos smokes lo usan)
+        working-directory: backend
+        run: |
+          npm ci
+          npm run build
+      - run: npm run build
+      - name: Smokes en serie
+        run: |
+          set -e
+          for name in smoke:auth smoke:unsaved smoke:panel-sections smoke:panel-toasts smoke:quote-origin smoke:chatbot; do
+            echo "::group::$name"; npm run "$name"; echo "::endgroup::"
+          done
+          node scripts/smoke-home.cjs
+          node scripts/smoke-global-content.cjs
+          node scripts/smoke-ui.cjs

@@ -18,6 +18,36 @@ El panel administrativo de Horus **ya no ofrece** una pantalla para revisar, res
 
 Mientras no exista una interfaz, la atención debe apoyarse en un mecanismo externo. Este documento propone cómo hacerlo.
 
+## 1.1 Qué funciona hoy y qué es solo propuesta
+
+| Elemento | Estado verificado en el código |
+| --- | --- |
+| Formulario público del Libro de Reclamaciones | **Operativo.** Guarda el registro en `reclamaciones` y responde con `numero_reclamo` |
+| Constancia por correo a la persona | **Operativa si el correo está configurado** (`backend/MAIL.md`). Es un efecto *posterior* al guardado: si falla, el registro **sigue guardado** y la respuesta pública lleva `correo_enviado: false`. «Aceptado por el proveedor» no es «entregado» |
+| Historial y datos de reclamaciones | **Conservados** en MySQL; nada se borra por haber retirado la pantalla |
+| Endpoints `GET /api/admin/reclamaciones` y `GET /api/admin/reclamaciones/:id` (requieren sesión de administrador) | **Existen, sin interfaz** |
+| Pantalla de revisión/respuesta en el panel | **No existe** (retirada) |
+| Procedimiento externo de este documento (responsables, buzón, sistema, plazos internos, alertas) | **No implantado.** Todo lo marcado **[PENDIENTE DE APROBACIÓN]** sigue sin decidir; no hay circuito externo configurado ni probado |
+
+**Límite importante:** la base **no guarda si la constancia se envió**. `correo_enviado` solo viaja en la respuesta HTTP al visitante; no hay columna ni marca en `reclamaciones`. Por tanto no es posible listar desde MySQL «las reclamaciones cuya constancia falló»: mientras no exista el procedimiento, **toda** reclamación nueva debe revisarse y confirmarse con la persona por el canal autorizado. Los logs del backend registran el motivo del fallo del correo sin identificar la reclamación. (Registrar el resultado de la constancia exigiría un cambio de esquema: decisión pendiente del responsable.)
+
+## 1.2 Localizar, revisar y conciliar las reclamaciones almacenadas (mientras se aprueba el procedimiento)
+
+Todo es de **solo lectura**; lo hace una persona técnica autorizada, con cuenta nominal.
+
+1. **Localizar.** Elegir una de dos vías (la decisión de cuál usar es **[PENDIENTE DE APROBACIÓN]**):
+   - API: iniciar sesión como administrador y consultar `GET /api/admin/reclamaciones?page=1&limit=50` (más recientes primero; `search=` busca por número, nombres, correo o documento; `tipo_registro=reclamo|queja`). El token no se guarda en scripts, chats ni URL.
+   - Consulta SQL con un usuario de **solo lectura** (crearlo es una decisión pendiente), por ejemplo:
+     ```sql
+     SELECT id, numero_reclamo, tipo_registro, area, createdAt
+     FROM reclamaciones WHERE createdAt >= '<AAAA-MM-DD>' ORDER BY createdAt DESC;
+     ```
+2. **Revisar.** Abrir cada caso nuevo (`GET /api/admin/reclamaciones/:id`) y clasificarlo como queja o reclamo según la sección 7.
+3. **Conciliar.** Comparar los `numero_reclamo` con el sistema de seguimiento externo que se apruebe; incorporar los que falten y dejar constancia (fecha, quién, casos). Ante la duda de si la persona recibió la constancia, enviarla manualmente desde el canal autorizado (un envío por caso, sin reintentos automáticos si el resultado fue incierto).
+4. **Seguimiento interno previo.** Si una reclamación antigua tiene seguimiento (`attention_records` con `recurso = 'reclamaciones'`: estado, responsable, notas, respuesta e historial), se conserva y puede leerse con la misma vía; no se edita desde una interfaz porque ya no existe.
+5. **Borrado:** `DELETE /api/admin/reclamaciones/:id` existe (requiere sesión de administrador), pero **no elimina nada**: comprueba que el registro exista y responde siempre HTTP 409 («Conserva la reclamación y su constancia…»). Verificado en `admin-reclamaciones.service.ts` (`remove`); además, las referencias de `attention_records` a `reclamaciones` están protegidas. Las reclamaciones no se eliminan; cualquier cambio de ese comportamiento sería una decisión expresa y documentada del responsable.
+6. **Plazo.** El texto público promete respuesta en un máximo de 15 días hábiles; el cómputo exacto, los avisos de vencimiento y las personas responsables siguen **[PENDIENTES DE APROBACIÓN]** (secciones 3, 6 y 11). No se han fijado compromisos adicionales.
+
 ## 2. Datos que hoy guarda cada registro (verificados en el código)
 
 Número de reclamo (`HG-AAAAMMDD-<UUID>`), nombres, apellidos, tipo y número de documento, correo, teléfono, dirección,

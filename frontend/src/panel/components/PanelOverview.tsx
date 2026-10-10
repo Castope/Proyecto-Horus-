@@ -7,6 +7,12 @@ import PanelIcon from './PanelIcon';
 import { useNavigate } from 'react-router-dom';
 import OverviewWork from './workspace/OverviewWork';
 
+// Una respuesta con otra forma (proxy, versión distinta del servidor) no debe romper la página entera: se trata como error de carga.
+const isObject = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object';
+function isDashboardStats(value: unknown): value is DashboardStats {
+  if (!isObject(value) || !isObject(value.stats) || !isObject(value.actividadReciente)) return false;
+  return isObject(value.stats.mensajes) && isObject(value.stats.catalogo) && Array.isArray(value.actividadReciente.mensajes);
+}
 export default function PanelOverview({ go }: { go: (section: string, create?: boolean, seccion?: string) => void }) {
   const { token, user } = useAdminAuth();
   const navigate = useNavigate();
@@ -16,7 +22,7 @@ export default function PanelOverview({ go }: { go: (section: string, create?: b
   useEffect(() => {
     if (!token) return;
     const controller = new AbortController();
-    panelRequest<DashboardStats>('stats', token, 'GET', undefined, controller.signal).then(data => { if (!controller.signal.aborted) setData(data); })
+    panelRequest<DashboardStats>('stats', token, 'GET', undefined, controller.signal).then(data => { if (controller.signal.aborted) return; if (!isDashboardStats(data)) throw new Error('El servidor devolvió datos con un formato inesperado.'); setData(data); })
       .catch(err => { if (!controller.signal.aborted) setError(errorMessage(err)); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();

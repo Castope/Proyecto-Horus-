@@ -20,10 +20,10 @@ export class ConveniosQueryDto {
 }
 
 export class CreateConvenioDto {
-  @Transform(trimValue) @IsString() @Length(2, 160) nombre: string;
+  @Transform(trimValue) @IsString() @Length(1, 160) nombre: string;
   @ValidateIf((_, v) => v !== undefined) @Transform(trimValue) @IsString() @Length(0, 50) sigla?: string;
   @ValidateIf((_, v) => v !== undefined) @Transform(trimValue) @ImageUrl(true) @Length(0, 2048) logo_url?: string;
-  @Transform(trimValue) @IsString() @Length(3, 2000) descripcion_corta: string;
+  @Transform(trimValue) @IsString() @Length(1, 2000) descripcion_corta: string;
   @ValidateIf((_, v) => v !== undefined) @Transform(trimValue) @IsString() @Length(0, 20000) descripcion_completa?: string;
   @ValidateIf((_, v) => v !== undefined) @Transform(trimValue) @IsString() @Length(0, 20000) informacion_adicional?: string;
   @ValidateIf((_, v) => v !== undefined) @IsInt() @Min(0) @Max(1000000) orden?: number;

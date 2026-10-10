@@ -56,7 +56,7 @@ export default function ConvenioEditor({ initial, onClose, onSaved }: {
     <form id={formId} className="hp-form hp-convenio-form" onSubmit={submit}>
       <div className="hp-convenio-editor-scroll">
         <fieldset disabled={locked}>
-          <label>Nombre<input name="nombre" required minLength={2} maxLength={160} value={fields.nombre} onChange={e => text('nombre', e.target.value)} /></label>
+          <label>Nombre<input name="nombre" required maxLength={160} value={fields.nombre} onChange={e => text('nombre', e.target.value)} /></label>
           <label>Sigla<input name="sigla" maxLength={50} value={fields.sigla} onChange={e => text('sigla', e.target.value)} /></label>
           <section className="hp-convenio-logo-section hp-full" aria-labelledby={formId + '-logo'}>
             <h3 id={formId + '-logo'}>Logo</h3>
@@ -71,7 +71,7 @@ export default function ConvenioEditor({ initial, onClose, onSaved }: {
               <label>URL del logo<input name="logo_url" type="text" inputMode="url" maxLength={2048} value={fields.logo_url} onChange={e => text('logo_url', e.target.value)} /></label>
             </details>
           </section>
-          <label className="hp-full">Descripción corta<textarea name="descripcion_corta" required minLength={3} maxLength={2000} rows={3}
+          <label className="hp-full">Descripción corta<textarea name="descripcion_corta" required maxLength={2000} rows={3}
             aria-describedby={formId + '-short-help'} value={fields.descripcion_corta} onChange={e => text('descripcion_corta', e.target.value)} />
             <small id={formId + '-short-help'}>Resumen que aparece en las tarjetas de Convenios en Home.</small></label>
           <label className="hp-full">Descripción completa<textarea name="descripcion_completa" maxLength={20000} rows={5}

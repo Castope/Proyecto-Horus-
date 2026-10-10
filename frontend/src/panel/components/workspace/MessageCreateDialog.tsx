@@ -82,8 +82,8 @@ export default function MessageCreateDialog({ onClose, onCreated, onUncertain }:
           const id = 'manual-message-' + field.key, required = !!field.required;
           const common = { id, value: form[field.key as keyof typeof form] ?? '', required, onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { const value = event.target.value; setForm(previous => ({ ...previous, [field.key]: value })); } };
           return <label key={field.key} className={field.type === 'textarea' ? 'hp-full' : ''} htmlFor={id}>{field.label}{required && <span className="hp-required"> *</span>}
-            {field.type === 'textarea' ? <textarea {...common} rows={4} minLength={field.min} maxLength={field.max} />
-              : <input {...common} type={field.type || 'text'} minLength={field.min} maxLength={field.max} data-autofocus={index === 0 ? true : undefined} />}
+            {field.type === 'textarea' ? <textarea {...common} rows={4} maxLength={field.max} />
+              : <input {...common} type={field.type || 'text'} maxLength={field.max} pattern={field.pattern} data-autofocus={index === 0 ? true : undefined} />}
           </label>;
         })}
       </fieldset>

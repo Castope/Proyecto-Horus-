@@ -16,6 +16,10 @@ export default defineConfig(({ mode }) => {
     define: {
       'import.meta.env.VITE_API_BASE_URL': JSON.stringify(apiBase),
     },
+    build: {
+      // El paquete principal superaba 500 kB: React y el router van a un chunk propio (se cachea aparte y no cambia con cada despliegue de la app).
+      rolldownOptions: { output: { codeSplitting: { groups: [{ name: 'vendor-react', test: /node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler|@remix-run)[\\/]/ }] } } },
+    },
     server: {
       allowedHosts: [
         'lingo-scrubbed-alienable.ngrok-free.dev',

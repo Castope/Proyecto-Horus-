@@ -3,14 +3,17 @@
 export const MESSAGE_FORM_KEYS = ['nombre', 'email', 'telefono', 'asunto', 'mensaje'] as const
 export type MessageForm = Record<(typeof MESSAGE_FORM_KEYS)[number], string>
 
+// Formato de teléfono (igual que el backend): dígitos y separadores habituales; sin longitud mínima. Escapado para el modo v de los patrones HTML.
+export const PHONE_INPUT_PATTERN = '(?=.*\\d)[+\\(\\)\\d\\s.\\-]+'
+
 // Campos del formulario de registro manual (antes definidos en `resources.mensajes`). Los límites coinciden con los del DTO del backend.
-export type MessageFieldSpec = { key: (typeof MESSAGE_FORM_KEYS)[number]; label: string; type?: 'textarea' | 'email'; required?: boolean; min?: number; max?: number }
+export type MessageFieldSpec = { key: (typeof MESSAGE_FORM_KEYS)[number]; label: string; type?: 'textarea' | 'email' | 'tel'; required?: boolean; max?: number; pattern?: string }
 export const MESSAGE_FIELDS: readonly MessageFieldSpec[] = [
-  { key: 'nombre', label: 'Nombre', required: true, min: 2, max: 100 },
+  { key: 'nombre', label: 'Nombre', required: true, max: 100 },
   { key: 'email', label: 'Correo electrónico', type: 'email', required: true },
-  { key: 'telefono', label: 'Teléfono', min: 6, max: 30 },
-  { key: 'asunto', label: 'Asunto', required: true, min: 3, max: 150 },
-  { key: 'mensaje', label: 'Mensaje', type: 'textarea', required: true, min: 3, max: 5000 },
+  { key: 'telefono', label: 'Teléfono', type: 'tel', max: 30, pattern: PHONE_INPUT_PATTERN },
+  { key: 'asunto', label: 'Asunto', required: true, max: 150 },
+  { key: 'mensaje', label: 'Mensaje', type: 'textarea', required: true, max: 5000 },
 ]
 export const emptyMessageForm = (): MessageForm => ({ nombre: '', email: '', telefono: '', asunto: '', mensaje: '' })
 

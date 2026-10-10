@@ -146,11 +146,11 @@ export default function Chatbot() {
           <h3>Hablemos de lo que necesitas</h3><p>Revisa tu consulta y autoriza que nuestro equipo te contacte.</p>
           <form onSubmit={submitContact}>
             <fieldset disabled={busy}>
-              <label>Nombre<input autoFocus required minLength={2} maxLength={100} autoComplete="name" value={contact.nombre} onChange={e => setContact({ ...contact, nombre: e.target.value })} /></label>
+              <label>Nombre<input autoFocus required maxLength={100} autoComplete="name" value={contact.nombre} onChange={e => setContact({ ...contact, nombre: e.target.value })} /></label>
               <label>Correo<input required type="email" maxLength={254} autoComplete="email" value={contact.email} onChange={e => setContact({ ...contact, email: e.target.value })} /></label>
-              <label>Teléfono<input required type="tel" minLength={6} maxLength={30} autoComplete="tel" value={contact.telefono} onChange={e => setContact({ ...contact, telefono: e.target.value })} /></label>
-              <label>Asunto<input required minLength={3} maxLength={140} value={contact.asunto} onChange={e => setContact({ ...contact, asunto: e.target.value })} /></label>
-              <label>Tu consulta<textarea required minLength={3} maxLength={5000} rows={3} value={contact.mensaje} onChange={e => setContact({ ...contact, mensaje: e.target.value })} /></label>
+              <label>Teléfono<input required type="tel" maxLength={30} pattern="(?=.*d)[+()ds.-]+" autoComplete="tel" value={contact.telefono} onChange={e => setContact({ ...contact, telefono: e.target.value })} /></label>
+              <label>Asunto<input required maxLength={140} value={contact.asunto} onChange={e => setContact({ ...contact, asunto: e.target.value })} /></label>
+              <label>Tu consulta<textarea required maxLength={5000} rows={3} value={contact.mensaje} onChange={e => setContact({ ...contact, mensaje: e.target.value })} /></label>
               {summary && <div className="hc-summary"><button className="hc-back" type="button" disabled={contact.mensaje.includes(summary)} onClick={includeSummary}>{contact.mensaje.includes(summary) ? 'Resumen añadido' : 'Añadir mis últimas consultas'}</button><p>Se añadirán hasta cuatro preguntas al texto de arriba. Puedes revisarlas y editarlas antes de enviar.</p></div>}
               <label className="hc-consent"><input type="checkbox" required checked={contact.consentimiento} onChange={e => setContact({ ...contact, consentimiento: e.target.checked })} /><span>Autorizo a Horus a usar estos datos para atender mi consulta. <Link to="/politicas/privacidad" onClick={close}>Ver privacidad</Link>.</span></label>
               <button className="hc-submit" type="submit">{busy ? 'Registrando…' : 'Enviar solicitud'}</button>

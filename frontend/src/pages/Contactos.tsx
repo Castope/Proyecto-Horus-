@@ -37,15 +37,12 @@ function validate(form: ContactForm): ContactErrors {
   const errors: ContactErrors = {}
   const nombre = form.nombre.trim(), email = form.email.trim(), telefono = form.telefono.trim(), asunto = form.asunto.trim(), mensaje = form.mensaje.trim()
   if (!nombre) errors.nombre = 'Ingresa tu nombre.'
-  else if (nombre.length < 2) errors.nombre = 'Ingresa al menos 2 caracteres.'
   if (!email) errors.email = 'Ingresa tu correo.'
   else if (!EMAIL.test(email)) errors.email = 'Ingresa un correo válido.'
   if (!telefono) errors.telefono = 'Ingresa tu teléfono.'
-  else if (!PHONE_CHARS.test(telefono) || telefono.replace(/\D/g, '').length < 6) errors.telefono = 'Ingresa un teléfono válido.'
+  else if (!PHONE_CHARS.test(telefono) || telefono.replace(/\D/g, '').length < 1) errors.telefono = 'Ingresa un teléfono válido.'
   if (!asunto) errors.asunto = 'Ingresa el asunto.'
-  else if (asunto.length < 3) errors.asunto = 'Ingresa al menos 3 caracteres.'
   if (!mensaje) errors.mensaje = 'Escribe tu mensaje.'
-  else if (mensaje.length < 3) errors.mensaje = 'Escribe al menos 3 caracteres.'
   return errors
 }
 

@@ -65,17 +65,17 @@ export class CreateCursoDto extends VisualContentDto {
   @ApiPropertyOptional() @ValidateIf((_,v)=>v!==undefined) @Transform(trim) @IsString() @Length(1,150) certificacion?:string;
   @ApiProperty()
   @Transform(trim)
-  @IsString() @Length(2, 160)
+  @IsString() @Length(1, 160)
   titulo: string;
 
   @ApiProperty()
   @Transform(trim)
-  @IsString() @Length(2, 180) @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+  @IsString() @Length(1, 180) @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
   slug: string;
 
   @ApiProperty()
   @Transform(trim)
-  @IsString() @Length(3, 20000)
+  @IsString() @Length(1, 20000)
   descripcion: string;
 
   @ApiProperty({ enum: ["curso","capacitacion"] })
@@ -92,13 +92,13 @@ export class CreateCursoDto extends VisualContentDto {
   @ApiPropertyOptional()
   @ValidateIf((o,v)=>o.tipo!=='capacitacion'||v!==undefined)
   @Transform(trim)
-  @IsString() @Length(2, 120)
+  @IsString() @Length(1, 120)
   duracion?: string;
 
   @ApiPropertyOptional()
   @ValidateIf((_, value) => value !== undefined)
   @Transform(trim)
-  @IsString() @Length(2, 20000)
+  @IsString() @Length(1, 20000)
   temario?: string;
 
   @ApiPropertyOptional()
@@ -135,17 +135,17 @@ export class CreateServicioDto extends VisualContentDto {
   @ApiPropertyOptional() @ValidateIf((_,v)=>v!==undefined) @Transform(trim) @IsString() @Length(1,2000) etiquetas?:string;
   @ApiProperty()
   @Transform(trim)
-  @IsString() @Length(2, 160)
+  @IsString() @Length(1, 160)
   titulo: string;
 
   @ApiProperty()
   @Transform(trim)
-  @IsString() @Length(2, 180) @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+  @IsString() @Length(1, 180) @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
   slug: string;
 
   @ApiProperty()
   @Transform(trim)
-  @IsString() @Length(3, 20000)
+  @IsString() @Length(1, 20000)
   descripcion: string;
 
   @ApiProperty({ enum: ["cableado","camaras","soporte","asesoramiento"] })
@@ -156,7 +156,7 @@ export class CreateServicioDto extends VisualContentDto {
   @ApiPropertyOptional()
   @ValidateIf((_, value) => value !== undefined)
   @Transform(trim)
-  @IsString() @Length(2, 20000)
+  @IsString() @Length(1, 20000)
   alcance?: string;
 
   @ApiPropertyOptional()
@@ -181,17 +181,17 @@ export class UpdateServicioDto extends PartialType(CreateServicioDto, { skipNull
 export class CreatePreguntaFrecuenteDto {
   @ApiProperty()
   @Transform(trim)
-  @IsString() @Length(2, 300)
+  @IsString() @Length(1, 300)
   pregunta: string;
 
   @ApiProperty()
   @Transform(trim)
-  @IsString() @Length(3, 12000)
+  @IsString() @Length(1, 12000)
   respuesta: string;
 
   @ApiProperty()
   @Transform(trim)
-  @IsString() @Length(2, 100)
+  @IsString() @Length(1, 100)
   categoria: string;
 
   @ApiPropertyOptional({ minimum: 0 })

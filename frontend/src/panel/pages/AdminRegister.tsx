@@ -25,8 +25,8 @@ export default function AdminRegister() {
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (loading) return;
-    if (form.nombre.trim().length < 2) {
-      const message = 'Ingresa un nombre de al menos 2 caracteres.';
+    if (!form.nombre.trim()) {
+      const message = 'Ingresa tu nombre.';
       setMensaje(message);
       toast.error(message);
       return;
@@ -72,7 +72,7 @@ export default function AdminRegister() {
           <div className="admin-auth__field">
             <label htmlFor="nombre">Nombre completo</label>
             <div className="admin-auth__input"><PanelIcon name="user" size={18} /><input id="nombre" name="nombre" value={form.nombre} onChange={handleChange}
-              autoComplete="name" placeholder="Nombre y apellido" minLength={2} maxLength={100} required /></div>
+              autoComplete="name" placeholder="Nombre y apellido" maxLength={100} required /></div>
           </div>
           <div className="admin-auth__field">
             <label htmlFor="email">Correo electrónico</label>

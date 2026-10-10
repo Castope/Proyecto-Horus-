@@ -2,19 +2,27 @@
 // Widget público: «Solicitar cotización» (Contacto con origen chatbot, sin doble envío ni reintento). Panel: vista de solo lectura de preguntas sin respuesta.
 const { start, sleep, TOKEN } = require('./smoke-kit.cjs');
 
-const sim = { contact: 'ok', list: 'ok' };
+const sim = { contact: 'ok', list: 'ok', chat: 'ok' };
+const chatRequests = [];
+let releaseChat = null;
 const contacts = [];
 const all = Array.from({ length: 25 }, (_, i) => ({ id: 25 - i, pregunta: 'Pregunta sin respuesta número ' + (25 - i), veces: 25 - i, createdAt: '2026-05-01T10:00:00.000Z', updatedAt: '2026-05-' + String(25 - i).padStart(2, '0') + 'T10:00:00.000Z' }));
 const metrics = { dias: 30, interacciones: 40, resueltas: 31, sinRespuesta: 9, conIa: 12, conCatalogo: 28 };
 const requests = [];
 
 const handler = async (req, res, { route, url, json, body }) => {
-  if (route.startsWith('/__s/')) { const [, , key, value] = route.split('/'); if (key === 'clear') { contacts.length = 0; requests.length = 0; sim.contact = 'ok'; sim.list = 'ok'; } else sim[key] = value; return json({ ok: true }) || true; }
-  if (route === '/__state') return json({ contacts, requests }) || true;
+  if (route.startsWith('/__s/')) { const [, , key, value] = route.split('/'); if (key === 'release') releaseChat?.(); else if (key === 'clear') { releaseChat?.(); contacts.length = 0; requests.length = 0; chatRequests.length = 0; sim.contact = 'ok'; sim.list = 'ok'; sim.chat = 'ok'; } else sim[key] = value; return json({ ok: true }) || true; }
+  if (route === '/__state') return json({ contacts, requests, chatRequests }) || true;
   if (!route.startsWith('/api/')) return false;
   if (req.method !== 'GET') requests.push(req.method + ' ' + route);
   const token = (req.headers.authorization || '').replace('Bearer ', '');
   if (route === '/api/settings') return json({ ok: true, settings: {} }) || true;
+  if (route === '/api/chatbot/message' && req.method === 'POST') { const data = await body(); chatRequests.push(data.message);
+    if (sim.chat === 'error') return json({ message: 'Internal server error ER_SECRET' }, 500) || true;
+    if (sim.chat === 'hold') await new Promise(resolve => { releaseChat = resolve; });
+    return json({ ok: true, mode: 'catalogo', kind: 'respuesta', answer: 'Respuesta de prueba para: ' + data.message,
+      sources: [{ id: 'servicio-4', title: 'Asesoramiento tecnológico', text: 'Orientación para elegir soluciones.', href: '/tecnologias/servicios/4' }, { id: 'faq-9', title: 'Fuente con enlace externo', text: 'No debe enlazarse.', href: 'https://evil.test/x' }],
+      suggestions: ['Información sobre Asesoramiento tecnológico', '¿Cómo puedo contactar al equipo?'] }) || true; }
   if (route === '/api/chatbot/contact' && req.method === 'POST') { const data = await body(); contacts.push(data);
     return (sim.contact === 'error' ? json({ message: 'Internal server error ER_SECRET' }, 500) : json({ ok: true, id: 70 + contacts.length })) || true; }
   if (route === '/api/admin/me') return (token === TOKEN ? json({ ok: true, user: { id: 1, nombre: 'Ana Administradora', email: 'ana@example.test' } }) : json({}, 401)) || true;
@@ -62,6 +70,57 @@ const handler = async (req, res, { route, url, json, body }) => {
     ck(/Hablemos de lo que necesitas/.test(await p.text('.hc-contact')), 'la solicitud de atención normal conserva su texto');
     await fillContact(p); await submitContact(p); await p.wait('document.querySelector(".hc-success")', 'éxito');
     const s = await state(); ck(s.contacts.length === 1 && s.contacts[0].tipo === 'contacto', 'la atención normal se envía con tipo contacto'); await p.close(); }
+
+  console.log('\n== WIDGET PÚBLICO: CONVERSACIÓN, MENÚ Y ESTADOS');
+  const sent = async () => (await state()).chatRequests;
+  await clean();
+  { const p = await open(1280); await openChat(p);
+    const tiles = await p.evaluate('[...document.querySelectorAll(".hc-guide-options > button")].map(b => b.querySelector("strong")?.textContent || b.textContent.trim())');
+    ck(['Cursos y capacitaciones', 'Servicios tecnológicos', 'Preguntas frecuentes', 'Asesoramiento', 'Convenios', 'Contacto'].every(name => tiles.includes(name)), 'el menú inicial ofrece las áreas reales del sitio', tiles);
+    ck(await p.evaluate('[...document.querySelectorAll(".hc-actions .hc-handoff")].length === 2 && !!document.querySelector(".hc-handoff-quote")'), 'cotización y atención son botones visibles y diferenciados');
+    await p.click('.hc-guide-options > button', 'Asesoramiento'); await p.wait('document.querySelectorAll(".hc-assistant").length === 2', 'respuesta');
+    ck((await sent()).join() === '¿Qué servicios de asesoramiento ofrecen?', 'un atajo del menú envía una pregunta concreta', await sent());
+    ck(/Respuesta de prueba para: ¿Qué servicios de asesoramiento/.test(await p.evaluate('[...document.querySelectorAll(".hc-assistant")].at(-1).innerText')), 'la respuesta se muestra en la conversación');
+    await p.evaluate('document.querySelector(".hc-sources summary").click(); 1');
+    const links = await p.evaluate('[...document.querySelectorAll(".hc-sources a")].map(a => a.getAttribute("href"))');
+    ck(links.join() === '/tecnologias/servicios/4', 'solo se enlaza la ruta propia del sitio; el enlace externo de una fuente se ignora', links);
+    const chips = await p.evaluate('[...document.querySelectorAll(".hc-followups button")].map(b => b.textContent)');
+    ck(chips.length === 2 && /Asesoramiento tecnológico/.test(chips[0]), 'se ofrecen las preguntas sugeridas por el servidor', chips);
+    await p.click('.hc-followups button', '¿Cómo puedo contactar'); await p.wait('document.querySelectorAll(".hc-assistant").length === 3', 'segunda respuesta');
+    ck((await sent()).length === 2 && (await sent())[1] === '¿Cómo puedo contactar al equipo?', 'tocar una sugerencia la envía como pregunta');
+    ck(await p.evaluate('getComputedStyle(document.querySelector("dialog.hc-dialog")).animationName === "none"'), 'con movimiento reducido el diálogo no se anima'); await p.close(); }
+  await clean();
+  { const p = await open(1280); await openChat(p); await p.click('.hc-guide-options > button', 'Prefiero escribir'); await p.wait('document.querySelector("#hc-question")', 'campo');
+    await ctl('chat', 'error'); await p.type('#hc-question', 0, 'curso de redes'); await p.evaluate('document.querySelector(".hc-compose form").requestSubmit(); 1'); await p.wait('document.querySelector(".hc-error")', 'error');
+    const err = await p.text('.hc-error');
+    ck(!/ER_SECRET|Internal/.test(err) && /Reintentar consulta/.test(err), 'un 500 muestra un aviso seguro y ofrece reintentar', err);
+    ck(await p.evaluate('document.querySelector("#hc-question").value') === 'curso de redes' && (await sent()).length === 1, 'la pregunta vuelve al campo y no se reenvía sola');
+    await ctl('chat', 'ok'); await p.click('.hc-retry', 'Reintentar'); await p.wait('document.querySelectorAll(".hc-assistant").length === 2', 'recuperación'); await sleep(200);
+    ck((await sent()).length === 2 && !(await p.evaluate('!!document.querySelector(".hc-error")')), 'Reintentar envía una sola vez y limpia el error', await sent()); await p.close(); }
+  await clean();
+  { const p = await open(1280); await openChat(p); await p.click('.hc-guide-options > button', 'Prefiero escribir'); await p.wait('document.querySelector("#hc-question")', 'campo');
+    await ctl('chat', 'hold'); await p.type('#hc-question', 0, 'asesoría'); await p.evaluate('const f = document.querySelector(".hc-compose form"); f.requestSubmit(); f.requestSubmit(); 1'); await p.wait('document.querySelector(".hc-thinking")', 'consultando'); await sleep(250);
+    ck((await sent()).length === 1, 'un doble envío produce una sola petición', await sent());
+    ck(await p.evaluate('document.querySelector(".hc-toolbar button").disabled && document.querySelector("#hc-question").disabled && [...document.querySelectorAll(".hc-handoff")].every(b => b.disabled) && document.querySelector(".hc-log").getAttribute("aria-busy") === "true"'), 'mientras responde no se puede reiniciar, escribir ni abrir el formulario, y el registro anuncia que está ocupado');
+    await ctl('release'); await p.wait('document.querySelectorAll(".hc-assistant").length === 2', 'respuesta'); await sleep(200);
+    ck(await p.evaluate('!document.querySelector(".hc-toolbar button").disabled && document.querySelector(".hc-log").getAttribute("aria-busy") === "false"'), 'al responder se rehabilita todo'); await p.close(); }
+  await clean();
+  { const p = await open(1280); await p.send('Page.addScriptToEvaluateOnNewDocument', { source: 'for (const key of ["localStorage","sessionStorage"]) Object.defineProperty(window, key, { get() { throw new DOMException("Storage blocked for test", "SecurityError"); } });' });
+    await openChat(p); await p.click('.hc-guide-options > button', 'Convenios'); await p.wait('document.querySelectorAll(".hc-assistant").length === 2', 'respuesta');
+    ck((await sent()).join() === '¿Qué convenios tienen?', 'con el almacenamiento del navegador bloqueado el chat funciona igual'); await p.close(); }
+  await clean();
+  { const p = await open(390, 700); await openChat(p);
+    const box = await p.evaluate('(() => { const r = document.querySelector("dialog.hc-dialog").getBoundingClientRect(); return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, w: innerWidth, h: innerHeight, scroll: document.documentElement.scrollWidth }; })()');
+    ck(box.left >= 0 && box.right <= box.w && box.top >= 0 && box.bottom <= box.h && box.scroll <= box.w, 'en móvil el chat cabe en pantalla sin desplazamiento horizontal', box);
+    ck(await p.evaluate('(() => { const r = document.querySelector(".hc-actions").getBoundingClientRect(); return r.bottom <= innerHeight && r.top >= 0; })()'), 'las acciones de cotización y atención quedan visibles');
+    const small = await p.evaluate('[...document.querySelectorAll(".hc-dialog button, .hc-dialog input, .hc-dialog summary")].filter(el => el.offsetParent && el.getBoundingClientRect().height < 32).map(el => (el.className || el.tagName) + ":" + Math.round(el.getBoundingClientRect().height))');
+    ck(small.length === 0, 'los controles tienen un tamaño táctil de al menos 32 px de alto', small);
+    await p.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 }); await p.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
+    await p.wait('!document.querySelector("dialog.hc-dialog[open]")', 'cierre con Escape'); await sleep(200);
+    ck(await p.evaluate('document.activeElement === document.querySelector(".hc-launcher")'), 'al cerrar con Escape el foco vuelve al botón del asistente'); await p.close(); }
+  await clean();
+  { const p = await open(1280); await openChat(p); await p.click('.hc-handoff', 'Solicitar atención'); await p.wait('document.querySelector(".hc-contact form")', 'formulario');
+    ck(/¿Qué datos pedimos y para qué\?/.test(await p.text('.hc-data-note')) && /no se inscribe, reserva ni compra/.test(await p.text('.hc-data-note')) && await p.evaluate('document.querySelector(".hc-contact form").getAttribute("aria-describedby") === "hc-data-note"'), 'el formulario explica qué datos recoge, para qué y que no es una compra, reserva ni inscripción'); await p.close(); }
 
   console.log('\n== PANEL: CONSULTAS DEL CHATBOT (SOLO LECTURA)');
   await clean();

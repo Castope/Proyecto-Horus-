@@ -6,7 +6,12 @@ import { publicErrorMessage } from '../../publicErrors';
 import ChatIcon from './ChatIcon';
 type Section='cursos'|'servicios'|'preguntas-frecuentes';
 type Item={id:number;titulo?:string;pregunta?:string;descripcion?:string;respuesta?:string;temario?:string;modalidad?:string;duracion?:string;fecha_inicio?:string;alcance?:string};
-type Props={onAnswer:(question:string,answer:ChatTurn)=>void;onContact:(topic?:string)=>void;onWrite:()=>void};
+type Props={onAnswer:(question:string,answer:ChatTurn)=>void;onContact:(topic?:string)=>void;onAsk:(question:string)=>void;onWrite:()=>void};
+// Áreas que Horus publica en el sitio: cada atajo envía una pregunta que el asistente responde solo con contenido publicado.
+const quickAsks:{label:string;hint:string;question:string;icon:'help'|'person'|'chat'}[]=[
+ {label:'Asesoramiento',hint:'Orientación tecnológica',question:'¿Qué servicios de asesoramiento ofrecen?',icon:'person'},
+ {label:'Convenios',hint:'Alianzas publicadas',question:'¿Qué convenios tienen?',icon:'help'},
+ {label:'Contacto',hint:'Teléfono, correo y horario',question:'¿Cómo puedo contactar al equipo?',icon:'chat'}];
 const titles:Record<Section,string>={cursos:'Cursos y capacitaciones',servicios:'Servicios tecnológicos','preguntas-frecuentes':'Preguntas frecuentes'};
 const name=(item:Item)=>item.titulo||item.pregunta||'Contenido publicado';
 const text=(value?:string)=>value?.replace(/<[^>]*>/g,'').trim()||'Este dato todavía no está publicado. Puedes solicitar información al equipo.';
@@ -31,5 +36,5 @@ function GuidedCatalog({section,onAnswer,onContact,onWrite}:{section:Section}&Pr
 }
 export default function GuidedMenu(props:Props){
  const [section,setSection]=useState<Section|null>(null);
- return <section className="hc-guide" aria-label="Opciones del asistente"><div className="hc-guide-heading"><strong>{section?titles[section]:'Elige una opción para comenzar'}</strong>{section&&<button onClick={()=>setSection(null)}>← Menú</button>}</div>{section?<GuidedCatalog key={section} section={section} {...props}/>:<div className="hc-guide-options">{(Object.keys(titles) as Section[]).map(key=><button type="button" key={key} onClick={()=>setSection(key)}><span className={'hc-option-icon hc-option-'+key}><ChatIcon name={key==='cursos'?'book':key==='servicios'?'tools':'help'} size={18}/></span><span className="hc-option-copy"><strong>{titles[key]}</strong><small>Consultar contenido publicado</small></span><span className="hc-option-arrow"><ChatIcon name="arrow" size={14}/></span></button>)}<button type="button" onClick={()=>props.onContact()}><span className="hc-option-copy"><strong>Hablar con el equipo</strong><small>Solicitar atención</small></span></button><button type="button" onClick={props.onWrite}>Escribir mi consulta</button></div>}</section>;
+ return <section className="hc-guide" aria-label="Opciones del asistente"><div className="hc-guide-heading"><strong>{section?titles[section]:'Elige una opción para comenzar'}</strong>{section&&<button onClick={()=>setSection(null)}>← Menú</button>}</div>{section?<GuidedCatalog key={section} section={section} {...props}/>:<div className="hc-guide-options">{(Object.keys(titles) as Section[]).map(key=><button type="button" key={key} onClick={()=>setSection(key)}><span className={'hc-option-icon hc-option-'+key}><ChatIcon name={key==='cursos'?'book':key==='servicios'?'tools':'help'} size={18}/></span><span className="hc-option-copy"><strong>{titles[key]}</strong><small>Consultar contenido publicado</small></span><span className="hc-option-arrow"><ChatIcon name="arrow" size={14}/></span></button>)}{quickAsks.map(item=><button type="button" key={item.label} onClick={()=>props.onAsk(item.question)}><span className="hc-option-icon hc-option-contact"><ChatIcon name={item.icon} size={18}/></span><span className="hc-option-copy"><strong>{item.label}</strong><small>{item.hint}</small></span><span className="hc-option-arrow"><ChatIcon name="arrow" size={14}/></span></button>)}<button type="button" className="hc-option-write" onClick={props.onWrite}><span>Prefiero escribir mi consulta</span><ChatIcon name="send" size={14}/></button></div>}</section>;
 }

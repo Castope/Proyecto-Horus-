@@ -1,9 +1,13 @@
 import { API_BASE } from '../../apiBase'
 import { PublicApiError } from '../../api'
 import { PUBLIC_ERROR_TEXTS } from '../../publicErrors'
-export type ChatSource = { id: string; title: string; text: string };
-export type ChatTurn = { role: 'user' | 'assistant'; content: string; sources?: ChatSource[] };
-export type ChatReply = { ok: boolean; answer: string; sources: ChatSource[]; mode: 'catalogo' | 'ia'; notice?: string };
+export type ChatSource = { id: string; title: string; text: string; href?: string };
+export type ChatTurn = { role: 'user' | 'assistant'; content: string; sources?: ChatSource[]; suggestions?: string[] };
+export type ChatKind = 'saludo' | 'aclaracion' | 'listado' | 'respuesta' | 'parcial' | 'sin_informacion';
+export type ChatReply = { ok: boolean; answer: string; sources: ChatSource[]; mode: 'catalogo' | 'ia'; kind?: ChatKind; suggestions?: string[]; notice?: string };
+
+// Solo se enlazan rutas propias del sitio; cualquier otro valor que llegue en `href` se ignora.
+export const internalPath = (href?: string) => (href && /^\/(?!\/)[A-Za-z0-9\-._~/]*$/.test(href) ? href : undefined);
 
 export async function chatRequest<T>(path: 'message' | 'contact', body: unknown, signal: AbortSignal): Promise<T> {
   const attempt = await fetch(API_BASE + '/chatbot/' + path, {

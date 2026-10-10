@@ -7,9 +7,27 @@ El botón «Pregúntale a Horus» aparece en las páginas públicas, no en admin
 Publica cursos, servicios o preguntas frecuentes desde el panel para alimentar las respuestas.
 Sin registros publicados, el asistente informa que no encontró información.
 
-La primera versión recupera contenido mediante palabras clave en MySQL. No usa embeddings ni
-entrenamiento adicional. Consulta en cada petición, por lo que los cambios publicados y el archivado
-se reflejan en la siguiente consulta. No utiliza los textos estáticos de las páginas públicas.
+## Cómo busca y responde
+
+Recupera contenido por palabras clave en MySQL y ordena por relevancia en memoria (`chatbot-search.ts`, funciones puras con pruebas). No usa embeddings ni entrenamiento adicional.
+Consulta en cada petición, por lo que los cambios publicados y el archivado se reflejan en la siguiente consulta. No utiliza los textos estáticos de las páginas públicas.
+
+- **Fuentes (solo publicadas):** cursos y capacitaciones (`estado=publicado`), servicios (`publicado`), preguntas frecuentes (`publicado`), convenios (`visible`) y las claves
+  institucionales públicas de contacto cuando se pide teléfono, correo, dirección u horario. Borradores y archivados nunca se leen. De cada curso se usan los datos que ya publica
+  la API pública (descripción, tipo, modalidad, duración, área, certificación, fecha, temario); los campos vacíos se omiten, no se rellenan.
+- **Interpretación:** se normalizan tildes y mayúsculas, se reducen plurales («redes» → «red») y se descartan palabras vacías. Las palabras que solo indican la clase de contenido
+  («cursos», «servicios», «convenios», «teléfono»…) fijan la intención pero no cuentan como tema. Un conjunto corto de sinónimos del propio negocio (cámaras/videovigilancia/CCTV,
+  red/cableado/wifi, soporte/mantenimiento/reparación, asesoría/asesoramiento, certificado/constancia, virtual/online…) amplía la búsqueda. Los términos de hasta 3 letras exigen
+  la palabra exacta («red» no coincide con «reducir»).
+- **Relevancia:** el título pesa más que el cuerpo; una fuente solo se considera respuesta si cubre todos los temas de la pregunta (o el 60 % si es larga). Si la primera búsqueda
+  no alcanza, una segunda pasada compara en memoria el catálogo publicado (hasta 60 filas por tabla) tolerando una errata («capacitasion», «kamaras»).
+- **Tipos de respuesta (`kind`):** `respuesta`, `listado` («¿qué cursos tienen?» enumera títulos), `parcial` (solo coincide con parte de lo preguntado: se dice y no se presenta como
+  respuesta), `sin_informacion`, `aclaracion` (pregunta sin tema, como «información» o «precio»: se pide concretar y no se consulta la base ni se cuenta como sin respuesta) y
+  `saludo` (saludo, agradecimiento y despedida). `suggestions` trae preguntas siguientes que el widget muestra como botones.
+- **Enlaces:** cada fuente trae `href`, una ruta propia del sitio (curso, capacitación, servicio, preguntas frecuentes, contacto). El widget solo enlaza rutas que empiezan por «/».
+  Al proveedor de IA no se envían rutas.
+- **Precios:** el catálogo no tiene campo de precio. Si se pregunta por precios y la información encontrada no menciona uno, la respuesta lo dice y remite a la cotización.
+- **Seguimientos:** una pregunta como «¿cuánto dura?» hereda el tema del último mensaje del visitante solo si no nombra un tema propio; una pregunta completa nunca hereda el anterior.
 
 ## IA opcional
 
@@ -37,8 +55,8 @@ No se consulta información de administradores, mensajes ni reclamaciones. Solo 
 ## Métricas y preguntas sin respuesta
 
 Cada respuesta del asistente se cuenta en `chatbot_interacciones` (modo `ia` o `catalogo`, si se resolvió y cuántas fuentes usó) **sin guardar el texto del visitante**.
-Cuando no hay información publicada, la pregunta se guarda en `chatbot_preguntas_sin_respuesta` con correos, teléfonos y números largos (también con puntos o barras), fechas numéricas y enlaces ocultos, en una línea,
-acotada a 500 caracteres y deduplicada por huella SHA-256 (`veces` cuenta las repeticiones). El historial de la conversación nunca se guarda. Los saludos no se registran.
+Cuando no hay información publicada (o solo coincide en parte, tipo `parcial`), la pregunta se guarda en `chatbot_preguntas_sin_respuesta` con correos, teléfonos y números largos (también con puntos o barras), fechas numéricas y enlaces ocultos, en una línea,
+acotada a 500 caracteres y deduplicada por huella SHA-256 (`veces` cuenta las repeticiones). El historial de la conversación nunca se guarda. Los saludos, agradecimientos y las preguntas que piden aclaración no se registran.
 Registrar no espera ni altera la respuesta: si falla, solo se deja una advertencia sin datos. Puedes revisarlas en Panel → Consultas del chatbot (solo lectura; últimos 30 días).
 
 **Limitación importante:** la redacción automática solo reconoce patrones (correos, números, enlaces). **No puede detectar nombres, direcciones, cargos ni datos escritos de forma
@@ -73,8 +91,8 @@ No se interpretan HTML o enlaces generados por el modelo.
 ## Límites y alcance
 
 Pregunta: 1000 caracteres; contexto: seis turnos de hasta 4000 caracteres.
-Recuperación: hasta 18 candidatos por tabla, cuatro fuentes seleccionadas por coincidencia.
-La búsqueda por palabras no garantiza recuperar sinónimos ni todo un catálogo extenso.
+Recuperación: hasta 18 candidatos por tabla (60 en la segunda pasada tolerante a erratas), cuatro fuentes por respuesta (seis en un listado).
+La búsqueda por palabras solo conoce los sinónimos listados arriba y no garantiza recuperar todo un catálogo extenso.
 El sitio dispone de detalles públicos de cursos y servicios. Las fuentes del chatbot se presentan como texto; el menú vuelve a comprobar cada detalle publicado.
 
 Las cuotas públicas por IP (20 consultas y cinco contactos por minuto) y el límite global de 200 peticiones por minuto se comparten en MySQL. El guard del chatbot conserva además su protección local y un máximo de cuatro llamadas simultáneas al proveedor por instancia.
@@ -87,7 +105,7 @@ visitante se conservan en el formulario, sin resúmenes automáticos que puedan 
 
 ## Verificación
 
-`npm test` incluye validación de entradas, filtros públicos, falta de información,
+`npm test` incluye validación de entradas, relevancia con un catálogo ficticio (`test/chatbot-relevance.test.ts`: consultas con tildes, errores, sinónimos, ambiguas y sin respuesta; borradores y archivados excluidos), filtros públicos, falta de información,
 respuesta y fallo del proveedor con fetch simulado, consentimiento, límites y endpoints HTTP.
 Las pruebas HTTP usan modelos de base de datos simulados; no acreditan persistencia real en MySQL.
 
@@ -99,4 +117,4 @@ Prueba manual con una base local:
 5. Revisar móvil, navegación con Tab, cierre con Escape y nueva conversación.
 
 ## Menú guiado
-El widget incluye cursos, servicios, FAQ por categoría y contacto. Consulta las listas públicas paginadas y vuelve a comprobar el detalle publicado en cada acción. Los botones muestran datos directamente sin llamar a IA. El campo de texto libre sigue disponible; Volver al menú y Nueva conversación permiten reiniciar la navegación. Las solicitudes desde una selección incluyen su título en el formulario editable.
+El widget incluye cursos y capacitaciones, servicios tecnológicos y preguntas frecuentes (listas publicadas) y atajos de pregunta para asesoramiento, convenios y contacto; «Solicitar cotización» y «Solicitar atención del equipo» están siempre visibles. Consulta las listas públicas paginadas y vuelve a comprobar el detalle publicado en cada acción. Los botones muestran datos directamente sin llamar a IA. El campo de texto libre sigue disponible; Volver al menú y Nueva conversación permiten reiniciar la navegación. Las solicitudes desde una selección incluyen su título en el formulario editable.

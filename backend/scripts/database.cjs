@@ -19,10 +19,12 @@ function options() {
   };
 }
 // One dedicated connection keeps GET_LOCK/RELEASE_LOCK on the same MySQL session.
-function connect() {
+// `extra` permite opciones puntuales (p. ej. dateStrings para volcados o database: undefined para crear una base); sin argumentos nada cambia.
+function connect(extra = {}) {
   const key = rsaPublicKey(process.env.DB_RSA_PUBLIC_KEY);
   return mysql.createConnection({ ...options(), timezone: 'Z',
     ...(key ? { authPlugins: { caching_sha2_password: authPlugins.caching_sha2_password({ serverPublicKey: key }) } } : {}),
+    ...extra,
   });
 }
 function prisma() {

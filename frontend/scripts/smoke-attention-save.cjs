@@ -271,35 +271,6 @@ async function main() {
     await page.evaluate('document.querySelectorAll(".hw-inbox-list > button")[3].click(); 1'); await page.wait('document.querySelector("dialog.hp-unsaved-dialog[open]")', 'borrador nuevo protegido');
     ck(true, '18. y el borrador nuevo sigue protegido (el callback antiguo no limpia el aviso de cambios sin guardar)'); }
 
-  { // 17. CommunityRecords (reclamaciones): el mismo editor, dentro de un diálogo
-    const D2 = 'dialog.hp-dialog[open] form.hp-form';
-    const openComplaint = async fast => { await session('/admin/dashboard?section=reclamaciones', fast); await page.wait('document.querySelector(".hp-table tbody tr")', 'reclamaciones'); await page.evaluate('document.querySelector("button[aria-label=\\"Ver detalle de HG-001\\"]").click(); 1'); await page.wait('document.querySelector("' + D2 + ' fieldset textarea")', 'editor de la reclamación'); };
-    const notes2 = () => page.evaluate('document.querySelector("' + D2 + ' fieldset textarea").value');
-    const type2 = value => fill(D2 + ' fieldset textarea', value);
-    const submit2 = () => page.evaluate('document.querySelector("' + D2 + '").requestSubmit(); 1');
-    const doubt2 = () => page.evaluate('document.querySelector("' + D2 + ' [data-save-uncertain]")?.dataset.saveUncertain || ""');
-    const saveBtn2 = () => page.evaluate('[...document.querySelectorAll("' + D2 + ' button")].find(b => b.textContent.includes("Guardar seguimiento"))?.disabled');
-    await openComplaint(false); await type2('Nota reclamación'); await submit2(); await waitText('Seguimiento guardado.', 'guardado de la reclamación');
-    let st = await state();
-    ck(st.writes.length === 1 && st.writes[0].resource === 'reclamaciones' && st.writes[0].data.revision === 1 && st.attnR[1].revision === 2 && !st.attn[1], '17. reclamación: el guardado va a seguimiento/reclamaciones con su revisión y no toca el seguimiento de una consulta con el mismo id');
-    await openComplaint(true); await set({ putMode: 'applyThenSlow', putDelay: 1500 });
-    const DRAFT = 'Nota con timeout\nlínea 2';
-    await type2(DRAFT); await submit2(); await page.wait('document.querySelector("' + D2 + ' [data-save-uncertain]")', 'resultado incierto en la reclamación');
-    ck((await notes2()) === DRAFT && (await saveBtn2()) === true && (await state()).writes.length === 1 && !(await bodyText()).includes('Seguimiento guardado.'), '17. reclamación: el timeout muestra resultado incierto, conserva el borrador, bloquea guardar y no envía otro PUT');
-    await submit2(); await sleep(1700);
-    ck((await state()).writes.length === 1 && (await doubt2()) !== '', '17. reclamación: ni el reenvío del formulario ni la respuesta tardía añaden escrituras');
-    await page.evaluate('[...document.querySelectorAll("' + D2 + ' button")].find(b => b.textContent.includes("Comprobar estado del servidor")).click(); 1'); await waitText('El servidor muestra exactamente los valores que enviaste', 'conciliación de la reclamación');
-    st = await state();
-    ck((await doubt2()) === '' && (await notes2()) === DRAFT && st.attnR[1].revision === 2 && st.writes.length === 1 && !st.attn[1], '17. reclamación: la comprobación (GET) concilia por coincidencia exacta sin escribir nada más');
-    // selección y cierre: con un guardado incierto sin resolver, cerrar el detalle pasa por el aviso de cambios sin guardar
-    await openComplaint(true); await set({ putMode: 'neverApply', putDelay: 1500 }); await type2('Nota pendiente de cierre'); await submit2(); await page.wait('document.querySelector("' + D2 + ' [data-save-uncertain]")', 'incierto');
-    await page.evaluate('[...document.querySelectorAll("dialog.hp-dialog[open] .hp-dialog-footer button")].find(b => b.textContent.includes("Cerrar detalle")).click(); 1'); await page.wait('document.querySelector("dialog.hp-unsaved-dialog[open]")', 'aviso al cerrar el detalle');
-    ck(/resultado de guardado incierto/.test((await unsavedDialog()) || ''), '17. reclamación: cerrar el detalle con el resultado incierto avisa y nombra el motivo');
-    await page.evaluate('[...document.querySelectorAll("dialog.hp-unsaved-dialog[open] button")].find(b => b.textContent.includes("Seguir editando")).click(); 1'); await sleep(250);
-    ck((await notes2()) === 'Nota pendiente de cierre' && (await state()).writes.length === 1, '17. reclamación: «Seguir editando» conserva el borrador y el detalle abierto, sin escrituras adicionales');
-    // 409 de D3 en la reclamación (el flujo completo con elección de versión lo cubre smoke:attention-conflicts, escenario 11)
-    await openComplaint(false); await type2('Nota local'); await remote(1, { notas: 'Nota remota' }, 'reclamaciones'); await submit2(); await page.wait('document.querySelector("dialog.hp-dialog[open] .hp-conflict-banner")', 'conflicto 409 en la reclamación'); await sleep(500);
-    ck(!(await doubt2()) && (await state()).writes.length === 1 && !(await state()).writes[0].applied && (await notes2()) === 'Nota local', '17. reclamación: un 409 no se confunde con un resultado incierto, no se repite y el borrador se conserva'); }
 
   const PUBLIC_ASSET_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com', 'cdnjs.cloudflare.com', 'www.google.com'];
   const leaks = blocked.filter(b => { try { return b.method !== 'GET' || !PUBLIC_ASSET_HOSTS.includes(new URL(b.url).hostname); } catch { return true; } });

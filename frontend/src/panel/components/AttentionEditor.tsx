@@ -25,7 +25,7 @@ const stateText = (value: string) => value.replace('_', ' ');
 // Nunca se adopta una revisión nueva sin comparar qué cambió (ver services/attentionMerge.ts): un campo cambiado por ambas partes con valores distintos
 // es un conflicto y exige elegir; el guardado siempre usa la revisión de la última versión comparada, así que el servidor sigue rechazando (409) cualquier
 // cambio ajeno posterior en vez de pisarlo.
-export default function AttentionEditor({ resource, id, onSaved, onPendingChange, onUncertainChange, syncKey = 0, stateOnly = false }: { resource: 'messages' | 'reclamaciones'; id: number; onSaved?: (item: { estado: string }, changed?: boolean) => void; onPendingChange?: (pending: boolean) => void; onUncertainChange?: (uncertain: boolean) => void; syncKey?: number; stateOnly?: boolean }) {
+export default function AttentionEditor({ resource, id, onSaved, onPendingChange, onUncertainChange, syncKey = 0, stateOnly = false }: { resource: 'messages'; id: number; onSaved?: (item: { estado: string }, changed?: boolean) => void; onPendingChange?: (pending: boolean) => void; onUncertainChange?: (uncertain: boolean) => void; syncKey?: number; stateOnly?: boolean }) {
   const { token } = useAdminAuth(); const latestToken = useLatest(token);
   const conflictId = useId();
   const [reload, setReload] = useState(0);
@@ -53,7 +53,7 @@ export default function AttentionEditor({ resource, id, onSaved, onPendingChange
   // Hay cambios cuando el borrador difiere de la base. Un campo en conflicto deja de serlo si ya coincide con el del servidor.
   const dirty = !!form && !!base && ATTENTION_FIELDS.some(key => form[key] !== base[key]);
   const conflicts = pending.filter(key => form && base && form[key] !== base[key]);
-  const confirmLeave = useUnsavedChanges(dirty, (resource === 'messages' ? 'seguimiento de la consulta #' : 'seguimiento de la reclamación #') + id + (conflicts.length ? ' (con conflictos)' : '') + (busy ? ' (operación en curso)' : doubt ? ' (resultado de guardado incierto)' : ''));
+  const confirmLeave = useUnsavedChanges(dirty, 'seguimiento de la consulta #' + id + (conflicts.length ? ' (con conflictos)' : '') + (busy ? ' (operación en curso)' : doubt ? ' (resultado de guardado incierto)' : ''));
   const blocked = conflicts.length > 0 || banner?.kind === 'compare-error' || comparing || !!doubt;
 
   useEffect(() => {

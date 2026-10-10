@@ -147,8 +147,8 @@ async function main() {
   async function clean() { await fetch(origin + '/__clear'); for (const q of pages.splice(0)) await q.close(); }
   const session = async (route, width) => { const p = await open(width); await p.go('/__empty'); await p.evaluate('localStorage.setItem(' + JSON.stringify(KEY) + ', ' + JSON.stringify(TOKEN) + '); 1'); await p.go(route); return p; };
 
-  // Selectores del editor: mensajes (panel de detalle) y reclamaciones (diálogo)
-  const R = { messages: '.hw-inbox-detail form.hp-form', reclamaciones: 'dialog.hp-dialog[open] form.hp-form' };
+  // Selector del editor de mensajes (panel de detalle)
+  const R = { messages: '.hw-inbox-detail form.hp-form' };
   const editorReady = (p, root) => p.wait('document.querySelector("' + root + ' fieldset textarea")', 'editor de seguimiento');
   const openMessage = async (id) => { const p = await session('/admin/messages?id=' + id); await editorReady(p, R.messages); return p; };
   const view = (p, root) => p.evaluate("(() => { const f = document.querySelector('" + root + "'); const t = f.querySelectorAll('fieldset textarea'); const banner = f.querySelector('.hp-conflict-banner'); const save = [...f.querySelectorAll('.hp-actions button')].find(b => b.textContent.includes('Guardar seguimiento')); return { estado: f.querySelector('fieldset select').value, responsable: f.querySelector('fieldset input').value, notas: t[0].value, respuesta: t[1].value, banner: banner ? banner.className.replace('hp-conflict-banner ', '') : null, bannerRole: banner?.getAttribute('role') || null, bannerText: banner?.innerText || '', conflicts: [...f.querySelectorAll('.hp-conflict-field')].map(c => ({ field: c.querySelector('h5').textContent, mine: c.querySelectorAll('pre')[0].textContent, theirs: c.querySelectorAll('pre')[1].textContent })), saveDisabled: save.disabled, notice: f.querySelector('.hp-notice')?.innerText || '', alert: f.querySelector('.hp-error')?.innerText || '' }; })()");
@@ -267,17 +267,7 @@ async function main() {
     await p.evaluate("(() => { const f = document.querySelector('" + R.messages + "'); f.requestSubmit(); f.requestSubmit(); f.requestSubmit(); return 1 })()"); await p.wait('document.querySelector("' + R.messages + ' .hp-notice")?.innerText.includes("Seguimiento guardado")', 'guardado correcto');
     ck((await putsOf('messages', 1)).length === before + 1, '10. doble envío: una sola petición PUT'); await p.close(); }
 
-  console.log('\n== RECLAMACIONES, NAVEGACIÓN Y SESIÓN');
-  await clean();
-  { // 11. Seguimiento de una reclamación y mismo ID que un contacto
-    const p = await session('/admin/dashboard?section=reclamaciones'); await p.wait('document.querySelector(".hp-table tbody tr")', 'reclamaciones');
-    await p.clickText('.hp-table button', 'Ver detalle de HG-001'); await editorReady(p, R.reclamaciones);
-    await p.type(R.reclamaciones + ' fieldset textarea', 0, 'Nota de A (reclamación)'); await remote('reclamaciones', 1, { notas: 'Nota de B (reclamación)' }); await remote('messages', 1, { notas: 'Nota ajena del contacto 1' });
-    await save(p, R.reclamaciones); await p.wait('document.querySelector("' + R.reclamaciones + ' .hp-conflict-banner.is-conflict")', 'conflicto en reclamación');
-    let v = await view(p, R.reclamaciones); ck(v.conflicts.length === 1 && v.conflicts[0].theirs === 'Nota de B (reclamación)', '11. el seguimiento de una reclamación detecta y muestra su conflicto', v.conflicts);
-    await choose(p, 'Notas internas', 'Conservar mi versión'); await sleep(200); await save(p, R.reclamaciones); await p.wait('document.querySelector("' + R.reclamaciones + ' .hp-notice")?.innerText.includes("Seguimiento guardado")', 'guardado de reclamación');
-    const s = await state(); const puts = s.writes.filter(w => w.method === 'PUT');
-    ck(puts.every(w => w.route === 'seguimiento/reclamaciones/1') && s.attention['reclamaciones:1'].notas === 'Nota de A (reclamación)' && s.attention['messages:1'].notas === 'Nota ajena del contacto 1', '11. contacto y reclamación con el mismo ID no se mezclan: solo se escribe seguimiento/reclamaciones/1 y el contacto 1 queda intacto', { puts: puts.map(w => w.route), contacto: s.attention['messages:1'].notas }); await p.close(); }
+  console.log('\n== NAVEGACIÓN Y SESIÓN');
 
   await clean();
   { // 12. Navegación con conflictos pendientes

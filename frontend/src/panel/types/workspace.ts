@@ -5,7 +5,6 @@ type CatalogCount = { total: number; publicados: number; borradores: number; arc
 export type DashboardStats = {
   stats: {
     mensajes: { total: number; nuevos: number; enProceso: number; atendidos: number; archivados: number };
-    reclamaciones: { total: number };
     contenido: { total: number };
     catalogo: Record<string, CatalogCount & { por_tipo?: Record<string, CatalogCount> }>;
   };

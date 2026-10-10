@@ -1,7 +1,7 @@
 # Entorno local con Docker Compose
 
 Levanta el sitio público, el panel, la API y MySQL en tu máquina con `docker-compose.local.yml`. **No es producción**: Railway usa los
-Dockerfiles de cada paquete ([RAILWAY.md](../../RAILWAY.md)). Nada de lo que sigue inicializa, migra ni importa datos por sí solo.
+Dockerfiles de cada paquete ([RAILWAY.md](../../RAILWAY.md)). Nada de lo que sigue inicializa, migra ni importa datos por sí solo. **Que funcione aquí no demuestra que Railway esté listo para producción**: no se prueban el volumen de Railway, su red privada, TLS/`DB_RSA_PUBLIC_KEY`, `TRUSTED_PROXY_CIDRS`, el dominio ni los servicios de correo reales.
 
 ## Qué se crea
 
@@ -58,7 +58,7 @@ No los ejecutes contra otra base. En una base ya inicializada, omite `db:init`.
 
 ```powershell
 docker compose --env-file .env.docker -f docker-compose.local.yml exec -u node backend npm run db:init       # solo si la base no tiene tablas
-docker compose --env-file .env.docker -f docker-compose.local.yml exec -u node backend npm run db:migrate    # aplica TODAS las migraciones, incluidas 20261009-chatbot-metrics y 20261010-newsletter-default-novedades
+docker compose --env-file .env.docker -f docker-compose.local.yml exec -u node backend npm run db:migrate    # aplica TODAS las migraciones, incluidas 20261009-chatbot-metrics, 20261010-newsletter-default-novedades y 20261011-cotizaciones-idempotencia; sin las dos columnas de esta última, las cotizaciones fallan
 docker compose --env-file .env.docker -f docker-compose.local.yml exec -u node backend npm run db:check      # solo lectura; debe terminar con «Esquema compatible»
 $env:ADMIN_INITIAL_PASSWORD = "<clave-local>"
 docker compose --env-file .env.docker -f docker-compose.local.yml exec -it -u node -e ADMIN_INITIAL_PASSWORD backend npm run admin:create   # pide nombre y correo
@@ -103,7 +103,9 @@ docker run --rm -v horus-local_uploads_data:/data:ro -v "${PWD}/backups:/backup"
 
 Estos dos comandos **no se ejecutaron** al preparar la guía: pruébalos con una base de prueba antes de fiarte de ellos. No uses `>` en PowerShell 5.1: escribe UTF-16 y corrompe el volcado.
 
-Alternativa del proyecto (tampoco ejecutada en este entorno): `docker compose … exec -u node backend npm run db:backup -- --dir=/tmp/respaldo` y copiar el resultado fuera con
+Para los archivos subidos, el proyecto también ofrece `uploads:backup` / `uploads:restore` (manifiesto SHA-256, sin sobrescribir; ver [backup-restauracion.md](backup-restauracion.md)), que no dependen de `tar` ni del volumen montado en el anfitrión: `docker compose … exec -u node backend npm run uploads:backup -- --dir=/tmp/respaldo-uploads` y luego `docker compose … cp backend:/tmp/respaldo-uploads ./backups/`. Haz primero el respaldo de la base y después el de los archivos.
+
+Alternativa del proyecto para la base (tampoco ejecutada en este entorno): `docker compose … exec -u node backend npm run db:backup -- --dir=/tmp/respaldo` y copiar el resultado fuera con
 `docker compose … cp backend:/tmp/respaldo ./backups/` antes de recrear el contenedor. Sin `--dir` escribe en `/app/.backups`, donde `node` no puede escribir.
 La restauración con `db:restore` solo acepta bases aisladas `horus_restore_*` y, al ser un servidor no local, exige `ALLOW_RESTORE_DB=true`: ver [backup-restauracion.md](backup-restauracion.md).
 
@@ -130,9 +132,9 @@ Las comprobaciones se hicieron con el estado actual del repositorio sin confirma
 **Otras comprobaciones (la primera con la imagen final; las demás, antes, con una versión intermedia del Dockerfile con la misma lógica de `CMD`):**
 - Con la imagen final y un volumen nuevo cuyo `/data` y `/data/uploads` eran propiedad de root (el caso de Railway), el contenedor arrancó como root, dejó `/data/uploads` a nombre de `node` (`/data` sigue siendo de root) y la API quedó con UID 1000 y sin capacidades; `node` escribe en `/data/uploads`. El volumen temporal se eliminó (era propio y recién creado). Es una simulación local: no prueba cómo monta Railway el volumen.
 - `/api/docs` 404 con Swagger apagado, `401` en `/api/admin/me` sin token y `caddy validate` con la imagen.
-- Sobre una base MySQL **vacía y temporal** (contenedor aparte, sin volúmenes, ya eliminado), `db:check` conectó y **no validó**: salió con código 1 y listó 72 elementos faltantes. La afirmación anterior de que «funcionó» solo se refería a la conexión.
+- Sobre una base MySQL **vacía y temporal** (contenedor aparte, sin volúmenes, ya eliminado), `db:check` conectó y **no validó**: salió con código 1 y listó los elementos faltantes (72 en esa verificación, antes de la migración `20261011`). La afirmación anterior de que «funcionó» solo se refería a la conexión.
 
-**Pendiente (no ejecutado):** `db:init`, `db:migrate`, un `db:check` con éxito («Esquema compatible»), `admin:create`, los comandos con `exec -u node`, subida de imágenes por el panel, formularios, inicio de sesión, los respaldos (`mysqldump`, `tar`, `db:backup`), `down -v`, cualquier flujo del navegador, el sitio sin conexión a Internet y todo lo relativo a Railway.
+**Pendiente (no ejecutado):** `uploads:backup`/`uploads:restore` dentro del contenedor, `db:init`, `db:migrate`, un `db:check` con éxito («Esquema compatible»), `admin:create`, los comandos con `exec -u node`, subida de imágenes por el panel, formularios, inicio de sesión, los respaldos (`mysqldump`, `tar`, `db:backup`), `down -v`, cualquier flujo del navegador, el sitio sin conexión a Internet y todo lo relativo a Railway.
 
 Tras la última verificación solo se retiraron contenedores y red del proyecto `horus-verify-final`. Sus dos volúmenes (`horus-verify-final_mysql_data` y `horus-verify-final_uploads_data`) siguen en el sistema: no contienen datos de la aplicación (sin tablas ni imágenes) y se pueden borrar a mano.
 

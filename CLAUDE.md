@@ -33,7 +33,7 @@ Para una tarea pequeña basta un flujo corto: no exijas un plan largo para cambi
 ## 4. Backend, datos y correo
 
 - Antes de tocar el backend revisa contratos y consumidores; mantén los endpoints, la validación y el manejo seguro de errores (sin detalles internos al usuario) y las reglas de autenticación.
-- **Datos:** no ejecutes migraciones, `db:init`, `db:migrate`, `admin:create`, `content:restore`, `convenios:import --apply` ni `test:integration` sin autorización expresa y sin comprobar el destino. No borres, reinicialices ni sobrescribas bases de datos; no uses MySQL real en pruebas automatizadas; no alteres relaciones ni elimines historiales por comodidad.
+- **Datos:** no ejecutes migraciones, `db:init`, `db:migrate`, `admin:create`, `content:restore`, `convenios:import --apply`, `chatbot:purge` (sin `--dry-run`), `uploads:restore --yes` ni `test:integration` sin autorización expresa y sin comprobar el destino. No borres, reinicialices ni sobrescribas bases de datos; no uses MySQL real en pruebas automatizadas; no alteres relaciones ni elimines historiales por comodidad.
 - **Correo:** no envíes correo real en pruebas ni uses destinatarios reales; simula Gmail y Resend. Un envío de resultado incierto (timeout, red, respuesta ilegible) **no se reintenta automáticamente**. «Aceptado por el proveedor» no es «entregado». Respeta el proveedor elegido con `MAIL_PROVIDER` sin fallback silencioso (ver `backend/MAIL.md`). Un envío real de prueba exige autorización explícita, un único destinatario autorizado y un solo intento.
 
 ## 5. Frontend, UX y accesibilidad

@@ -94,6 +94,8 @@ jobs:
       DB_USER: root
       DB_PASS: ci-only-throwaway-password
       DB_SSL: 'false'
+      # Clave ficticia exclusiva de pruebas (no es un secreto): JwtStrategy exige >= 32 caracteres al inicializar AppModule.
+      JWT_SECRET: ci-only-jwt-secret-not-for-production-use-0000
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

@@ -6,6 +6,7 @@ import * as bcrypt from 'bcryptjs';
 import { AdminUser } from '@prisma/client';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { BCRYPT_COST, DUMMY_PASSWORD_HASH } from './password-security';
 
 @Injectable()
 export class AuthService {
@@ -24,7 +25,7 @@ export class AuthService {
       throw new ConflictException({ ok: false, mensaje: 'Ya existe un administrador con ese correo.' });
     }
 
-    const hashedPassword = await bcrypt.hash(dto.password, 12);
+    const hashedPassword = await bcrypt.hash(dto.password, BCRYPT_COST);
     let user: AdminUser;
     try {
       user = await this.prisma.adminUser.create({ data: {
@@ -49,7 +50,9 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const user = await this.prisma.adminUser.findFirst({ where: { email: dto.email.toLowerCase().trim() } });
-    if (!user || user.activo === false || !(await bcrypt.compare(dto.password, user.password))) {
+    // bcrypt se ejecuta siempre: sin cuenta se compara contra un hash ficticio del mismo coste. La respuesta es la misma en los tres casos.
+    const matches = await bcrypt.compare(dto.password, user?.password ?? DUMMY_PASSWORD_HASH);
+    if (!user || user.activo === false || !matches) {
       throw new UnauthorizedException({ ok: false, mensaje: 'Credenciales incorrectas.' });
     }
 

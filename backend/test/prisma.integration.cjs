@@ -109,6 +109,102 @@ test('Prisma works against MySQL and legacy-compatible SQL in an isolated databa
         assert.equal((await request('admin/convenios', 'GET', undefined, true)).status, 401);
       } finally { await app.close(); await client.adminUser.delete({ where: { id: auth.user.id } }); }
     });
+
+    await t.test('contenido global persiste tras reiniciar la API y lo ven un administrador nuevo y visitantes sin sesión', async () => {
+      const { AppModule } = require('../dist/app.module');
+      const { createValidationPipe } = require('../dist/common/validation');
+      const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
+      const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'horus-global-uploads-'));
+      const previousUploadDir = process.env.UPLOAD_DIR;
+      process.env.UPLOAD_DIR = directory;
+      const savedSettings = await client.setting.findMany();
+      const adminIds = [], records = [];
+      let app;
+      const start = async () => {
+        app = await NestFactory.create(AppModule, { logger: false, abortOnError: false });
+        app.setGlobalPrefix('api'); app.useGlobalPipes(createValidationPipe());
+        await app.listen(0, '127.0.0.1');
+        return app.getUrl();
+      };
+      let origin;
+      const request = async (route, token, method = 'GET', body) => {
+        const response = await fetch(origin + '/api/' + route, { method, headers: {
+          ...(token ? { Authorization: 'Bearer ' + token } : {}),
+          ...(body ? { 'Content-Type': 'application/json' } : {}),
+        }, ...(body ? { body: JSON.stringify(body) } : {}) });
+        const data = await response.json();
+        assert.ok(response.ok, 'Solicitud aislada: ' + route + ' (' + response.status + ')');
+        return data;
+      };
+      const password = 'Global-content-test-123!';
+      try {
+        origin = await start();
+        // El primer administrador se crea por el proceso controlado (servicio/CLI): el registro HTTP exige una sesión.
+        assert.equal((await fetch(origin + '/api/admin/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre: 'Intruso', email: 'intruso@example.com', password }) })).status, 401);
+        const first = await app.get(AuthService).register({ nombre: 'Admin global A', email: 'global-a@example.com', password });
+        adminIds.push(first.user.id);
+        const form = new FormData();
+        const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jQxQAAAAASUVORK5CYII=', 'base64');
+        form.append('file', new Blob([png], { type: 'image/png' }), 'global.png');
+        const upload = await fetch(origin + '/api/admin/uploads', { method: 'POST', headers: { Authorization: 'Bearer ' + first.token }, body: form });
+        assert.equal(upload.status, 201);
+        const image = '/api' + (await upload.json()).path;
+        const entries = [
+          ['cursos', { titulo: 'Curso global', slug: 'curso-global', descripcion: 'Contenido global de prueba', tipo: 'curso', modalidad: 'virtual', duracion: '20 horas', estado: 'publicado', imagen_url: image }, 'curso'],
+          ['servicios', { titulo: 'Servicio global', slug: 'servicio-global', descripcion: 'Contenido global de prueba', categoria: 'cableado', estado: 'publicado', imagen_url: image }, 'servicio'],
+          ['preguntas-frecuentes', { pregunta: 'Pregunta global', respuesta: 'Respuesta global', categoria: 'general', estado: 'publicado' }, 'preguntaFrecuente'],
+          ['galeria', { titulo: 'Foto global', categoria: 'global', imagen_url: image, activo: true }, 'galeriaItem'],
+          ['convenios', { nombre: 'Convenio global', descripcion_corta: 'Contenido global de prueba', logo_url: image, visible: true }, 'convenio'],
+          ['convenios', { nombre: 'Convenio oculto', descripcion_corta: 'Borrador compartido de prueba', visible: false }, 'convenio'],
+        ];
+        for (const [route, body, model] of entries) {
+          const created = (await request('admin/' + route, first.token, 'POST', body)).item;
+          records.push([model, created.id]);
+        }
+        await request('admin/convenios/' + records[4][1] + '/fotos', first.token, 'POST', { imagen_url: image, orden: 0 });
+        await request('admin/settings', first.token, 'PUT', { ajustes: { empresa_nombre: 'Empresa global de prueba' } });
+        // El segundo administrador se registra después de crear el contenido.
+        // Alta autorizada: la hace el primer administrador con su sesión y la cuenta nueva entra por el login normal.
+        const created = await request('admin/register', first.token, 'POST', { nombre: 'Admin global B', email: 'global-b@example.com', password });
+        assert.equal(created.token, undefined);
+        const second = { user: created.user, token: (await request('admin/login', null, 'POST', { email: 'global-b@example.com', password })).token };
+        adminIds.push(second.user.id);
+        assert.notEqual(first.user.id, second.user.id);
+        const lists = ['cursos', 'servicios', 'preguntas-frecuentes', 'galeria', 'convenios', 'settings'];
+        const snapshots = {};
+        for (const route of lists) {
+          snapshots[route] = await request('admin/' + route, first.token);
+          assert.deepEqual(await request('admin/' + route, second.token), snapshots[route], 'Ambos administradores ven ' + route);
+        }
+        assert.equal(snapshots.convenios.pagination.total, 2);
+        await app.close(); app = null;
+        origin = await start();
+        const loggedIn = await request('admin/login', null, 'POST', { email: 'global-b@example.com', password });
+        for (const route of lists) assert.deepEqual(await request('admin/' + route, loggedIn.token), snapshots[route], 'Persistencia de ' + route + ' tras reiniciar');
+        for (const route of ['cursos', 'servicios', 'preguntas-frecuentes', 'galeria', 'convenios']) {
+          const data = await request(route, null);
+          assert.equal(data.items.length, 1, 'Visitante ve contenido publicado de ' + route);
+        }
+        assert.equal((await request('settings', null)).settings.empresa_nombre, 'Empresa global de prueba');
+        const detail = await request('convenios/' + records[4][1], null);
+        assert.equal(detail.item.fotos[0].imagen_url, image);
+        const picture = await fetch(origin + image);
+        assert.equal(picture.status, 200);
+        assert.deepEqual(Buffer.from(await picture.arrayBuffer()), png);
+        const protectedResponse = await fetch(origin + '/api/admin/convenios');
+        assert.equal(protectedResponse.status, 401, 'Los visitantes no obtienen permisos administrativos');
+      } finally {
+        if (app) await app.close();
+        for (const [model, id] of records.reverse()) await client[model].delete({ where: { id } });
+        await client.setting.deleteMany();
+        for (const row of savedSettings) await client.setting.create({ data: row });
+        await client.adminUser.deleteMany({ where: { id: { in: adminIds } } });
+        if (previousUploadDir === undefined) delete process.env.UPLOAD_DIR; else process.env.UPLOAD_DIR = previousUploadDir;
+        if (path.dirname(directory) !== fs.realpathSync(os.tmpdir()) || !path.basename(directory).startsWith('horus-global-uploads-')) throw new Error('Uploads fuera del directorio temporal');
+        fs.rmSync(directory, { recursive: true, force: true });
+      }
+    });
+
     await t.test('catalog publication, search, dates, duplicate slug and archive', async () => {
       const { item } = await catalog.create('cursos', { titulo: 'Curso de redes', slug: 'redes', descripcion: 'Redes locales', tipo: 'curso', modalidad: 'virtual', duracion: '20 horas', fecha_inicio: '2026-09-21' });
       assert.equal(item.estado, 'borrador');
@@ -193,6 +289,19 @@ test('Prisma works against MySQL and legacy-compatible SQL in an isolated databa
       const rolledBack = await client.cotizacion.findUnique({ where: { id: item.id } });
       assert.equal(rolledBack.revision, 3);
       assert.equal(rolledBack.historial.length, 3);
+    });
+    await t.test('quote creation is idempotent under the real UNIQUE constraint (migration 20261011)', async () => {
+      const service = new CotizacionesService(client);
+      const dto = { cliente: 'Idempotente', email: '', telefono: '', documento: '', direccion: '', emisor: 'Horus', datos_emisor: '', moneda: 'PEN', validez: '2099-12-31', condiciones: '', conceptos: [{ descripcion: 'Servicio', cantidad: 1, precio: 10 }], descuento: 0, tasa: 0 };
+      const key = 'integration-key-' + randomUUID();
+      const results = await Promise.all(Array.from({ length: 5 }, () => service.create(dto, 1, key)));
+      assert.equal(await client.cotizacion.count({ where: { idempotencia_clave: key } }), 1);
+      assert.equal(new Set(results.map(r => r.item.numero)).size, 1);
+      assert.equal(results.filter(r => r.reutilizada === true).length, 4);
+      assert.ok(results.every(r => !('idempotencia_clave' in r.item)));
+      await assert.rejects(() => service.create({ ...dto, cliente: 'Otro' }, 1, key), e => e.getStatus() === 422);
+      const first = await service.create(dto, 1), second = await service.create(dto, 1);
+      assert.notEqual(first.item.numero, second.item.numero, 'sin clave no hay deduplicación');
     });
     await t.test('attention uses revision, preserves histories and protects complaints', async () => {
       const { AttentionService } = require('../dist/attention/attention.service');
@@ -297,13 +406,47 @@ test('Prisma works against MySQL and legacy-compatible SQL in an isolated databa
       assert.equal(await client.servicio.count(),before.services);
       const imported=await restore.restore('servicios','borrador');assert.equal(imported.created,19);
       assert.equal((await catalog.list('servicios',{page:1,limit:100},true)).items.length,0);
-      const first=await client.servicio.findFirst({where:{origen_original:{not:null}},orderBy:{orden:'asc'}});
+      // `orden` se repite entre categorías (hay un servicio con orden 1 en cada una): sin categoría ni desempate por id, MySQL elige cualquiera de ellos
+      // (con LIMIT 1 y filesort devolvió «asesoramiento») y la comprobación posterior sobre «cableado» fallaba. Se fija la categoría y un desempate estable.
+      const first=await client.servicio.findFirst({where:{origen_original:{not:null},categoria:'cableado'},orderBy:[{orden:'asc'},{id:'asc'}]});
       await catalog.update('servicios',first.id,{titulo:'Contenido revisado desde el panel',slug:'nuevo-enlace-revisado',estado:'publicado',nombre_corto:'Nombre revisado',etiquetas:'Etiqueta editada'});
       const repeated=await restore.restore('servicios');assert.equal(repeated.created,0);
       const visible=await catalog.list('servicios',{categoria:'cableado',page:1,limit:100},true);
       assert.equal(visible.items.length,1);assert.equal(visible.items[0].titulo,'Contenido revisado desde el panel');assert.equal(visible.items[0].nombre_corto,'Nombre revisado');
       await catalog.archive('servicios',first.id);await restore.restore('servicios');
       assert.equal((await client.servicio.findUnique({where:{id:first.id}})).estado,'archivado');
+      // Services are removed for real: the row disappears and its slug can be reused.
+      const removable=await catalog.create('servicios',{titulo:'Servicio temporal',slug:'servicio-temporal',descripcion:'Se elimina de verdad',categoria:'soporte',estado:'borrador'});
+      await assert.rejects(()=>catalog.create('servicios',{titulo:'Otro',slug:'servicio-temporal',descripcion:'Mismo slug',categoria:'soporte'}),error=>/«Servicio temporal» \(borrador\).*«servicio-temporal»/.test(error.getResponse().mensaje));
+      assert.equal((await catalog.remove('servicios',removable.item.id)).ok,true);
+      assert.equal(await client.servicio.findUnique({where:{id:removable.item.id}}),null);
+      await assert.rejects(()=>catalog.detail('servicios',removable.item.id));
+      const reused=await catalog.create('servicios',{titulo:'Servicio reutilizado',slug:'servicio-temporal',descripcion:'El slug quedó libre',categoria:'soporte',estado:'borrador'});
+      await catalog.remove('servicios',reused.item.id);
+      const sections=await catalog.list('servicios',{categoria:'cableado,camaras',page:1,limit:100});
+      assert.ok(sections.items.length>0&&sections.items.every(x=>['cableado','camaras'].includes(x.categoria)));
+      // "Otros servicios" is gone from the database too; each technology category can be created, published, edited and deleted.
+      const [[column]]=await db.query('SELECT COLUMN_TYPE ct FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?',[name,'servicios','categoria']);
+      assert.equal(column.ct,"enum('cableado','camaras','soporte','asesoramiento')");
+      await assert.rejects(()=>client.servicio.create({data:{titulo:'Otro servicio',slug:'otro-servicio',descripcion:'Esta categoría ya no existe',categoria:'otros'}}));
+      for(const categoria of ['cableado','camaras','soporte']){
+        const draft=await catalog.create('servicios',{titulo:'Prueba '+categoria,slug:'prueba-'+categoria,descripcion:'Servicio de prueba',categoria,estado:'borrador'});
+        assert.equal((await catalog.list('servicios',{categoria,page:1,limit:100},true)).items.some(x=>x.id===draft.item.id),false,'Un borrador no es público');
+        await catalog.update('servicios',draft.item.id,{estado:'publicado',titulo:'Prueba editada '+categoria});
+        assert.equal((await catalog.list('servicios',{categoria,page:1,limit:100},true)).items.find(x=>x.id===draft.item.id)?.titulo,'Prueba editada '+categoria);
+        await catalog.remove('servicios',draft.item.id);
+        assert.equal(await client.servicio.findUnique({where:{id:draft.item.id}}),null);
+      }
+      // Courses and capacitaciones are removed for good too, archived ones included, and their slug is released.
+      for(const tipo of ['curso','capacitacion']){
+        const course=await catalog.create('cursos',{titulo:'Prueba '+tipo,slug:'prueba-'+tipo,descripcion:'Se elimina de verdad',tipo,modalidad:'virtual',duracion:'2 horas',estado:'borrador'});
+        await catalog.archive('cursos',course.item.id);
+        assert.equal((await catalog.remove('cursos',course.item.id)).ok,true);
+        assert.equal(await client.curso.findUnique({where:{id:course.item.id}}),null);
+        const again=await catalog.create('cursos',{titulo:'Prueba '+tipo,slug:'prueba-'+tipo,descripcion:'El slug quedó libre',tipo,modalidad:'virtual',duracion:'2 horas',estado:'borrador'});
+        await catalog.remove('cursos',again.item.id);
+      }
+      await assert.rejects(()=>catalog.remove('preguntas-frecuentes',1));
       assert.equal((await restore.restore('capacitaciones')).created,4);
       const program=await client.curso.findFirst({where:{origen_original:{not:null}}});
       assert.equal(program.modalidad,null);assert.equal(program.duracion,null);assert.equal(program.fecha_inicio,null);

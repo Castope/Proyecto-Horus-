@@ -1,5 +1,5 @@
 import type { AdminItem, AdminMessage, AdminUser } from '../types';
-import { panelRequest } from './panelApi';
+import { PanelApiError, panelRequest } from './panelApi';
 
 import { API_BASE as PUBLIC_API_BASE } from '../../apiBase';
 const API_BASE = PUBLIC_API_BASE + '/admin';
@@ -10,13 +10,18 @@ const getAuthHeaders = (token?: string): HeadersInit => {
   return headers;
 };
 
-export async function loginAdmin(payload: { email: string; password: string }) {
+export async function loginAdmin(payload: { email: string; password: string }, signal?: AbortSignal) {
   const response = await fetch(`${API_BASE}/login`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
+    signal,
   });
-  return response.json();
+  const data = await response.json().catch(() => null) as { ok?: boolean; token?: string; user?: AdminUser } | null;
+  // El texto del servidor no se propaga: la pantalla elige el mensaje según el código HTTP.
+  if (!response.ok || !data || data.ok === false) throw new PanelApiError('Inicio de sesión rechazado.', response.ok ? 500 : response.status);
+  if (!data.token) throw new PanelApiError('Respuesta de inicio de sesión incompleta.', 500);
+  return data as { ok: boolean; token: string; user?: AdminUser };
 }
 
 export async function registerAdmin(payload: { nombre: string; email: string; password: string }) {
@@ -77,7 +82,7 @@ export async function createAdminMessage(token: string, payload: Omit<AdminMessa
   return response.json() as Promise<{ ok: boolean; message?: AdminMessage; mensaje?: string }>;
 }
 
-export async function updateAdminMessage(token: string, id: number, estado: AdminMessage['estado']) {
+export async function updateAdminMessage(token: string, id: number, estado: Exclude<AdminMessage['estado'], 'archivado'>) {
   const response = await fetch(`${API_BASE}/messages/${id}`, {
     method: 'PUT',
     headers: getAuthHeaders(token),

@@ -6,7 +6,7 @@ import { NotFoundException, ConflictException, BadRequestException } from '@nest
 import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { CatalogoService } from '../src/catalogo/catalogo.service';
-import { CatalogoQueryDto, CreateCursoDto, UpdateCursoDto, CreatePreguntaFrecuenteDto } from '../src/catalogo/catalogo.dto';
+import { CatalogoQueryDto, CreateCursoDto, UpdateCursoDto, CreatePreguntaFrecuenteDto, CreateServicioDto, UpdateServicioDto } from '../src/catalogo/catalogo.dto';
 import { AdminCursoController, AdminServicioController, AdminPreguntaFrecuenteController } from '../src/catalogo/catalogo.controllers';
 import { JwtAuthGuard } from '../src/common/guards/jwt-auth.guard';
 import { AuthController } from '../src/admin/auth/auth.controller';
@@ -96,5 +96,93 @@ test('gallery public detail excludes inactive entries', async () => {
 test('catalog stats return database counts, including zero', async () => {
   const api = service({ count: async (options: any) => options?.where?.estado === 'publicado' ? 2 : options ? 0 : 2 });
   const stats = await api.stats();
-  assert.deepEqual(stats.cursos, { total: 2, publicados: 2, borradores: 0, archivados: 0 });
+  const { por_tipo, ...general } = stats.cursos as any;
+  assert.deepEqual(general, { total: 2, publicados: 2, borradores: 0, archivados: 0 });
+  assert.deepEqual(Object.keys(por_tipo), ['curso', 'capacitacion']);
+  assert.deepEqual(Object.keys(por_tipo.capacitacion), ['total', 'publicados', 'borradores', 'archivados']);
+});
+test('services and courses are deleted for real while FAQs can only be archived', async () => {
+  let deleted: any;
+  const item = { id: 9 };
+  const api = service({ findFirst: async () => item, delete: async (args: any) => { deleted = args; return item; } });
+  const result = await api.remove('servicios', 9);
+  assert.deepEqual(deleted, { where: { id: 9 } });
+  assert.equal(result.ok, true);
+  assert.equal((await api.remove('cursos', 9)).ok, true);
+  assert.deepEqual(deleted, { where: { id: 9 } });
+  await assert.rejects(() => api.remove('preguntas-frecuentes', 9), BadRequestException);
+  await assert.rejects(() => service({ findFirst: async () => null }).remove('servicios', 1), NotFoundException);
+});
+
+test('a service removed by another request while deleting answers 404', async () => {
+  const api = service({
+    findFirst: async () => ({ id: 3 }),
+    delete: async () => { throw new PrismaClientKnownRequestError('Missing', { code: 'P2025', clientVersion: '6.19.0' }); },
+  });
+  await assert.rejects(() => api.remove('servicios', 3), NotFoundException);
+});
+
+test('administrative DELETE of a course or capacitación removes it instead of archiving it', async () => {
+  const calls: string[] = [];
+  const controller = new AdminCursoController({ remove: async (resource: string, id: number) => { calls.push('remove:' + resource + ':' + id); return { ok: true }; },
+    archive: async () => { calls.push('archive'); return { ok: true }; } } as any);
+  await controller.remove(7);
+  assert.deepEqual(calls, ['remove:cursos:7']);
+});
+
+test('administrative DELETE of a service removes it instead of archiving it', async () => {
+  const calls: string[] = [];
+  const controller = new AdminServicioController({ remove: async (resource: string, id: number) => { calls.push('remove:' + resource + ':' + id); return { ok: true }; },
+    archive: async () => { calls.push('archive'); return { ok: true }; } } as any);
+  await controller.remove(5);
+  assert.deepEqual(calls, ['remove:servicios:5']);
+});
+
+test('a slug conflict tells which record already uses it', async () => {
+  const duplicate = () => new PrismaClientKnownRequestError('Duplicate', { code: 'P2002', clientVersion: '6.19.0' });
+  let lookup: any;
+  const api = service({
+    create: async () => { throw duplicate(); },
+    update: async () => { throw duplicate(); },
+    findFirst: async (args: any) => { lookup = args; return args.where.NOT ? { id: 8, titulo: 'Categoria 3', estado: 'publicado' } : args.where.id ? { id: 2 } : { id: 8, titulo: 'Categoria 3', estado: 'publicado' }; },
+  });
+  await assert.rejects(() => api.create('servicios', { slug: 'categoria-3', titulo: 'Otra' }), (error: any) => {
+    assert.ok(error instanceof ConflictException);
+    assert.match((error.getResponse() as any).mensaje, /«Categoria 3» \(publicado\).*«categoria-3»/);
+    return true;
+  });
+  assert.deepEqual(lookup.where, { slug: 'categoria-3' });
+  await assert.rejects(() => api.update('servicios', 2, { slug: 'categoria-3' }), (error: any) => {
+    assert.match((error.getResponse() as any).mensaje, /«Categoria 3»/);
+    return true;
+  });
+  assert.deepEqual(lookup.where, { slug: 'categoria-3', NOT: { id: 2 } });
+});
+
+test('service sections can filter by one or several categories and reject unknown ones', async () => {
+  const wheres: any[] = [];
+  const api = service({ findMany: async (input: any) => { wheres.push(input.where); return []; }, count: async () => 0 });
+  await api.list('servicios', { page: 1, limit: 8, categoria: 'cableado' });
+  await api.list('servicios', { page: 1, limit: 8, categoria: 'cableado,camaras' });
+  assert.equal(wheres[0].categoria, 'cableado');
+  assert.deepEqual(wheres[1].categoria, { in: ['cableado', 'camaras'] });
+  await assert.rejects(() => api.list('servicios', { page: 1, limit: 8, categoria: 'cableado,inventada' }), BadRequestException);
+});
+
+test('course agenda metrics follow the selected type', async () => {
+  const wheres: any[] = [];
+  const api = service({ findMany: async () => [], count: async (input: any) => { wheres.push(input.where); return 0; } });
+  await api.list('cursos', { page: 1, limit: 20, periodo: 'upcoming', tipo: 'capacitacion' });
+  assert.ok(wheres.length >= 4);
+  assert.ok(wheres.every(where => where.tipo === 'capacitacion'));
+});
+
+test('service categories no longer include "otros"', async () => {
+  const valid = { titulo: 'Servicio', slug: 'servicio', descripcion: 'Descripción del servicio', categoria: 'cableado' };
+  for (const categoria of ['cableado', 'camaras', 'soporte', 'asesoramiento']) await validate({ ...valid, categoria }, CreateServicioDto);
+  await assert.rejects(() => validate({ ...valid, categoria: 'otros' }, CreateServicioDto));
+  await assert.rejects(() => validate({ categoria: 'otros' }, UpdateServicioDto));
+  const api = service({ findMany: async () => [], count: async () => 0 });
+  await assert.rejects(() => api.list('servicios', { page: 1, limit: 8, categoria: 'otros' }), BadRequestException);
+  await assert.rejects(() => api.list('servicios', { page: 1, limit: 8, categoria: 'cableado,otros' }), BadRequestException);
 });

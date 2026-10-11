@@ -55,8 +55,10 @@ Vercel detecta `src/main.ts` de NestJS. No hace falta convertir la API en un fro
 | DB_SSL_CA | Certificado CA del proveedor, cuando sea necesario; admite saltos como `\n` |
 | JWT_SECRET | Secreto aleatorio de al menos 32 caracteres |
 | CORS_ORIGINS | Origen exacto del frontend, por ejemplo https://horus-web.vercel.app |
-| MAIL_USER | Cuenta Gmail remitente |
-| MAIL_PASS | Contraseña de aplicación de Gmail |
+| MAIL_PROVIDER | `resend` o `gmail` (sin valor, gmail); ver backend/MAIL.md |
+| RESEND_API_KEY / RESEND_FROM | Solo con Resend: clave y remitente (dominio verificado) |
+| MAIL_USER | Solo con Gmail: cuenta remitente |
+| MAIL_PASS | Solo con Gmail: contraseña de aplicación |
 
 Para varios orígenes CORS, separarlos por comas sin barra final. Autorizar explícitamente las URLs de previews que deban usar la API; no usar un comodín para todos los proyectos de vercel.app. Puedes reservar/configurar los nombres de ambos proyectos antes del primer despliegue para conocer las URLs.
 
@@ -64,7 +66,7 @@ Si la protección de despliegue de Vercel impide acceder públicamente a la API,
 
 Comprobar:
 
-- `https://TU-BACKEND.vercel.app/api/docs`
+- `https://TU-BACKEND.vercel.app/api/health` (Swagger está apagado en producción salvo `SWAGGER_ENABLED=true`, con HTTPS y cuenta de administrador)
 - `https://TU-BACKEND.vercel.app/api/cursos`
 
 Si MySQL no conecta, la aplicación no podrá arrancar. Revisar logs, host, TLS y restricciones de red del proveedor.

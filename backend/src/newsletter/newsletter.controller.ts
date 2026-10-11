@@ -14,7 +14,7 @@ export class NewsletterController {
 
   @Post()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Suscribirse al boletín informativo o novedades de Horus Market' })
+  @ApiOperation({ summary: 'Suscribirse al boletín informativo o novedades de Horus' })
   @ApiResponse({ status: 200, description: 'Suscripción registrada con éxito' })
   async subscribe(@Body() dto: SubscribeNewsletterDto) {
     return this.newsletterService.subscribe(dto);

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Resource, Row } from '../../types/workspace';
-import { label, rowState } from '../../types/workspace';
+import { canRemove, label, removeVerb, rowState } from '../../types/workspace';
 import { dateLabel, plainText } from './useCollection';
 import PanelIcon from '../PanelIcon';
 
@@ -16,7 +16,7 @@ export function ResourceImage({ value, title }: { value: unknown; title: string 
 }
 export default function ResourceCards({ resource: r, rows, busy, onOpen, onDuplicate, onRemove }: {
   resource: Resource; rows: Row[]; busy: boolean;
-  onOpen: (row: Row, view?: boolean) => void; onDuplicate: (row: Row) => void; onRemove: (row: Row) => void;
+  onOpen: (row: Row, view?: boolean) => void; onDuplicate: (row: Row, copiedAt: number) => void; onRemove: (row: Row) => void;
 }) {
   if (r.endpoint === 'preguntas-frecuentes') return <div className="hw-faq">
     {[...new Set(rows.map(row => String(row.categoria || 'General')))].map(category => <section key={category}>
@@ -25,7 +25,7 @@ export default function ResourceCards({ resource: r, rows, busy, onOpen, onDupli
         <summary><span>{String(row.pregunta)}</span><span className={'hp-badge hp-state-' + rowState(row)}>{label(rowState(row))}</span></summary>
         <p>{plainText(row.respuesta)}</p><div className="hp-actions">
           <button className="hp-btn" disabled={busy} onClick={() => onOpen(row)}>Editar respuesta</button>
-          <button className="hp-btn" disabled={busy} onClick={() => onDuplicate(row)}>Duplicar como borrador</button>
+          <button className="hp-btn" disabled={busy} onClick={() => onDuplicate(row, Date.now())}>Duplicar como borrador</button>
           <button className="hp-btn" disabled={busy || row.estado === 'archivado'} onClick={() => onRemove(row)}>Archivar</button>
         </div>
       </details>)}
@@ -45,8 +45,8 @@ export default function ResourceCards({ resource: r, rows, busy, onOpen, onDupli
         {r.endpoint === 'servicios' && <p className="hw-completeness"><PanelIcon name={row.alcance ? 'check' : 'help'} size={14} />{row.alcance ? 'Alcance del servicio definido' : 'Falta detallar el alcance'}</p>}
         {r.endpoint === 'galeria' && <small>Orden de presentación: {String(row.orden ?? 0)}</small>}
         <footer><button className="hp-btn" disabled={busy} onClick={() => onOpen(row)}><PanelIcon name="edit" size={15} />Editar</button>
-          {r.catalog && <button className="hp-icon-btn" disabled={busy} title="Duplicar como borrador" aria-label={'Duplicar ' + row[r.title]} onClick={() => onDuplicate(row)}><PanelIcon name="copy" size={16} /></button>}
-          <button className="hp-icon-btn hp-danger" disabled={busy || (r.catalog && row.estado === 'archivado')} title={r.catalog ? 'Archivar' : 'Eliminar'} aria-label={(r.catalog ? 'Archivar ' : 'Eliminar ') + row[r.title]} onClick={() => onRemove(row)}><PanelIcon name="trash" size={16} /></button>
+          {r.catalog && <button className="hp-icon-btn" disabled={busy} title="Duplicar como borrador" aria-label={'Duplicar ' + row[r.title]} onClick={() => onDuplicate(row, Date.now())}><PanelIcon name="copy" size={16} /></button>}
+          <button className="hp-icon-btn hp-danger" disabled={busy || !canRemove(r, row)} title={removeVerb(r)} aria-label={removeVerb(r) + ' ' + row[r.title]} onClick={() => onRemove(row)}><PanelIcon name="trash" size={16} /></button>
         </footer>
       </div>
     </article>)}

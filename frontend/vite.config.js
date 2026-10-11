@@ -6,12 +6,30 @@ import { resolveApiBase } from './config/api-config.js'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const apiBase = resolveApiBase(process.env.VITE_API_BASE_URL || env.VITE_API_BASE_URL, process.env.VERCEL === '1')
+  const apiBase = resolveApiBase(
+    process.env.VITE_API_BASE_URL || env.VITE_API_BASE_URL,
+    process.env.VERCEL === '1'
+  )
+
   return {
     plugins: [react(), tailwindcss()],
-    define: { 'import.meta.env.VITE_API_BASE_URL': JSON.stringify(apiBase) },
+    define: {
+      'import.meta.env.VITE_API_BASE_URL': JSON.stringify(apiBase),
+    },
+    build: {
+      // El paquete principal superaba 500 kB: React y el router van a un chunk propio (se cachea aparte y no cambia con cada despliegue de la app).
+      rolldownOptions: { output: { codeSplitting: { groups: [{ name: 'vendor-react', test: /node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler|@remix-run)[\\/]/ }] } } },
+    },
     server: {
-      proxy: { '/api': { target: 'http://127.0.0.1:3000', changeOrigin: true } },
+      allowedHosts: [
+        'lingo-scrubbed-alienable.ngrok-free.dev',
+      ],
+      proxy: {
+        '/api': {
+          target: 'http://127.0.0.1:3000',
+          changeOrigin: true,
+        },
+      },
     },
   }
 })

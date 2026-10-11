@@ -20,6 +20,7 @@ import { ReclamacionesService } from '../src/reclamaciones/reclamaciones.service
 import { ContactoService } from '../src/contacto/contacto.service';
 import { MessagesService } from '../src/admin/messages/messages.service';
 import { NewsletterService } from '../src/newsletter/newsletter.service';
+import { SubscribeNewsletterDto } from '../src/newsletter/dto/subscribe-newsletter.dto';
 import { SettingsService } from '../src/settings/settings.service';
 import { MailService } from '../src/mail/mail.service';
 import { validateDeployment } from '../src/deployment.config';
@@ -107,9 +108,46 @@ test('newsletter reactivates subscriptions atomically and preserves existing int
   } } } as any);
   assert.equal((await service.subscribe({ email: ' ALEX@example.com ' })).ok, true);
   assert.equal(existing.activo, true);
-  assert.equal(existing.interes, 'market');
+  assert.equal(existing.interes, 'market'); // dato histórico: no se recategoriza
   await service.subscribe({ email: existing.email, interes: 'cursos' });
   assert.equal(existing.interes, 'cursos');
+});
+
+test('new newsletter subscriptions default to "novedades" and keep an explicit interest such as "cursos"', async () => {
+  const created: any[] = [];
+  const service = new NewsletterService({ newsletter: { upsert: async (options: any) => { created.push(options); return { id: 1, ...options.create }; } } } as any);
+  await service.subscribe({ email: 'Nuevo@Example.com' });
+  await service.subscribe({ email: 'otro@example.com', interes: 'cursos' });
+  assert.equal(created[0].create.interes, 'novedades');
+  assert.equal(created[1].create.interes, 'cursos');
+  assert.equal(created[0].create.email, 'nuevo@example.com');
+  assert.equal('interes' in created[0].update, false, 'una suscripción sin interés no modifica el de un suscriptor existente');
+  assert.ok(created.every(o => o.create.interes !== 'market'));
+});
+
+test('newsletter rejects the retired "market" interest (case/space-insensitive) without converting it', async () => {
+  for (const interes of ['market', ' MARKET ', 'Market']) {
+    await assert.rejects(() => validate({ email: 'a@example.com', interes, consentimiento: true }, SubscribeNewsletterDto), BadRequestException);
+  }
+  await validate({ email: 'a@example.com', consentimiento: true }, SubscribeNewsletterDto);
+  await validate({ email: 'a@example.com', interes: 'cursos', consentimiento: true }, SubscribeNewsletterDto);
+  await validate({ email: 'a@example.com', interes: 'marketing', consentimiento: true }, SubscribeNewsletterDto);
+
+  // Nueva suscripción y reactivación de una existente: el servicio también rechaza y no escribe nada.
+  const existing = { email: 'alex@example.com', activo: false, interes: 'market' };
+  let writes = 0;
+  const service = new NewsletterService({ newsletter: { upsert: async (options: any) => { writes++; Object.assign(existing, options.update); return existing; } } } as any);
+  for (const interes of ['market', '  Market  ']) {
+    await assert.rejects(() => service.subscribe({ email: 'nuevo@example.com', interes }), BadRequestException);
+    await assert.rejects(() => service.subscribe({ email: existing.email, interes }), BadRequestException);
+  }
+  assert.equal(writes, 0);
+  assert.equal(existing.activo, false);
+  assert.equal(existing.interes, 'market'); // histórico intacto
+  await service.subscribe({ email: existing.email }); // reactivar sin interés
+  assert.equal(writes, 1);
+  assert.equal(existing.activo, true);
+  assert.equal(existing.interes, 'market');
 });
 
 test('settings reads never seed sample values or expose unknown keys', async () => {

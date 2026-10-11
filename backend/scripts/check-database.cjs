@@ -18,6 +18,15 @@ function expectedColumns() {
     ...[['id','varchar(64)'],['count','int'],['expiresAt','datetime']].map(([name,type])=>['rate_limit_buckets',name,type,false]),
   ].map(([table,name,type,nullable])=>({table,name,type,nullable,unique:name==='id'}));
   const visual=[...['cursos','servicios'].map(table=>({table,name:'origen_original',type:'varchar(150)',nullable:true,unique:true})),...['area','certificacion','icono','color'].map((name,i)=>({table:'cursos',name,type:['varchar(80)','varchar(150)','varchar(30)','varchar(20)'][i],nullable:name!=='color',unique:false})),{table:'cursos',name:'orden',type:'int',nullable:false,unique:false},...['presentacion','nombre_corto','destacado','dato_principal','dato_secundario','etiquetas','icono','color','orden'].map((name,i)=>({table:'servicios',name,type:['varchar(30)','varchar(80)','varchar(100)','varchar(40)','varchar(100)','text','varchar(30)','varchar(20)','int'][i],nullable:!['presentacion','color','orden'].includes(name),unique:false})),{table:'galeria_items',name:'origen_original',type:'varchar(150)',nullable:true,unique:true}];
+  const chatbot = [
+    {table:'contactos',name:'origen',type:'varchar(20)',nullable:false,unique:false},
+    ...[['id','int',false],['modo','varchar(10)',false],['resuelta','tinyint',false],['fuentes','int',false],['createdAt','datetime',false]].map(([name,type,nullable])=>({table:'chatbot_interacciones',name,type,nullable,unique:name==='id'})),
+    ...[['id','int',false],['huella','char(64)',false],['pregunta','varchar(500)',false],['veces','int',false],['createdAt','datetime',false],['updatedAt','datetime',false]].map(([name,type,nullable])=>({table:'chatbot_preguntas_sin_respuesta',name,type,nullable,unique:['id','huella'].includes(name)})),
+  ];
+  const idempotencia = [
+    {table:'cotizaciones',name:'idempotencia_clave',type:'varchar(128)',nullable:true,unique:true},
+    {table:'cotizaciones',name:'idempotencia_huella',type:'char(64)',nullable:true,unique:false},
+  ];
   const convenios = [
     ...[
       ['id','int',false], ['nombre','varchar(160)',false], ['sigla','varchar(50)',true],
@@ -30,7 +39,7 @@ function expectedColumns() {
       ['id','int'], ['convenio_id','int'], ['imagen_url','varchar(2048)'], ['orden','int'], ['createdAt','datetime'],
     ].map(([name,type])=>({table:'convenio_fotos',name,type,nullable:false,unique:name==='id'})),
   ];
-  return [...convenios, ...legacy.map(column=>column.table==='cursos'&&['modalidad','duracion'].includes(column.name)?{...column,nullable:true}:column),...added,...visual];
+  return [...chatbot, ...idempotencia, ...convenios, ...legacy.map(column=>column.table==='cursos'&&['modalidad','duracion'].includes(column.name)?{...column,nullable:true}:column.table==='servicios'&&column.name==='categoria'?{...column,type:"ENUM('cableado','camaras','soporte','asesoramiento')"}:column),...added,...visual];
 }
 function normalizeType(type) { return type.toLowerCase().replace(/\binteger\b/g, 'int').replace(/int\(\d+\)/g, 'int').replace(/\s/g, ''); }
 async function check(db) {

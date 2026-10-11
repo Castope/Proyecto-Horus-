@@ -1,10 +1,10 @@
 import { createValidationPipe } from './common/validation';
-import { corsOrigins } from './deployment.config';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { trustedProxies } from './common/trusted-proxies';
+import { adminDocsAuthenticator, configureHttpSecurity, setupSwagger } from './common/security';
+import { PrismaService } from './database/prisma.service';
 import { Logger } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -16,43 +16,21 @@ async function bootstrap() {
   // Prefijo global /api para mantener compatibilidad total con el frontend
   app.setGlobalPrefix('api');
 
-  // Configuración de CORS para desarrollo y producción local
-  app.enableCors({
-    origin: corsOrigins(process.env),
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  });
+  // Cabeceras de seguridad (Helmet) y CORS con lista exacta de orígenes; antes de cualquier ruta.
+  configureHttpSecurity(app, process.env);
 
   // Validación y transformación automática de DTOs con class-validator
   app.useGlobalPipes(createValidationPipe());
 
-  // Documentación OpenAPI / Swagger
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('Horus Group API')
-    .setDescription('API REST oficial para Horus Group SRL (Web Pública y Panel Administrativo)')
-    .setVersion('1.0.0')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'Authorization',
-        description: 'Ingrese su token JWT (sin el prefijo Bearer)',
-        in: 'header',
-      },
-      'bearer',
-    )
-    .build();
-
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document);
+  // Swagger: activo en desarrollo; apagado en producción salvo SWAGGER_ENABLED=true, y entonces exige HTTPS y un administrador.
+  const swagger = setupSwagger(app, process.env, adminDocsAuthenticator(app.get(PrismaService)));
 
   const port = Number(process.env.PORT) || 3000;
   await app.listen(port);
 
   logger.log(`🚀 Servidor NestJS corriendo en: http://localhost:${port}/api`);
-  logger.log(`📚 Documentación Swagger interactiva en: http://localhost:${port}/api/docs`);
+  if (swagger === 'open') logger.log(`📚 Documentación Swagger interactiva en: http://localhost:${port}/api/docs`);
+  else if (swagger === 'protected') logger.log('📚 Swagger habilitado: requiere HTTPS y una cuenta de administrador.');
 }
 
 bootstrap();

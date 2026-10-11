@@ -98,6 +98,7 @@ model Contacto {
   asunto String @db.VarChar(255)
   mensaje String @db.Text
   estado String @default("nuevo") @db.VarChar(255)
+  origen String @default("web") @db.VarChar(20)
   createdAt DateTime @default(now()) @db.DateTime(0)
   updatedAt DateTime @updatedAt @db.DateTime(0)
   cotizaciones Cotizacion[]
@@ -130,6 +131,8 @@ model Cotizacion {
   @@index([contacto_id], map: "cotizaciones_contacto_id_idx")
   revision Int @default(1)
   historial Json
+  idempotencia_clave String? @unique(map: "cotizaciones_idempotencia_clave") @db.VarChar(128)
+  idempotencia_huella String? @db.Char(64)
   createdAt DateTime @default(now()) @db.DateTime(0)
   updatedAt DateTime @updatedAt @db.DateTime(0)
   @@map("cotizaciones")
@@ -153,7 +156,7 @@ model Newsletter {
   consent_at DateTime? @db.DateTime(0)
   id Int @id @default(autoincrement())
   email String @unique(map: "email") @db.VarChar(254)
-  interes String @default("market") @db.VarChar(100)
+  interes String @default("novedades") @db.VarChar(100)
   activo Boolean? @default(true)
   createdAt DateTime @default(now()) @db.DateTime(0)
   updatedAt DateTime @updatedAt @db.DateTime(0)
@@ -215,7 +218,6 @@ enum ServicioCategoria {
   camaras
   soporte
   asesoramiento
-  otros
 }
 
 enum ServicioEstado {
@@ -291,4 +293,25 @@ model ConvenioFoto {
   createdAt DateTime @default(now()) @db.DateTime(0)
   @@index([convenio_id, orden], map: "convenio_fotos_convenio_orden_idx")
   @@map("convenio_fotos")
+}
+
+model ChatbotInteraccion {
+  id Int @id @default(autoincrement())
+  modo String @db.VarChar(10)
+  resuelta Boolean
+  fuentes Int @default(0)
+  createdAt DateTime @default(now()) @db.DateTime(0)
+  @@index([createdAt], map: "chatbot_interacciones_created_idx")
+  @@map("chatbot_interacciones")
+}
+
+model ChatbotPreguntaSinRespuesta {
+  id Int @id @default(autoincrement())
+  huella String @unique(map: "chatbot_sin_respuesta_huella") @db.Char(64)
+  pregunta String @db.VarChar(500)
+  veces Int @default(1)
+  createdAt DateTime @default(now()) @db.DateTime(0)
+  updatedAt DateTime @updatedAt @db.DateTime(0)
+  @@index([updatedAt], map: "chatbot_sin_respuesta_updated_idx")
+  @@map("chatbot_preguntas_sin_respuesta")
 }

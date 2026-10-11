@@ -21,7 +21,7 @@ export interface AdminMessage {
   telefono: string;
   asunto: string;
   mensaje: string;
-  estado: 'nuevo' | 'en_proceso' | 'atendido';
+  estado: 'nuevo' | 'en_proceso' | 'atendido' | 'archivado';
   createdAt?: string;
 }
 

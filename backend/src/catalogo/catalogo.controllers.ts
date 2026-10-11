@@ -32,8 +32,8 @@ export class AdminCursoController {
     return this.service.update('cursos', id, dto);
   }
   @Delete(':id')
-  @ApiOperation({ summary: 'Archivar contenido sin borrar su registro' })
-  archive(@Param('id', ParseIntPipe) id: number) { return this.service.archive('cursos', id); }
+  @ApiOperation({ summary: 'Eliminar definitivamente un curso o capacitación' })
+  remove(@Param('id', ParseIntPipe) id: number) { return this.service.remove('cursos', id); }
 }
 
 @ApiTags('servicios')
@@ -64,8 +64,8 @@ export class AdminServicioController {
     return this.service.update('servicios', id, dto);
   }
   @Delete(':id')
-  @ApiOperation({ summary: 'Archivar contenido sin borrar su registro' })
-  archive(@Param('id', ParseIntPipe) id: number) { return this.service.archive('servicios', id); }
+  @ApiOperation({ summary: 'Eliminar definitivamente un servicio' })
+  remove(@Param('id', ParseIntPipe) id: number) { return this.service.remove('servicios', id); }
 }
 
 @ApiTags('preguntas-frecuentes')

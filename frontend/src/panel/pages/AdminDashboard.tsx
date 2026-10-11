@@ -1,18 +1,20 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useConfirmLeave } from '../unsaved/unsavedContext';
 import HorusBrand from '../components/HorusBrand';
 import { useAdminAuth } from '../context';
-import { resources } from '../types/workspace';
+import { educationSections, resources, serviceSections, servicesOverview, type PanelScope } from '../types/workspace';
 import PanelIcon from '../components/PanelIcon';
 import PanelOverview from '../components/PanelOverview';
 import ResourceManager from '../components/ResourceManager';
 import PanelSettings from '../components/PanelSettings';
 import MessageInbox from '../components/workspace/MessageInbox';
-import CommunityRecords from '../components/workspace/CommunityRecords';
-import PanelAccounts from '../components/PanelAccounts';
+import PanelPreferences from '../components/PanelPreferences';
 import PanelQuotes from '../components/PanelQuotes';
+import PanelChatbot from '../components/PanelChatbot';
 import PanelConvenios from '../components/PanelConvenios';
 import '../styles/workspace.css';
+import '../styles/panel-polish.css';
 
 const mobileQuery = '(max-width: 760px)';
 const subscribeToViewport = (callback: () => void) => {
@@ -23,12 +25,23 @@ const subscribeToViewport = (callback: () => void) => {
 
 export default function AdminDashboard() {
   const { user, logout } = useAdminAuth();
+  const confirmLeave = useConfirmLeave(); // cerrar sesión a propósito avisa si hay cambios sin guardar (el cierre forzoso por seguridad no pasa por aquí)
   const navigate = useNavigate();
   const location = useLocation();
   const [params] = useSearchParams();
-  const requested = location.pathname === '/admin/messages' ? 'mensajes' : params.get('section') || 'resumen';
-  const section = resources[requested] || ['ajustes', 'newsletter', 'reclamaciones', 'cotizaciones', 'cuentas', 'convenios'].includes(requested) ? requested : 'resumen';
+  const asked = location.pathname === '/admin/messages' ? 'mensajes' : params.get('section') || 'resumen';
+  // 'cursos' is the resource behind the Education menu, so both addresses open the same section.
+  const requested = asked === 'educacion' ? 'cursos' : asked;
+  const section = resources[requested] || ['mensajes', 'chatbot', 'ajustes', 'cotizaciones', 'configuracion', 'convenios'].includes(requested) ? requested : 'resumen';
   const [menuLocation, setMenuLocation] = useState<string | null>(null);
+  // Menu groups: undefined = open while active; false = folded by the administrator.
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean | undefined>>({});
+  const activeGroup = section === 'servicios' ? 'servicios' : section === 'cursos' ? 'educacion' : '';
+  // Education always opens one concrete section; the old ?section=cursos address opens Cursos.
+  const wantedScope = params.get('seccion') ?? (asked === 'cursos' ? 'cursos' : null);
+  const activeScope: PanelScope | undefined = (activeGroup === 'servicios' ? serviceSections : activeGroup === 'educacion' ? educationSections : []).find(item => item.key === wantedScope)
+    ?? (activeGroup === 'servicios' ? servicesOverview : activeGroup === 'educacion' ? educationSections[0] : undefined);
+  const resourceKey = activeScope?.resource ?? section;
   const menu = menuLocation === location.key;
   const mobile = useSyncExternalStore(subscribeToViewport, () => window.matchMedia(mobileQuery).matches, () => false);
   const sidebarRef = useRef<HTMLElement>(null);
@@ -56,17 +69,31 @@ export default function AdminDashboard() {
       trigger?.focus();
     };
   }, [menu, mobile]);
-  const title = resources[section]?.label || (section === 'convenios' ? 'Convenios' : section === 'cuentas' ? 'Cuentas y acceso' : section === 'cotizaciones' ? 'Cotizaciones' : section === 'ajustes' ? 'Empresa' : section === 'newsletter' ? 'Suscripciones' : section === 'reclamaciones' ? 'Reclamaciones' : 'Resumen');
+  const title = section === 'cursos' ? 'Educación' : resources[section]?.label || (section === 'mensajes' ? 'Bandeja de mensajes' : section === 'chatbot' ? 'Consultas del chatbot' : section === 'convenios' ? 'Convenios' : section === 'configuracion' ? 'Ajustes' : section === 'cotizaciones' ? 'Cotizaciones' : section === 'ajustes' ? 'Empresa' : 'Resumen');
   useEffect(() => { document.title = title + ' — Panel Horus'; window.scrollTo(0, 0); }, [title]);
   useEffect(() => {
     const close = (event: KeyboardEvent) => { if (event.key === 'Escape') setMenuLocation(null); };
     window.addEventListener('keydown', close); return () => window.removeEventListener('keydown', close);
   }, []);
-  const go = (value: string, create = false) => {
-    navigate(value === 'mensajes' && !create ? '/admin/messages' : '/admin/dashboard?section=' + value + (create ? '&crear=1' : ''));
+  const go = (value: string, create = false, seccion?: string) => {
+    navigate(value === 'mensajes' && !create ? '/admin/messages' : '/admin/dashboard?section=' + value + (seccion ? '&seccion=' + seccion : '') + (create ? '&crear=1' : ''));
     setMenuLocation(null);
   };
   const nav = (key: string, text: string, icon: string) => <button key={key} className={'hp-nav-item' + (section === key ? ' is-active' : '')} aria-current={section === key ? 'page' : undefined} onClick={() => go(key)}><PanelIcon name={icon} /><span>{text}</span>{section === key && <span className="hp-nav-dot" />}</button>;
+  const groupNav = (group: 'servicios' | 'educacion', text: string, icon: string, items: PanelScope[]) => {
+    const active = activeGroup === group;
+    // A group is only expanded while it is the active one; leaving it folds it again.
+    const open = active && (openGroups[group] ?? true);
+    const menuId = 'panel-' + group + '-menu';
+    return <div key={group} className="hp-nav-group">
+      <button className={'hp-nav-item' + (active ? ' is-active' : '')} aria-expanded={open} aria-controls={menuId} aria-current={active && (!activeScope || activeScope.key === 'todos') ? 'page' : undefined}
+        onClick={() => { if (!active) { setOpenGroups(value => ({ ...value, [group]: undefined })); go(group, false, group === 'educacion' ? items[0].key : undefined); } else setOpenGroups(value => ({ ...value, [group]: !open })); }}>
+        <PanelIcon name={icon} /><span>{text}</span><PanelIcon name="chevron-down" size={16} /></button>
+      {open && <ul id={menuId} className="hp-nav-sub" aria-label={'Secciones de ' + text.toLowerCase()}>{items.map(item =>
+        <li key={item.key}><button className={'hp-nav-subitem' + (active && activeScope?.key === item.key ? ' is-active' : '')} aria-current={active && activeScope?.key === item.key ? 'page' : undefined}
+          onClick={() => go(group, false, item.key)}>{item.label}</button></li>)}</ul>}
+    </div>;
+  };
   return <div className="hp-shell">
     <a className="hp-skip" href="#panel-content">Saltar al contenido</a>
     {menu && <button className="hp-menu-overlay" aria-label="Cerrar menú" onClick={() => setMenuLocation(null)} />}
@@ -74,14 +101,14 @@ export default function AdminDashboard() {
       <div className="hp-brand-row"><Link className="hp-brand" to="/" aria-label="Ir al inicio de Horus Group"><HorusBrand light /></Link><button className="hp-sidebar-close" aria-label="Cerrar menú" onClick={() => setMenuLocation(null)}><PanelIcon name="close" /></button></div>
       <div className="hp-workspace-label"><span className="hp-workspace-mark"><PanelIcon name="shield" size={18} /></span><div><strong>Panel de administración</strong><small>Tu espacio de trabajo</small></div></div>
       <nav aria-label="Navegación del panel"><p className="hp-nav-label">PRINCIPAL</p>{nav('resumen', 'Resumen', 'home')}
-        <p className="hp-nav-label">GESTIÓN DE CONTENIDO</p>{['cursos', 'servicios', 'galeria', 'faq', 'contenido'].map(key => nav(key, resources[key].label, resources[key].icon))}
-        {nav('convenios', 'Convenios', 'file')}<p className="hp-nav-label">ATENCIÓN Y EMPRESA</p>{nav('mensajes', 'Mensajes', 'mail')}{nav('cotizaciones', 'Cotizaciones', 'file')}{nav('newsletter', 'Suscripciones', 'user')}{nav('reclamaciones', 'Reclamaciones', 'file')}{nav('ajustes', 'Información de empresa', 'settings')}{nav('cuentas', 'Cuentas y acceso', 'user')}</nav>
-      <div className="hp-sidebar-bottom"><Link to="/admin/register"><PanelIcon name="user-plus" />Crear administrador</Link><a href="/" target="_blank" rel="noreferrer"><PanelIcon name="arrow" />Visitar sitio web</a><button onClick={() => { logout(); navigate('/admin/login'); }}><PanelIcon name="logout" />Cerrar sesión</button></div>
+        <p className="hp-nav-label">GESTIÓN DE CONTENIDO</p>{groupNav('educacion', 'Educación', resources.cursos.icon, educationSections)}{groupNav('servicios', resources.servicios.label, resources.servicios.icon, serviceSections)}{['galeria', 'faq', 'contenido'].map(key => nav(key, resources[key].label, resources[key].icon))}
+        {nav('convenios', 'Convenios', 'file')}<p className="hp-nav-label">ATENCIÓN Y EMPRESA</p>{nav('mensajes', 'Mensajes', 'mail')}{nav('cotizaciones', 'Cotizaciones', 'file')}{nav('chatbot', 'Consultas del chatbot', 'help')}{nav('ajustes', 'Información de empresa', 'settings')}</nav>
+      <div className="hp-sidebar-bottom"><button className={section === 'configuracion' ? 'is-active' : undefined} aria-current={section === 'configuracion' ? 'page' : undefined} onClick={() => go('configuracion')}><PanelIcon name="gear" />Ajustes</button><a href="/" target="_blank" rel="noreferrer"><PanelIcon name="arrow" />Visitar sitio web</a><button onClick={() => confirmLeave(() => { logout(); navigate('/admin/login'); })}><PanelIcon name="logout" />Cerrar sesión</button></div>
       <div className="hp-profile"><span className="hp-avatar">{user?.nombre?.charAt(0).toUpperCase()}</span><div><strong>{user?.nombre}</strong><small>{user?.email}</small></div></div>
     </aside>
     <div className="hp-body" inert={mobile && menu}><header className="hp-topbar"><div><button ref={menuButtonRef} className="hp-icon-btn hp-menu-toggle" aria-label={menu ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menu} aria-controls="panel-sidebar" onClick={() => setMenuLocation(menu ? null : location.key)}><PanelIcon name="menu" /></button><span className="hp-breadcrumb">Mi espacio <span>/</span> <strong>{title}</strong></span></div><div><span className="hp-date"><PanelIcon name="calendar" size={16} />{new Date().toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' })}</span><span className="hp-topbar-divider" /><span className="hp-avatar">{user?.nombre?.charAt(0).toUpperCase()}</span></div></header>
-      <main id="panel-content" className="hp-main" tabIndex={-1}>{section === 'resumen' ? <PanelOverview go={go} /> : section === 'convenios' ? <PanelConvenios /> : section === 'cuentas' ? <PanelAccounts /> : section === 'cotizaciones' ? <PanelQuotes /> : section === 'ajustes' ? <PanelSettings /> : section === 'newsletter' || section === 'reclamaciones' ? <CommunityRecords key={section} kind={section} /> : section === 'mensajes' && params.get('crear') !== '1' && params.get('vista') !== 'tabla' ? <MessageInbox /> :
-        <ResourceManager key={section + (params.get('crear') || '') + (params.get('estado') || '') + (params.get('vista') || '')} resource={resources[section]} autoCreate={params.get('crear') === '1'} />}</main>
+      <main id="panel-content" className="hp-main" tabIndex={-1}>{section === 'resumen' ? <PanelOverview go={go} /> : section === 'convenios' ? <PanelConvenios /> : section === 'configuracion' ? <PanelPreferences /> : section === 'cotizaciones' ? <PanelQuotes /> : section === 'ajustes' ? <PanelSettings /> : section === 'mensajes' ? <MessageInbox /> : section === 'chatbot' ? <PanelChatbot /> :
+        <ResourceManager key={section + (params.get('crear') || '') + (params.get('estado') || '') + (params.get('vista') || '') + (activeScope ? activeScope.resource + activeScope.key : '')} resource={resources[resourceKey]} autoCreate={params.get('crear') === '1'} scope={activeScope} />}</main>
       <footer className="hp-footer"><span>© {new Date().getFullYear()} Horus Group SRL</span><span>Hecho para conectar tecnología y personas.</span></footer>
     </div>
   </div>;

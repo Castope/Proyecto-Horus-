@@ -81,8 +81,6 @@ jobs:
     name: Integración (MySQL efímero)
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    # Primera versión sin ejecutar todavía en GitHub: un fallo se ve en el resumen, pero no bloquea. Retirar esta línea cuando haya una ejecución verde.
-    continue-on-error: true
     needs: [backend]
     defaults:
       run:

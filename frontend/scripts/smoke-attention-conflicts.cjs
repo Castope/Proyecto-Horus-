@@ -1,6 +1,6 @@
 // Concurrencia en el seguimiento (D3) con API simulada: nada real (ni datos, ni sesiones, ni correo). Edge por DevTools.
 // El navegador es el administrador A; el endpoint /__remote edita el mismo seguimiento como administrador B.
-const http = require('node:http'), fs = require('node:fs'), path = require('node:path'), os = require('node:os'), { spawn } = require('node:child_process');
+const http = require('node:http'), fs = require('node:fs'), path = require('node:path'), { spawn } = require('node:child_process');
 const root = path.resolve(__dirname, '../dist');
 const edge = process.env.SMOKE_BROWSER || 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -75,7 +75,8 @@ const server = http.createServer(async (req, res) => {
         if ((m = sub.match(/^messages\/(\d+)$/))) return json({ ok: true, message: effectiveMessages().find(x => x.id === +m[1]) });
         if (sub === 'stats') {
           const all = effectiveMessages(), count = s => all.filter(m=>m.estado===s).length;
-          return json({ok:true,stats:{mensajes:{total:all.length,nuevos:count('nuevo'),enProceso:count('en_proceso'),atendidos:count('atendido'),archivados:count('archivado')},reclamaciones:{total:reclamaciones.length},contenido:{total:0},catalogo:{}},actividadReciente:{mensajes:all,reclamaciones:[]}});
+          // Contrato de GET /admin/stats?vista=operativa (Resumen académico y de atención).
+          return json({ok:true,stats:{academico:{estudiantes:0,edicionesActivas:0,matriculasRegistradas:0,matriculasVigentes:0},mensajes:{total:all.length,nuevos:count('nuevo'),enProceso:count('en_proceso'),atendidos:count('atendido'),archivados:count('archivado'),pendientes:count('nuevo')+count('en_proceso')}},actividadReciente:{mensajes:all.map(x=>({id:x.id,nombre:x.nombre,asunto:x.asunto,estado:x.estado,createdAt:x.createdAt}))}});
         }
         if (sub === 'reclamaciones') return json({ ok: true, reclamaciones, pagination: { total: reclamaciones.length, page: 1, limit: 10, pages: 1 }, metrics: { reclamo: reclamaciones.length, queja: 0 } });
         return json({ ok: true, items: [], messages: [], pagination: { page: 1, total: 0, pages: 1 }, metrics: {} });
@@ -101,8 +102,6 @@ function connect(url) {
 }
 const SET = "(el, v) => { const proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : el.tagName === 'SELECT' ? HTMLSelectElement.prototype : HTMLInputElement.prototype; Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, v); el.dispatchEvent(new Event(el.tagName === 'SELECT' ? 'change' : 'input', { bubbles: true })) }";
 function newestMtime(dir) { let n = 0; for (const e of fs.readdirSync(dir, { withFileTypes: true })) { const f = path.join(dir, e.name); n = Math.max(n, e.isDirectory() ? newestMtime(f) : fs.statSync(f).mtimeMs); } return n; }
-// En Windows child.kill() solo cierra el proceso raíz de Edge y dejaba docenas de procesos huérfanos: se cierra el árbol completo.
-function killBrowser(child) { try { if (process.platform === 'win32') require('node:child_process').spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true }); else child.kill(); } catch { /* ya cerrado */ } }
 
 async function main() {
   if (!fs.existsSync(path.join(root, 'index.html'))) throw new Error('Falta dist/: ejecuta "npm run build".');
@@ -110,9 +109,9 @@ async function main() {
   if (!fs.existsSync(edge)) throw new Error('Configura SMOKE_BROWSER con una instalación de Edge/Chromium.');
   await new Promise(r => server.listen(0, '127.0.0.1', r)); const origin = 'http://127.0.0.1:' + server.address().port;
   const probe = http.createServer(); await new Promise(r => probe.listen(0, '127.0.0.1', r)); const port = probe.address().port; await new Promise(r => probe.close(r));
-  const profile = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'horus-conflict-'));
-  const child = spawn(edge, ['--headless=new', '--disable-gpu', '--no-first-run', '--remote-debugging-port=' + port, '--user-data-dir=' + profile, 'about:blank'], { windowsHide: true, stdio: 'ignore' });
-  const cleanup = require('./smoke-cleanup.cjs')(child,profile,server,killBrowser);
+  const profile = require('./smoke-cleanup.cjs').createProfile('horus-conflict-');
+  const child = spawn(edge, ['--headless=new', '--disable-gpu', '--no-first-run', '--remote-debugging-port=' + port, '--user-data-dir=' + profile, 'about:blank'], { detached: process.platform !== 'win32', windowsHide: true, stdio: 'ignore' });
+  const cleanup = require('./smoke-cleanup.cjs')(child,profile,server);
   let version; for (let i = 0; i < 100 && !version; i++) { await sleep(100); try { version = await fetch('http://127.0.0.1:' + port + '/json/version').then(r => r.json()); } catch { /* arrancando */ } }
   const bc = connect(version.webSocketDebuggerUrl); await bc.ready;
   const jsErrors = [], blocked = [], pages = []; let fails = 0;

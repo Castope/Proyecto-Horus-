@@ -11,9 +11,10 @@
     "start:dev": "nest start --watch --path tsconfig.dev.json",
     "start:debug": "nest start --debug --watch --path tsconfig.dev.json",
     "start:prod": "node dist/main",
-    "test": "node --test -r ./test/isolate-env.cjs -r ts-node/register test/*.test.ts",
+    "test": "node --test --test-concurrency=1 -r ./test/isolate-env.cjs -r ts-node/register test/*.test.ts",
     "db:migrate": "node scripts/migrate.cjs",
     "admin:create": "node scripts/create-admin.cjs",
+    "admin:assign-role": "node scripts/assign-role.cjs",
     "db:init": "node scripts/init-database.cjs",
     "prisma:generate": "node scripts/prisma-generate.cjs",
     "postinstall": "npm run prisma:generate",
@@ -35,8 +36,8 @@
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.4.15",
     "@nestjs/swagger": "^7.4.2",
-    "@prisma/adapter-mariadb": "6.19.0",
-    "@prisma/client": "6.19.0",
+    "@prisma/adapter-mariadb": "6.19.3",
+    "@prisma/client": "6.19.3",
     "bcryptjs": "^2.4.3",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
@@ -46,6 +47,7 @@
     "nodemailer": "^6.9.16",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "pdfkit": "0.17.2",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
@@ -57,7 +59,8 @@
     "@types/node": "^22.10.7",
     "@types/nodemailer": "^6.4.17",
     "@types/passport-jwt": "^4.0.1",
-    "prisma": "6.19.0",
+    "@types/pdfkit": "0.17.6",
+    "prisma": "6.19.3",
     "source-map-support": "^0.5.21",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
@@ -65,5 +68,11 @@
   },
   "engines": {
     "node": "22.x"
+  },
+  "overrides": {
+    "@nestjs/platform-express": {
+      "body-parser": "1.20.8",
+      "qs": "6.16.0"
+    }
   }
 }
